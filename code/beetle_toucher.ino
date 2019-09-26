@@ -1,151 +1,45 @@
-// This example shows basic use of a Pololu High Power Stepper Motor Driver.
-//
-// It shows how to initialize the driver, configure various settings, and enable
-// the driver.  It shows how to send pulses to the STEP pin to step the motor
-// and how to switch directions using the DIR pin.
-//
-// Before using this example, be sure to change the setCurrentMilliamps36v4 line
-// to have an appropriate current limit for your system.  Also, see this
-// library's documentation for information about how to connect the driver:
-//   http://pololu.github.io/high-power-stepper-driver
+// Set the current limit to 2400 mA.
+// Documentation: http://pololu.github.io/high-power-stepper-driver
 
+// SET-UP -----------------------------------------------------------------------
+
+#include <Servo.h>
 #include <SPI.h>
 #include <HighPowerStepperDriver.h>
-#include <Servo.h>
-# include <AccelStepper.h>
 
-const uint8_t DirPin = 2;
-const uint8_t StepPin = 3;
-const uint8_t CSPin = 4;
+// Servo pin:
+const uint8_t servo_pin = 9;
+// Stepper pins:
+const uint8_t dir_pin = 2;
+const uint8_t step_pin = 3;
+const uint8_t cs_pin = 4;
+
+// Initialize my servo as a servo:
+Servo myservo;
+// Initialize my stepper as a high-powered stepper:
+HighPowerStepperDriver sd;
+
+// Initialize the servo and stepper pins to position 0:
+//int servo_pos = 0;
+bool servo_extended = false;
+unsigned long stepper_pos = 0;
 
 // This period is the length of the delay between steps, which controls the
 // stepper motor's speed.  You can increase the delay to make the stepper motor
 // go slower.  If you decrease the delay, the stepper motor will go faster, but
 // there is a limit to how fast it can go before it starts missing steps.
-const uint16_t StepPeriodUs = 2000;
-unsigned int stepper_pos = 6000;
+const uint16_t StepPeriodUs = 80;
 
-// LIN ACT:
-Servo myservo;  // create servo object to control a servo
-int servo_pos = 0;    // variable to store the servo position
-//
-
-HighPowerStepperDriver sd;
-
-void setup()
-{
-  SPI.begin();
-  sd.setChipSelectPin(CSPin);
-
-  // Drive the STEP and DIR pins low initially.
-  pinMode(StepPin, OUTPUT);
-  digitalWrite(StepPin, LOW);
-  pinMode(DirPin, OUTPUT);
-  digitalWrite(DirPin, LOW);
-
-  // Give the driver some time to power up.
-  delay(1);
-
-  // Reset the driver to its default settings and clear latched status
-  // conditions.
-  sd.resetSettings();
-  sd.clearStatus();
-
-  // Select auto mixed decay.  TI's DRV8711 documentation recommends this mode
-  // for most applications, and we find that it usually works well.
-  sd.setDecayMode(HPSDDecayMode::AutoMixed);
-
-  // Set the current limit. You should change the number here to an appropriate
-  // value for your particular system.
-  sd.setCurrentMilliamps36v4(2400);
-
-  // Set the number of microsteps that correspond to one full step.
-  sd.setStepMode(HPSDStepMode::MicroStep16);
-
-  // Enable the motor outputs.
-  sd.enableDriver();
-
-  // LIN ACT: Attach the servo on pin 9 to the servo object
-  myservo.attach(9);
-}
-
-void loop()
-{
-  // Step the stepper motor in the default direction n times
-  setDirection(0); 
-  if (unsigned int x >= 0 and x < stepper_pos)
-  {
-    step();
-    delayMicroseconds(StepPeriodUs);
-  }
-  delay(300);
-  /*
-  // Step the stepper motor in the opposite direction n times
-  setDirection(1); 
-  if (unsigned int x >= 0 and x < stepper_pos)
-  {
-    step();
-    delayMicroseconds(StepPeriodUs);
-  }
-  delay(300);
-  */
-  // Extend the lienar actuator if in bounds, retract if out of bounds:
-  if (servo_pos <= 0 and servo_pos >= 100)
-  {
-    myservo.write(0);
-    delay(15);
-  }
-  else 
-  {
-    myservo.write(101);
-    delay(15);
-  }
-  
-  /*
-  // Step in the default direction 6000 times.
-  setDirection(0);
-  for(unsigned int x = 0; x < 6000; x++)
-  {
-    step();
-    delayMicroseconds(StepPeriodUs);
-  }
-
-  // Wait for 300 ms.
-  delay(300);
-
-  // Step in the other direction 6000 times.
-  setDirection(1);
-  for(unsigned int x = 0; x < 6000; x++)
-  {
-    step();
-    delayMicroseconds(StepPeriodUs);
-  }
-
-  // Wait for 300 ms.
-  delay(300);
-
-  // LIN ACT
-  for (servo_pos = 0; servo_pos <= 180; servo_pos += 1) { // goes from 0 degrees to 180 degrees
-    // in steps of 1 degree
-    myservo.write(servo_pos);              // tell servo to go to position in variable 'pos'
-    delay(15);                       // waits 15ms for the servo to reach the position
-  }
-  for (servo_pos = 180; servo_pos >= 0; servo_pos -= 1) { // goes from 180 degrees to 0 degrees
-    myservo.write(servo_pos);              // tell servo to go to position in variable 'pos'
-    delay(15);                       // waits 15ms for the servo to reach the position
-  }
-  */
-}
-
+// FUNCTIONS -----------------------------------------------------------------------
 
 // Sends a pulse on the STEP pin to tell the driver to take one step, and also
 //delays to control the speed of the motor.
 void step()
 {
   // The STEP minimum high pulse width is 1.9 microseconds.
-  digitalWrite(StepPin, HIGH);
+  digitalWrite(step_pin, HIGH);
   delayMicroseconds(3);
-  digitalWrite(StepPin, LOW);
+  digitalWrite(step_pin, LOW);
   delayMicroseconds(3);
 }
 
@@ -156,6 +50,79 @@ void setDirection(bool dir)
   // The STEP pin must not change for at least 200 nanoseconds before and after
   // changing the DIR pin.
   delayMicroseconds(1);
-  digitalWrite(DirPin, dir);
+  digitalWrite(dir_pin, dir);
   delayMicroseconds(1);
+}
+
+// RUN ONCE ------------------------------------------------------------------------
+void setup()
+{
+  // Attach the servo to the servo pin.
+  myservo.attach(servo_pin);
+
+  SPI.begin();
+  sd.setChipSelectPin(cs_pin);
+
+  // Initialize the STEP and DIR pins to low.
+  pinMode(step_pin, OUTPUT);
+  digitalWrite(step_pin, LOW);
+  pinMode(dir_pin, OUTPUT);
+  digitalWrite(dir_pin, LOW);
+
+  // Give the driver 1 ms to power up.
+  delay(1);
+
+  // Reset the driver to its default settings and clear latched status conditions.
+  sd.resetSettings();
+  sd.clearStatus();
+
+  // Select auto mixed decay.  TI's DRV8711 documentation recommends the auto mixed decay mode.
+  sd.setDecayMode(HPSDDecayMode::AutoMixed);
+
+  // Set the current limit.
+  sd.setCurrentMilliamps36v4(2400);
+
+  // Set the number of microsteps that corresponds to one full step.
+  sd.setStepMode(HPSDStepMode::MicroStep32);
+
+  // Enable the motor outputs.
+  sd.enableDriver();
+}
+
+// RUN INFINITELY -------------------------------------------------------------------
+void loop()
+{ setDirection(false);
+  for (unsigned long i = 0; i <= 45000; i++)
+  {
+     step();
+     delayMicroseconds(StepPeriodUs);
+  }
+  
+  delay(300);
+
+  setDirection(true);
+
+  for (unsigned long i = 0; i <= 12000; i++)
+  {
+     step();
+     delayMicroseconds(StepPeriodUs);
+  }
+  
+  delay(300);
+  
+
+  // Extend the linear actuator if in bounds, retract if out of bounds:
+  if (! servo_extended)
+  {
+    myservo.write(90);
+    delay(1000);
+    servo_extended = true;
+  }
+  else
+  {
+    myservo.write(0);
+    delay(1000);
+    servo_extended = false;
+  }
+
 }
