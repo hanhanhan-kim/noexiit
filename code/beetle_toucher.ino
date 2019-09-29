@@ -19,16 +19,14 @@ Servo myservo;
 // Initialize my stepper as a high-powered stepper:
 HighPowerStepperDriver sd;
 
-// Initialize the servo and stepper pins to position 0:
-//int servo_pos = 0;
-bool servo_extended = false;
-unsigned long stepper_pos = 0;
+// Initialize my servo pos as position 0;
+int pos = 0;
 
 // This period is the length of the delay between steps, which controls the
 // stepper motor's speed.  You can increase the delay to make the stepper motor
 // go slower.  If you decrease the delay, the stepper motor will go faster, but
 // there is a limit to how fast it can go before it starts missing steps.
-const uint16_t StepPeriodUs = 80;
+const uint16_t StepPeriodUs = 200;
 
 // FUNCTIONS -----------------------------------------------------------------------
 
@@ -91,38 +89,57 @@ void setup()
 
 // RUN INFINITELY -------------------------------------------------------------------
 void loop()
-{ setDirection(false);
-  for (unsigned long i = 0; i <= 45000; i++)
+{ 
+  /*
+  setDirection(false);
+  for (unsigned long i = 0; i <= 30720; i++) //under MicroStep32, 30720 is full revo
   {
      step();
      delayMicroseconds(StepPeriodUs);
   }
   
-  delay(300);
+  delay(500);
 
   setDirection(true);
-
-  for (unsigned long i = 0; i <= 12000; i++)
+  for (unsigned long i = 0; i <= 5120; i++)
   {
      step();
      delayMicroseconds(StepPeriodUs);
   }
   
-  delay(300);
+  delay(500);
+
+  setDirection(false);
+  for (unsigned long i = 0; i <= 10240; i++)
+  {
+    step();
+    delayMicroseconds(StepPeriodUs);
+  }
+
+  delay(500);
+
+  setDirection(true);
+  for (unsigned long i = 0; i <= 5120; i++)
+  {
+    step();
+    delayMicroseconds(StepPeriodUs);
+  }
   
 
-  // Extend the linear actuator if in bounds, retract if out of bounds:
-  if (! servo_extended)
-  {
-    myservo.write(90);
-    delay(1000);
-    servo_extended = true;
+  */
+  // Extend the linear actuator back and forth:
+  for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
   }
-  else
-  {
-    myservo.write(0);
-    delay(1000);
-    servo_extended = false;
+  
+  
+  for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
   }
+
+  delay(8000);
 
 }
