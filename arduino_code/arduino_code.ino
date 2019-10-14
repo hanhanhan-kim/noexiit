@@ -7,6 +7,11 @@
 #include <SPI.h>
 #include <HighPowerStepperDriver.h>
 
+// Comment this line to exclude prints, making things a little faster
+// (though, idk, maybe not to an extent that matters, or maybe not enough.
+// fuck.)
+//#define PRINT_STUFF
+
 // Servo pin:
 const uint8_t servo_pin = 9;
 // Stepper pins:
@@ -37,18 +42,23 @@ float read_float() {
     byte b[4];
     float floatval;
   } u;
+
+  while (Serial.available() < 4) { }
+
   u.b[0] = Serial.read();
   u.b[1] = Serial.read();
   u.b[2] = Serial.read();
   u.b[3] = Serial.read();
+
   return u.floatval;
 }
 
 // Sends a pulse on the STEP pin to tell the driver to take one step, and also
 //delays to control the speed of the motor.
-void step()
-{
+void step() {
   // The STEP minimum high pulse width is 1.9 microseconds.
+  // (though the time digitalWrite takes may make the delayMicroseconds
+  // unecessary)
   digitalWrite(step_pin, HIGH);
   delayMicroseconds(3);
   digitalWrite(step_pin, LOW);
@@ -62,10 +72,12 @@ void setDirection(bool dir) {
   // changing the DIR pin.
   delayMicroseconds(1);
   digitalWrite(dir_pin, dir);
-  delayMicroseconds(1); 
+  delayMicroseconds(1);
 }
 
-void rotate(float deg_increm) {
+float curr_deg = 0.0;
+void rotate(float deg) {
+  float deg_increm = curr_deg - deg;
   setDirection(deg_increm > 0);
 
   // fullstep is 0.9 deg, gear ratio is 2.4
@@ -73,15 +85,16 @@ void rotate(float deg_increm) {
   //unsigned int step_increm = 400 * microstepping;
   for (unsigned int i = 0; i <= step_increm; i++) {
     step();
-    delayMicroseconds(StepPeriodUs); 
+    delayMicroseconds(StepPeriodUs);
   }
+  curr_deg = deg;
 }
 
 int servo_pos = 0;
 void init_servo() {
   /*
-  servo.write(servo_pos);
-  delay(2700);
+    servo.write(servo_pos);
+    delay(2700);
   */
   for (int pos = 180; pos > 0; pos--) {
     servo.write(pos);
@@ -90,16 +103,35 @@ void init_servo() {
 }
 
 
-void lineate(float mm_increm) {
-  int target_servo_pos = round(mm_increm * 9);
-  
+void lineate(float mm_pos) {
+  // Way we calculated this conversion factor:
+  // 1) Found arguments to the servo.write fn (going through the loop below),
+  // that did not make the servo behave weird. (40 and 150)
+  // 2) (150 - 40) / (effective mm stroke given those arguments)
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // To make this accurate, we need to measure the denominator, if not crystal
+  // clear what relationship between servo.write argument and position is from
+  // docs.
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // 3) for now, we are estimating denominator to be 1cm
+  int target_servo_pos = 40 + round(mm_pos * 9);
+
+  if (target_servo_pos < 40) {
+    target_servo_pos = 40;
+  } else if (target_servo_pos > 150) {
+    target_servo_pos = 150;
+  }
+
   int servo_step;
   if (target_servo_pos >= servo_pos) {
     servo_step = 1;
   } else {
     servo_step = -1;
   }
-  
+
+  /*
   for (int pos = servo_pos; pos != target_servo_pos; pos += servo_step) {
     servo.write(pos);
     delay(15);
@@ -107,11 +139,12 @@ void lineate(float mm_increm) {
   servo.write(target_servo_pos);
   delay(15);
   servo_pos = target_servo_pos;
+  */
+  servo.write(target_servo_pos);
 }
 
-// RUN ONCE ------------------------------------------------------------------------
-void setup()
-{
+
+void setup() {
   // Attach the servo to the servo pin.
   servo.attach(servo_pin);
 
@@ -131,7 +164,8 @@ void setup()
   sd.resetSettings();
   sd.clearStatus();
 
-  // Select auto mixed decay. TI's DRV8711 documentation recommends the auto mixed decay mode.
+  // Select auto mixed decay.
+  // TI's DRV8711 documentation recommends the auto mixed decay mode.
   sd.setDecayMode(HPSDDecayMode::AutoMixed);
 
   // Set the current limit.
@@ -158,48 +192,41 @@ void setup()
   } else if (microstepping == 256) {
     sd.setStepMode(HPSDStepMode::MicroStep256);
   }
-  
+
   // Enable the motor outputs.
   sd.enableDriver();
 
   Serial.begin(9600);
 
-  init_servo();
+  // may need to uncomment for some bizarre reason
+  //init_servo();
 }
 
-// RUN INFINITELY -------------------------------------------------------------------
-void loop()
-{ /*
-  rotate(360);
-  delay(1000);
-  rotate(-360);
-  delay(1000);*/
-  /*
-  servo.write(40);
-  delay(15);
-  servo.write(60);
-  delay(15);
-  */
-
-  /*
-  lineate(5.5);
-  delay(1000);
-  lineate(15.5);
-  delay(1000);
-  */
+void loop() {
+  #ifdef PRINT_STUFF
+  Serial.println("reading linear actuator move position");
+  #endif
   
-  /*
-  for (int pos = 0; pos < 180; pos++) {
-    servo.write(pos);
-    delay(15);
-  }
-  for (int pos = 180; pos > 0; pos--) {
-    servo.write(pos);
-    delay(15);
-  }
-  */
   float curr_mm_increm = read_float();
-  float curr_deg_increm = read_float();
+  
+  #ifdef PRINT_STUFF
+  Serial.println("reading stepper move amount");
+  #endif
+  
+  float curr_deg = read_float();
+  
+  #ifdef PRINT_STUFF
+  Serial.println("moving linear actuator to:");
+  Serial.println(curr_mm_increm);
+  #endif
+  
   lineate(curr_mm_increm);
-  rotate(curr_deg_increm);
+  
+  #ifdef PRINT_STUFF
+  Serial.println("moving stepper motor by:");
+  Serial.println(curr_deg);
+  #endif
+  
+  rotate(curr_deg);
+  Serial.println("ok");
 }
