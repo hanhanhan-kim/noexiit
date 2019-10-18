@@ -75,9 +75,8 @@ void setDirection(bool dir) {
   delayMicroseconds(1);
 }
 
-float curr_deg = 0.0;
-void rotate(float deg) {
-  float deg_increm = curr_deg - deg;
+
+void rotate(float deg_increm) {
   setDirection(deg_increm > 0);
 
   // fullstep is 0.9 deg, gear ratio is 2.4
@@ -87,7 +86,6 @@ void rotate(float deg) {
     step();
     delayMicroseconds(StepPeriodUs);
   }
-  curr_deg = deg;
 }
 
 int servo_pos = 0;
@@ -207,26 +205,26 @@ void loop() {
   Serial.println("reading linear actuator move position");
   #endif
   
-  float curr_mm_increm = read_float();
+  float curr_mm = read_float();
   
   #ifdef PRINT_STUFF
   Serial.println("reading stepper move amount");
   #endif
   
-  float curr_deg = read_float();
+  float curr_deg_increm = read_float();
   
   #ifdef PRINT_STUFF
   Serial.println("moving linear actuator to:");
-  Serial.println(curr_mm_increm);
+  Serial.println(curr_mm);
   #endif
   
-  lineate(curr_mm_increm);
+  lineate(curr_mm);
   
   #ifdef PRINT_STUFF
   Serial.println("moving stepper motor by:");
-  Serial.println(curr_deg);
+  Serial.println(curr_deg_increm);
   #endif
   
-  rotate(curr_deg);
+  rotate(curr_deg_increm);
   Serial.println("ok");
 }

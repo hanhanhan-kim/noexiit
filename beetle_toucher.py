@@ -6,14 +6,23 @@ import time
 import socket
 
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 
-def write_servo_and_stepper(serial_obj, mm, deg):
+def write_servo_and_stepper(serial_obj, mm, deg,
+    read_any_lines_at_all=False, block_like_an_idiot=False):
+
     serial_obj.write(struct.pack('ff', mm, deg))
+
+    if not read_any_lines_at_all:
+        return
 
     num_read_floats = 1
     while True:
         line = serial_obj.readline().decode('utf-8').strip()
+        if not block_like_an_idiot:
+            return
+
         if len(line) > 0:
             print(line)
 
@@ -30,6 +39,18 @@ def main():
     HOST = '127.0.0.1'  # The server's hostname or IP address
     PORT = 27654         # The port used by the server
 
+    np.set_printoptions(precision=2)
+
+    time_to_wait_s = 0.5
+
+    # Fake headings 
+    test_rotations_per_second = 0.1
+    test_degrees_per_second = 360 * test_rotations_per_second
+    test_degrees_per_wait = time_to_wait_s * test_degrees_per_second
+    # In range that FicTrac headings seem to occupy ~ [-pi, pi]
+    test_radians_per_wait = 2 * np.pi * (test_degrees_per_wait / 360) - np.pi
+    motor_angle_deg = 0
+        
     # Open the connection (FicTrac must be waiting for socket connection)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((HOST, PORT))
@@ -44,8 +65,8 @@ def main():
         # TODO fill this in w/ actual initial condition, maybe
         # changing arduino code to change initial condition as desired
         linac_pos = 0
-        # SET PARAMETER:
-        time_to_wait = 0.5  
+
+        angle_deltas = []
 
         # Keep receiving data until FicTrac closes
         while True:
@@ -90,30 +111,63 @@ def main():
             seq = int(toks[23])
 
             if last_position is None:
-               last_position = np.array([posx, posy])
+                last_position = np.array([posx, posy])
+                last_cnt = cnt
 
-            if time.time() - last_time > time_to_wait:
+            angle_deltas.append(dr_lab)
+
+            time_since_last_print_s = time.time() - last_time
+            if time_since_last_print_s > time_to_wait_s:
                 last_time = time.time()
+
+                cnts_per_sec = (cnt - last_cnt) / time_since_last_print_s
+                #print('FicTrac messages per second: {:.2f}'.format(
+                #    cnts_per_sec))
+                last_cnt = cnt
+
+                # ts seems to be in microseconds for whatever reason
+                time_error = time.time() - (ts / 1e6)
+                #print('FicTrac is behind by {:.2f} seconds'.format(time_error))
+
+                summed_angle_deltas = np.stack(angle_deltas).sum(axis=0)
+                angle_deltas = []
+
                 curr_position = np.array([posx, posy])
                 movement_during_wait = curr_position - last_position
                 last_position = curr_position
-                theta = (360 * heading / (2 * np.pi)) - linear_actuator_theta_deg
+                heading_deg = (360 * heading / (2 * np.pi))
+                theta = heading_deg - linear_actuator_theta_deg
                 linac_pos_delta = np.linalg.norm(movement_during_wait) * np.cos(theta)
 
-                linac_pos = min(max(0, linac_pos + linac_pos_delta), 10)
+                #####linac_pos = min(max(0, linac_pos + linac_pos_delta), 10)
                 linear_actuator_theta_deg = linear_actuator_theta_deg + theta
 
-                print('movement_during_wait: ({:.2f}, {:.2f})'.format(
-                    *movement_during_wait))
-                print('heading: {:.2f}'.format(heading))
+                #print('movement_during_wait: ({:.2f}, {:.2f})'.format(
+                #    *movement_during_wait))
+
+                '''
+                print('heading_deg: {:.2f}'.format(heading_deg))
                 print('theta: {:.2f}'.format(theta))
                 print('linac_pos_delta: {:.2f}'.format(linac_pos_delta))
                 print('linac_pos: {:.2f}'.format(linac_pos))
                 print('linear_actuator_theta_deg: {:.2f}'.format(
                     linear_actuator_theta_deg))
                 print('')
+                '''
 
-                #write_servo_and_stepper(serial_obj, linac_pos, linear_actuator_theta_deg)
+                print(summed_angle_deltas)
+                radian_heading_delta = summed_angle_deltas[2]
+                deg_heading_delta = 360 * (radian_heading_delta / (2 * np.pi))
+
+                write_servo_and_stepper(serial_obj, linac_pos,
+                    deg_heading_delta)
+
+                '''
+                test_ddeg = 360 * test_radians_per_wait / (2 * np.pi)
+                #write_servo_and_stepper(serial_obj, 0, test_ddeg)
+                # w/ actual fictrac data would want to also be able to go down
+                motor_angle_deg += test_ddeg
+                '''
 
 
 if __name__ == '__main__':
