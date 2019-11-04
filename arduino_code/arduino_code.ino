@@ -1,41 +1,19 @@
-// Set the current limit to 2400 mA.
-// Documentation: http://pololu.github.io/high-power-stepper-driver
 
-// SET-UP -----------------------------------------------------------------------
+//#include <Servo.h>
 
-#include <Servo.h>
-#include <SPI.h>
-#include <HighPowerStepperDriver.h>
+#include "stepper_driver.h"
 
 // Comment this line to exclude prints, making things a little faster
 // (though, idk, maybe not to an extent that matters, or maybe not enough.
 // fuck.)
 //#define PRINT_STUFF
 
-// Servo pin:
-const uint8_t servo_pin = 9;
-// Stepper pins:
-const uint8_t dir_pin = 2;
-const uint8_t step_pin = 3;
-const uint8_t cs_pin = 4;
+const uint8_t servo_pin = 2;
 
-// Initialize my servo as a servo:
-Servo servo;
-// Initialize my stepper as a high-powered stepper:
-HighPowerStepperDriver sd;
+StepperDriver stepper_driver;
+//Servo servo;
 
-// Initialize my servo pos as position 0;
 int pos = 0;
-
-// This period is the length of the delay between steps, which controls the
-// stepper motor's speed.  You can increase the delay to make the stepper motor
-// go slower.  If you decrease the delay, the stepper motor will go faster, but
-// there is a limit to how fast it can go before it starts missing steps.
-const uint16_t StepPeriodUs = 100;
-// Define the microstepping size (not the reciprocal, e.g. not 1/32, but 32)
-int microstepping = 32;
-
-// FUNCTIONS -----------------------------------------------------------------------
 
 float read_float() {
   union u_tag {
@@ -53,47 +31,30 @@ float read_float() {
   return u.floatval;
 }
 
-// Sends a pulse on the STEP pin to tell the driver to take one step, and also
-//delays to control the speed of the motor.
-void step() {
-  // The STEP minimum high pulse width is 1.9 microseconds.
-  // (though the time digitalWrite takes may make the delayMicroseconds
-  // unecessary)
-  digitalWrite(step_pin, HIGH);
-  delayMicroseconds(3);
-  digitalWrite(step_pin, LOW);
-  delayMicroseconds(3);
-}
 
-// Writes a high or low value to the direction pin to specify what direction to
-// turn the motor.
-void setDirection(bool dir) {
-  // The STEP pin must not change for at least 200 nanoseconds before and after
-  // changing the DIR pin.
-  delayMicroseconds(1);
-  digitalWrite(dir_pin, dir);
-  delayMicroseconds(1);
-}
-
-
+const float gear_ratio = 2.4;
+/*
+float deg = 0;
 void rotate(float deg_increm) {
-  setDirection(deg_increm > 0);
-
-  // fullstep is 0.9 deg, gear ratio is 2.4
-  unsigned int step_increm = round(2.4 * abs(deg_increm) / 0.9 * microstepping);
-  //unsigned int step_increm = 400 * microstepping;
-  for (unsigned int i = 0; i <= step_increm; i++) {
-    step();
-    delayMicroseconds(StepPeriodUs);
-  }
+  deg = deg + deg_increm;
+*/
+void rotate(float deg) {
+  /*
+  Serial.println(deg);
+  Serial.println(deg * gear_ratio);
+  Serial.println(stepper_driver.degree_to_microstep(deg * gear_ratio));
+  Serial.println(long(stepper_driver.degree_to_microstep(deg * gear_ratio)));
+  */
+  stepper_driver.move_to(deg * gear_ratio);
+  stepper_driver.busy_wait();
 }
 
+
+/*
 int servo_pos = 0;
 void init_servo() {
-  /*
-    servo.write(servo_pos);
-    delay(2700);
-  */
+  //servo.write(servo_pos);
+  //delay(2700);
   for (int pos = 180; pos > 0; pos--) {
     servo.write(pos);
     delay(15);
@@ -129,78 +90,85 @@ void lineate(float mm_pos) {
     servo_step = -1;
   }
 
-  /*
-  for (int pos = servo_pos; pos != target_servo_pos; pos += servo_step) {
-    servo.write(pos);
-    delay(15);
-  }
-  servo.write(target_servo_pos);
-  delay(15);
-  servo_pos = target_servo_pos;
-  */
+  
+  //for (int pos = servo_pos; pos != target_servo_pos; pos += servo_step) {
+  //  servo.write(pos);
+  //  delay(15);
+  //}
+  //servo.write(target_servo_pos);
+  //delay(15);
+  //servo_pos = target_servo_pos;
+  
   servo.write(target_servo_pos);
 }
+*/
 
 
 void setup() {
-  // Attach the servo to the servo pin.
-  servo.attach(servo_pin);
+  Serial.begin(38400);
+  Serial.println("start of setup");
 
-  SPI.begin();
-  sd.setChipSelectPin(cs_pin);
+  stepper_driver = StepperDriver(0, 10, 7, 8);
+  stepper_driver.initialize();
+  stepper_driver.set_fullstep_per_rev(400);
+  stepper_driver.set_oc_threshold(String("OC_2250mA"));
+  stepper_driver.set_jog_speed(50.0);
+  stepper_driver.set_jog_acceleration(100.0);
+  stepper_driver.set_jog_deceleration(100.0);
+  stepper_driver.set_max_speed(500.0);
+  stepper_driver.set_max_acceleration(1000.0);
+  stepper_driver.set_max_deceleration(1000.0);
+  stepper_driver.set_movement_params_to_jog();
 
-  // Initialize the STEP and DIR pins to low.
-  pinMode(step_pin, OUTPUT);
-  digitalWrite(step_pin, LOW);
-  pinMode(dir_pin, OUTPUT);
-  digitalWrite(dir_pin, LOW);
+  stepper_driver.enable();
 
-  // Give the driver 1 ms to power up.
-  delay(1);
-
-  // Reset the driver to its default settings and clear latched status conditions.
-  sd.resetSettings();
-  sd.clearStatus();
-
-  // Select auto mixed decay.
-  // TI's DRV8711 documentation recommends the auto mixed decay mode.
-  sd.setDecayMode(HPSDDecayMode::AutoMixed);
-
-  // Set the current limit.
-  sd.setCurrentMilliamps36v4(2400);
-
-  // Set the number of microsteps that corresponds to one full step.
-  // sd.setStepMode(HPSDStepMode::MicroStep32);
-  if (microstepping == 1) {
-    sd.setStepMode(HPSDStepMode::MicroStep1);
-  } else if (microstepping == 2) {
-    sd.setStepMode(HPSDStepMode::MicroStep2);
-  } else if (microstepping == 4) {
-    sd.setStepMode(HPSDStepMode::MicroStep4);
-  } else if (microstepping == 8) {
-    sd.setStepMode(HPSDStepMode::MicroStep8);
-  } else if (microstepping == 16) {
-    sd.setStepMode(HPSDStepMode::MicroStep16);
-  } else if (microstepping == 32) {
-    sd.setStepMode(HPSDStepMode::MicroStep32);
-  } else if (microstepping == 64) {
-    sd.setStepMode(HPSDStepMode::MicroStep64);
-  } else if (microstepping == 128) {
-    sd.setStepMode(HPSDStepMode::MicroStep128);
-  } else if (microstepping == 256) {
-    sd.setStepMode(HPSDStepMode::MicroStep256);
-  }
-
-  // Enable the motor outputs.
-  sd.enableDriver();
-
-  Serial.begin(9600);
+  stepper_driver.set_position(0.0);
+  
+  // Attach the servo to the servo pin
+  //servo.attach(servo_pin);
 
   // may need to uncomment for some bizarre reason
   //init_servo();
+  Serial.println("end of setup");
 }
 
 void loop() {
+  Serial.println("start of loop");
+
+  rotate(0.0);
+  Serial.println(stepper_driver.get_position());
+  Serial.println(stepper_driver.get_position_fullsteps());
+  Serial.println(stepper_driver.get_position_microsteps());
+  delay(2000);
+  rotate(180.0);  
+  Serial.println(stepper_driver.get_position());
+  Serial.println(stepper_driver.get_position_fullsteps());
+  Serial.println(stepper_driver.get_position_microsteps());
+
+  /*
+  // This required moving these from protected section in .h file.
+  Serial.println("conversion constants:");
+  Serial.println("fullstep_per_rev:");
+  Serial.println(stepper_driver.fullstep_per_rev_);
+  Serial.println("fullstep_per_degree:");
+  Serial.println(stepper_driver.fullstep_per_degree_);
+  Serial.println("microstep_per_degree:");
+  Serial.println(stepper_driver.microstep_per_degree_);
+  Serial.println("degree_per_fullstep:");
+  Serial.println(stepper_driver.degree_per_fullstep_);
+  Serial.println("degree_per_microstep:");
+  Serial.println(stepper_driver.degree_per_microstep_);
+  Serial.println("");
+  */
+  
+  delay(2000);
+  rotate(-90.0);  
+  Serial.println(stepper_driver.get_position());
+  Serial.println(stepper_driver.get_position_fullsteps());
+  Serial.println(stepper_driver.get_position_microsteps());
+  delay(2000);
+  
+  /*
   #ifdef PRINT_STUFF
   Serial.println("reading linear actuator move position");
   #endif
@@ -227,4 +195,5 @@ void loop() {
   
   rotate(curr_deg_increm);
   Serial.println("ok");
+  */
 }

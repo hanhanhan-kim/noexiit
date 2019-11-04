@@ -12,14 +12,12 @@ from scipy.spatial.transform import Rotation as R
 def write_servo_and_stepper(serial_obj, mm, deg,
     read_any_lines_at_all=False, block_like_an_idiot=False):
 
-    serial_obj.write(struct.pack('ff', mm, deg))
 
     if not read_any_lines_at_all:
         return
 
     num_read_floats = 1
     while True:
-        line = serial_obj.readline().decode('utf-8').strip()
         if not block_like_an_idiot:
             return
 
@@ -33,7 +31,7 @@ def write_servo_and_stepper(serial_obj, mm, deg,
 
 
 def main():
-    serial_obj = serial.Serial('/dev/ttyUSB0', 9600) #, timeout=1)
+    serial_obj = serial.Serial('/dev/ttyACM0', 38400) #, timeout=1)
     time.sleep(2)
     
     HOST = '127.0.0.1'  # The server's hostname or IP address
@@ -41,16 +39,10 @@ def main():
 
     np.set_printoptions(precision=2)
 
-    time_to_wait_s = 0.5
+    time_to_wait_s = None #0.5
+    max_nonacked_commands = 5
+    n_nonacked_commands = 0
 
-    # Fake headings 
-    test_rotations_per_second = 0.1
-    test_degrees_per_second = 360 * test_rotations_per_second
-    test_degrees_per_wait = time_to_wait_s * test_degrees_per_second
-    # In range that FicTrac headings seem to occupy ~ [-pi, pi]
-    test_radians_per_wait = 2 * np.pi * (test_degrees_per_wait / 360) - np.pi
-    motor_angle_deg = 0
-        
     # Open the connection (FicTrac must be waiting for socket connection)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((HOST, PORT))
@@ -116,8 +108,16 @@ def main():
 
             angle_deltas.append(dr_lab)
 
+            if serial_obj.in_waiting >= 3:
+                line = serial_obj.readline().decode('utf-8').strip()
+                if line == 'ok':
+                    n_nonacked_commands -= 1
+                    print('GOT AN OK')
+
             time_since_last_print_s = time.time() - last_time
-            if time_since_last_print_s > time_to_wait_s:
+
+            if ((time_to_wait_s and time_since_last_print_s > time_to_wait_s) or
+                n_nonacked_commands <= max_nonacked_commands):
                 last_time = time.time()
 
                 cnts_per_sec = (cnt - last_cnt) / time_since_last_print_s
@@ -137,14 +137,22 @@ def main():
                 last_position = curr_position
                 heading_deg = (360 * heading / (2 * np.pi))
                 theta = heading_deg - linear_actuator_theta_deg
-                linac_pos_delta = np.linalg.norm(movement_during_wait) * np.cos(theta)
+                # TODO TODO TODO this probably needs to be updated in the main
+                # loop (not the part that only happens before sending a command)
+                # as the angle_deltas are (and then sum in here, appropriately)
+                linac_pos_delta = \
+                    np.linalg.norm(movement_during_wait) * np.cos(theta)
 
-                #####linac_pos = min(max(0, linac_pos + linac_pos_delta), 10)
+                linac_pos = min(max(0, linac_pos + linac_pos_delta), 10)
                 linear_actuator_theta_deg = linear_actuator_theta_deg + theta
+
+                print(n_nonacked_commands)
+                print(summed_angle_deltas)
+                radian_heading_delta = summed_angle_deltas[2]
+                deg_heading_delta = 360 * (radian_heading_delta / (2 * np.pi))
 
                 #print('movement_during_wait: ({:.2f}, {:.2f})'.format(
                 #    *movement_during_wait))
-
                 '''
                 print('heading_deg: {:.2f}'.format(heading_deg))
                 print('theta: {:.2f}'.format(theta))
@@ -155,19 +163,9 @@ def main():
                 print('')
                 '''
 
-                print(summed_angle_deltas)
-                radian_heading_delta = summed_angle_deltas[2]
-                deg_heading_delta = 360 * (radian_heading_delta / (2 * np.pi))
-
-                write_servo_and_stepper(serial_obj, linac_pos,
-                    deg_heading_delta)
-
-                '''
-                test_ddeg = 360 * test_radians_per_wait / (2 * np.pi)
-                #write_servo_and_stepper(serial_obj, 0, test_ddeg)
-                # w/ actual fictrac data would want to also be able to go down
-                motor_angle_deg += test_ddeg
-                '''
+                serial_obj.write(struct.pack('ff',
+                    linac_pos, deg_heading_delta))
+                n_nonacked_commands += 1
 
 
 if __name__ == '__main__':
