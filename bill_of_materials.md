@@ -52,3 +52,15 @@ TODO: Add laser cutter, band saw, acrylic bond, taps, under tools
 - 
 
 TODO: Actually measure my cut posts and poles
+
+- M3 screws now have different lengths: a set of long ones (16 mm) and a set of short ones (something mm). These lengths are to accommodate for the NEMA 17 vibration dampener. 
+- Hex stand offs are taller now to accommodate for the NEMA 17 dampener; they are 2 1/4" instead of 2" 
+- 8-32 screw vibration dampeners
+- The magnet for the angle sensor is a D12 N-52 ( https://www.kjmagnetics.com/proddetail.asp?prod=D12-N52 )
+  - The magnet was press fit into the 1/16" thick Delrin using a vice. 
+
+I have aluminum spacers that are 5/16" thick for the 1/4-20 stand offs that support the angle sensor (McMaster 92510A763)
+
+They go above the 3" aluminum hex stand offs (McMaster 93505A037)
+
+Certain hole diameters require tapping with particular threads. They are:
