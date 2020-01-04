@@ -63,4 +63,8 @@ I have aluminum spacers that are 5/16" thick for the 1/4-20 stand offs that supp
 
 They go above the 3" aluminum hex stand offs (McMaster 93505A037)
 
+I AM USING A NEMA 23 STEPPER NOW FROM SPARKFUN
+
+I replaced my 32 teeth pulley with a 15 teeth pulley from SDP-SI. 
+
 Certain hole diameters require tapping with particular threads. They are:
