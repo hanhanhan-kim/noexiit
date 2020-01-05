@@ -24,9 +24,8 @@ __pycache__/
 *.so
 
 # .DS_Store
-*.DS_Store
+*.DS_Store*
 .DS_Store
-/ .DS_Store
 
 # Exploratory code:
 exploratory/
