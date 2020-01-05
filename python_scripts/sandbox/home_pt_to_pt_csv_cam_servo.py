@@ -6,6 +6,7 @@ from camera_trigger import CameraTrigger
 import time
 import threading
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Set up autostep motors:
 motor_port = '/dev/ttyACM1' # change as necessary
@@ -95,6 +96,8 @@ if stepper.get_position() == 0:
     stepper_th.join()
 
     # Plot outputs:
+    plt.plot(elapsed_time, stepper_pos, 
+             elapsed_time, servo_pos)
 
     # Save outputs to a csv:
     df = pd.DataFrame({'Elapsed time': elapsed_time, 
