@@ -69,7 +69,7 @@ if stepper.get_position() == 0:
 
     # Save outputs to a csv
     df = pd.DataFrame({'elapsed time': elapsed_time, 
-                       'motor output (degs)': stepper.get_position()})
+                       'motor output (degs)': stepper_pos})
     df.to_csv('output.csv', index=False)
             
             
