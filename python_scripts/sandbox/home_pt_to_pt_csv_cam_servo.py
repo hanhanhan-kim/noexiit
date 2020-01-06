@@ -70,7 +70,7 @@ if stepper.get_position() == 0:
     trig.start()
     
     # Run move function in a separate thread:
-    stepper_th = threading.Thread(target=pt_to_pt_and_servo, args=(pos_list, wait_time))
+    stepper_th = threading.Thread(target=pt_to_pt_and_servo, args=(pos_list, ext_angle, wait_time))
     stepper_th.start()
     
     # Save data for plotting and csv:
