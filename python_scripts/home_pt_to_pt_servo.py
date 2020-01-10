@@ -28,16 +28,28 @@ def pt_to_pt_and_servo(pos_list, ext_angle, wait_time):
         wait_time: duration of time (s) for which to wait at each position in pos_list
     Returns nothing. 
     '''
+    step_size = 2
+    angle_list_fwd = list(range(0, ext_angle + step_size, step_size))
+    angle_list_rev = list(angle_list_fwd[::-step_size])
+
     for _, pos in enumerate(pos_list):
         # Move stepper to pos:
         stepper.move_to(pos)
         stepper.busy_wait()
-        # Extend, wait, retract, linear servo:
-        stepper.set_servo_angle(ext_angle)
-        stepper.busy_wait()
+        # Extend linear servo:
+        for _, angle in enumerate(angle_list_fwd):
+            stepper.set_servo_angle(angle)
+            while stepper.get_servo_angle() <= ext_angle is True:
+                time.sleep(0.01)
+        # Wait at extension:
         time.sleep(wait_time)
-        stepper.set_servo_angle(0)
-        stepper.busy_wait()
+        # Retract linear servo:
+        for _, angle in enumerate(angle_list_rev):
+            stepper.set_servo_angle(angle)
+            while stepper.get_servo_angle() > 0 is True:
+                time.sleep(wait_time)
+        # Wait at retraction:
+        time.sleep(wait_time)
 
 
 # Arguments for above function:
@@ -52,7 +64,7 @@ stepper.busy_wait()
 stepper.set_position(0)
 
 # Wait before starting experiment:
-pre_exp_time = 5.0
+pre_exp_time = 3.0
 print('Home found. Position is %f.' %stepper.get_position(), ' Experiment starting in %s seconds.' %pre_exp_time)
 time.sleep(pre_exp_time)
 
@@ -93,5 +105,5 @@ if stepper.get_position() == 0:
                        'Servo output (degs)': servo_pos})
     df.to_csv('output.csv', index=False)
 
-    # Print the steper parameters:
+    # Print the steper settings:
     stepper.print_params()
