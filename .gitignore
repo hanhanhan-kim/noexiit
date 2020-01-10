@@ -1,8 +1,8 @@
 # Data folder is always huge:
 data/
 
-# JAABA:
-JAABA/
+# Sandbox:
+python_scripts/sandbox/
 
 # Large data files:
 *.h5ad
