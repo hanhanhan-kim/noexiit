@@ -94,9 +94,8 @@ if stepper.get_position() == 0:
     # Join the stepper thread back to the main:
     stepper_th.join()
 
-    # Plot outputs:
-    plt.plot(elapsed_time, stepper_pos, 
-             elapsed_time, servo_pos)
+    # Print the steper settings:
+    stepper.print_params()
 
     # Save outputs to a csv:
     df = pd.DataFrame({'Elapsed time': elapsed_time, 
@@ -105,5 +104,6 @@ if stepper.get_position() == 0:
                        'Servo output (degs)': servo_pos})
     df.to_csv('output.csv', index=False)
 
-    # Print the steper settings:
-    stepper.print_params()
+    # Plot outputs:
+    plt.plot(elapsed_time, stepper_pos, 
+             elapsed_time, servo_pos)
