@@ -14,6 +14,7 @@ stepper = Autostep(motor_port)
 stepper.set_step_mode('STEP_FS_128') 
 stepper.set_fullstep_per_rev(200)
 stepper.set_jog_mode_params({'speed':200, 'accel':100, 'decel':1000}) # deg/s and deg/s2
+stepper.set_kval_params({'accel':30, 'decel':30, 'run':30, 'hold':30})
 stepper.set_move_mode_to_jog()
 stepper.set_gear_ratio(1)
 stepper.enable() 
@@ -42,7 +43,7 @@ def pt_to_pt_and_servo(pos_list, ext_angle, wait_time):
 # Arguments for above function:
 pos_list = [0.0, 180.0, 360.0, 2*360, 540.0]
 ext_angle = 180
-wait_time = 1.0
+wait_time = 2.0
 
 # Set the home position to 0:
 print('Searching for home...')
@@ -91,3 +92,6 @@ if stepper.get_position() == 0:
                        'Stepper output (degs)': stepper_pos,
                        'Servo output (degs)': servo_pos})
     df.to_csv('output.csv', index=False)
+
+    # Print the steper parameters:
+    stepper.print_params()
