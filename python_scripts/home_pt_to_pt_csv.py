@@ -1,4 +1,4 @@
-#!/home/chonk/.virtualenvs/behaviour/bin/python
+#!/home/platyusa/.virtualenvs/behaviour/bin/python3
 
 from __future__ import print_function
 from autostep import Autostep
@@ -6,12 +6,12 @@ import time
 import threading
 import pandas as pd
 
-port = '/dev/ttyACM1' # change as necessary
+port = '/dev/ttyACM0' # change as necessary
 
 stepper = Autostep(port)
 stepper.set_step_mode('STEP_FS_128') 
 stepper.set_fullstep_per_rev(200)
-stepper.set_jog_mode_params({'speed':200, 'accel':100, 'decel':1000})
+stepper.set_jog_mode_params({'speed':200, 'accel':100, 'decel':800})
 stepper.set_move_mode_to_jog()
 stepper.set_gear_ratio(1)
 stepper.enable() 
@@ -38,7 +38,7 @@ stepper.busy_wait()
 stepper.set_position(0)
 
 # Wait befor starting experiment:
-pre_exp_time = 5.0
+pre_exp_time = 3.0
 print('Home found. Position is %f.' %stepper.get_position(), ' Experiment starting in %s seconds.' %pre_exp_time)
 time.sleep(pre_exp_time)
 
@@ -71,5 +71,7 @@ if stepper.get_position() == 0:
     df = pd.DataFrame({'elapsed time': elapsed_time, 
                        'motor output (degs)': stepper_pos})
     df.to_csv('output.csv', index=False)
-            
+    
+    # Print the stepper motor settings:
+    stepper.print_params()
             
