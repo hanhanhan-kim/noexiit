@@ -22,9 +22,10 @@ stepper.enable()
 
 def pt_to_pt_and_servo(pos_list, ext_angle, wait_time):
     '''
-    Specifies stepper motor behaviour according to a list of target positions. \n
+    Specifies stepper motor and servo motor behaviours according to a list of target positions. \n
     Arguments:
         pos_list: (list) list of target absolute positions to move to
+        ext_angle: the linear servo's extension 'angle' for full extension
         wait_time: duration of time (s) for which to wait at each position in pos_list
     Returns nothing. 
     '''
@@ -46,7 +47,7 @@ def pt_to_pt_and_servo(pos_list, ext_angle, wait_time):
         # Retract linear servo:
         for _, angle in enumerate(angle_list_rev):
             stepper.set_servo_angle(angle)
-            while stepper.get_servo_angle() > 0 is True:
+            while stepper.get_servo_angle() >= 0 is True:
                 time.sleep(wait_time)
         # Wait at retraction:
         time.sleep(wait_time)
@@ -107,3 +108,4 @@ if stepper.get_position() == 0:
     # Plot outputs:
     plt.plot(elapsed_time, stepper_pos, 
              elapsed_time, servo_pos)
+    plt.show()
