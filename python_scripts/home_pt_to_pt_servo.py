@@ -25,8 +25,8 @@ def pt_to_pt_and_servo(pos_list, ext_angle, wait_time):
     Specifies stepper motor and servo motor behaviours according to a list of target positions. \n
     Arguments:
         pos_list: (list) list of target absolute positions to move to
-        ext_angle: the linear servo's extension 'angle' for full extension
-        wait_time: duration of time (s) for which to wait at each position in pos_list
+        ext_angle: (float) the linear servo's extension 'angle' for full extension
+        wait_time: (float) duration of time (s) for which to wait at each position in pos_list
     Returns nothing. 
     '''
     step_size = 2
@@ -56,7 +56,7 @@ def pt_to_pt_and_servo(pos_list, ext_angle, wait_time):
 # Arguments for above function:
 pos_list = [0.0, 180.0, 360.0, 2*360, 540.0]
 ext_angle = 180
-wait_time = 2.0
+wait_time = 5.0
 
 # Set the home position to 0:
 print('Searching for home...')
