@@ -11,7 +11,8 @@ port = '/dev/ttyACM0' # change as necessary
 stepper = Autostep(port)
 stepper.set_step_mode('STEP_FS_128') 
 stepper.set_fullstep_per_rev(200)
-stepper.set_jog_mode_params({'speed':200, 'accel':100, 'decel':800})
+stepper.set_jog_mode_params({'speed':200, 'accel':100, 'decel':1000}) # deg/s and deg/s2
+stepper.set_kval_params({'accel':30, 'decel':30, 'run':30, 'hold':30})
 stepper.set_move_mode_to_jog()
 stepper.set_gear_ratio(1)
 stepper.enable() 
