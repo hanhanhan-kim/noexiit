@@ -13,7 +13,7 @@ motor_port = '/dev/ttyACM0' # change as necessary
 stepper = Autostep(motor_port)
 stepper.set_step_mode('STEP_FS_128') 
 stepper.set_fullstep_per_rev(200)
-stepper.set_jog_mode_params({'speed':200, 'accel':100, 'decel':1000}) # deg/s and deg/s2
+stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) # deg/s and deg/s2
 stepper.set_kval_params({'accel':30, 'decel':30, 'run':30, 'hold':30})
 stepper.set_move_mode_to_jog()
 stepper.set_gear_ratio(1)
@@ -60,7 +60,7 @@ wait_time = 5.0
 
 # Set the home position to 0:
 print('Searching for home...')
-stepper.home_to_switch(100)
+stepper.home_to_switch(30)
 stepper.busy_wait()
 stepper.set_position(0)
 
