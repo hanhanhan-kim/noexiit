@@ -14,7 +14,7 @@ stepper = Autostep(motor_port)
 stepper.set_step_mode('STEP_FS_128') 
 stepper.set_fullstep_per_rev(200)
 stepper.set_kval_params({'accel':30, 'decel':30, 'run':30, 'hold':30})
-stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) # deg/s and deg/s2
+stepper.set_jog_mode_params({'speed':15, 'accel':100, 'decel':1000}) # deg/s and deg/s2
 stepper.set_move_mode_to_jog()
 stepper.set_gear_ratio(1)
 stepper.enable() 
@@ -53,7 +53,7 @@ if stepper.get_position() == 0:
 
     # Reset servo to 0:
     stepper.set_servo_angle(0)
-    time.sleep(1.5)
+    time.sleep(3.0)
     
     # Move stepper pt to pt, with servo extended to user-inputted value:
     print("Moving the stepper with the servo fully extended ...")
@@ -71,7 +71,10 @@ if stepper.get_position() == 0:
             time.sleep(3.0)
         # Wait at extension:
         time.sleep(wait_time)
-
+    
     stepper.set_servo_angle(0.0)
     # Print the steper settings:
     stepper.print_params()
+
+    with open("calib_servo.noexiit", "w") as f:
+        print(max_ext, file=f)
