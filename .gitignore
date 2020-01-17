@@ -4,6 +4,9 @@ data/
 # Sandbox:
 python_scripts/sandbox/
 
+# Special output files:
+*.noexiit
+
 # Large data files:
 *.h5ad
 *.xls
