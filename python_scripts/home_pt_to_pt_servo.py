@@ -2,8 +2,10 @@
 
 from __future__ import print_function
 from autostep import Autostep
+from calibrate import max_ext
 import time
 import threading
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -29,9 +31,8 @@ def pt_to_pt_and_servo(pos_list, ext_angle, wait_time):
         wait_time: (float) duration of time (s) for which to wait at each position in pos_list
     Returns nothing. 
     '''
-    step_size = 2
-    angle_list_fwd = list(range(0, ext_angle + step_size, step_size))
-    angle_list_rev = list(angle_list_fwd[::-step_size])
+    angle_list_fwd = list(np.linspace(0, ext_angle, ext_angle))
+    angle_list_rev = list(angle_list_fwd[::-1])
 
     for _, pos in enumerate(pos_list):
         # Move stepper to pos:
@@ -55,7 +56,7 @@ def pt_to_pt_and_servo(pos_list, ext_angle, wait_time):
 
 # Arguments for above function:
 pos_list = [0.0, 180.0, 360.0, 2*360, 540.0]
-ext_angle = 180
+ext_angle = max_ext 
 wait_time = 5.0
 
 # Set the home position to 0:
