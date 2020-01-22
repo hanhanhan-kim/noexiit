@@ -38,7 +38,7 @@ See [Will Dickson's official repo](https://github.com/willdickson/camera_trigger
 - TimerOne v1.1.0
 - Streaming v5.0.0
 - ArduinoJson v5.13.5 (is _not_ compatible with v6.0.0+)
-- Array v1.1.2
+- Array v1.1.2 <br/>
 My cloned repo is rolled back to commit `da8570642aa36987b56101a6618d0b61ba8d11b0`.
 
 ### Motor firmware dependencies
@@ -46,11 +46,11 @@ See [Will Dickson's official repo](https://github.com/willdickson/autostep) for 
 - Streaming v5.0.0
 - ArduinoJson v5.13.5 (is _not_ compatible with v6.0.0+)
 - Array v1.1.2
-- [SparkFun's L6470 AutoDriver library](https://github.com/sparkfun/L6470-AutoDriver/tree/master/Libraries/Arduino) (commit `734489ea1eaeb96cfab712c96817e35d9c942eb8`).
+- [SparkFun's L6470 AutoDriver library](https://github.com/sparkfun/L6470-AutoDriver/tree/master/Libraries/Arduino) (commit `734489ea1eaeb96cfab712c96817e35d9c942eb8`). <br/>
 My cloned repo is rolled back to commit `444fdabf883b54d7669cbc3888e8d0a3f6f0d73d`. 
 
 ### Other software
 See [Richard Moore's official repo](https://github.com/rjdmoore/fictrac) for additional details. I use the following dependencies:
 - `vcpkg` rolled back to commit `85211f3ab66e15c7669a1c14a25564afcf31e2e6`. 
-- [cmake v.3.15.0](https://github.com/Kitware/CMake/releases/tag/v3.15.0) . 
+- [cmake v.3.15.0](https://github.com/Kitware/CMake/releases/tag/v3.15.0). <br/>
 My cloned repo is rolled back to commit `f60cae42ec747ad8e050f46079b49df2f7698749`. 
