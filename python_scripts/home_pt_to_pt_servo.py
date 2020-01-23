@@ -98,17 +98,24 @@ if stepper.get_position() == 0:
     # Join the stepper thread back to the main:
     stepper_th.join()
 
-    # Print the steper settings:
+
+    t_cal_start = str(time.ctime(int(elapsed_time[0]) + t_start))
+
+    # Save the stepper settings and servo extension angle: 
+    with open(t_cal_start + "_motor_settings.txt", "w") as f:
+        print(stepper.get_params(), file=f)
+        print('linear servo max extension angle: %f' %ext_angle, file =f)
     stepper.print_params()
 
     # Save outputs to a csv:
     df = pd.DataFrame({'Elapsed time': elapsed_time, 
-                       'Calendar time': [time.ctime(int()+t_start) for t in elapsed_time],
+                       'Calendar time': [time.ctime(int() + t_start) for t in elapsed_time],
                        'Stepper output (degs)': stepper_pos,
                        'Servo output (degs)': servo_pos})
-    df.to_csv('output.csv', index=False)
+    df.to_csv(t_cal_start + '_motor_commands.csv', index=False)
 
-    # Plot outputs:
+    # Plot and save outputs:
     plt.plot(elapsed_time, stepper_pos, 
              elapsed_time, servo_pos)
+    plt.savefig(t_cal_start + '_motor_commands.png')
     plt.show()
