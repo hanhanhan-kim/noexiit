@@ -1,5 +1,3 @@
-#!/home/platyusa/.virtualenvs/behaviour/bin/python
-
 import requests
 import json
 import sys
