@@ -6,14 +6,17 @@ import sys
 import time
 
 
-def command_BIAS_HTTP(cmd, success_msg, fail_msg):
+def command_BIAS_HTTP(port, cmd, success_msg, fail_msg):
 
     """
+    port (str): The port number of the target camera 
     cmd (str): The HTTP get command to use with BIAS
     success_msg (str): The message if port connection and HTTP response both succeed.
     fail_msg (str): The message if port connection and HTTP both fail.
     check_success (bool): Pass as true, to check the "success" key in the BIAS request response.
+    retries (int): The number of retries if connection is 404 or request response has a False value to the success key.
     """
+
 
     ret = requests.get("http://localhost:" + port + f"/?{cmd}")
 
@@ -46,6 +49,7 @@ config_path = '/home/platyusa/Videos/bias_test_ext_trig.json'
 # Connect cameras:
 for _, port in enumerate(cam_ports):
     command_BIAS_HTTP(
+        port = port,
         cmd = "connect", 
         success_msg = "Camera on port " + f"{port}" + " connected", 
         fail_msg = "Port" + f"{port}" + " not connected"
@@ -55,6 +59,7 @@ for _, port in enumerate(cam_ports):
 # Load json configuration file:
 for _, port in enumerate(cam_ports):
     command_BIAS_HTTP(
+        port = port,
         cmd = "load-configuration" + '=' + config_path,
         success_msg = "Loaded configuration json on port " + f"{port}",
         fail_msg = "Could not load configuration json on port " + f"{port}"
@@ -65,6 +70,7 @@ time.sleep(3.0)
 # Acquire frames:
 for _, port in enumerate(cam_ports):
     command_BIAS_HTTP(
+        port = port,
         cmd = "start-capture",
         success_msg = "Started acquisition on port " + f"{port}",
         fail_msg = "Could not start acquisition on port " + f"{port}"
