@@ -5,8 +5,7 @@ import json
 import sys
 import time
 
-
-def command_BIAS_HTTP(port, cmd, success_msg, fail_msg):
+def command_BIAS_HTTP(port, cmd, success_msg, fail_msg, retries=10):
 
     """
     port (str): The port number of the target camera 
@@ -22,7 +21,6 @@ def command_BIAS_HTTP(port, cmd, success_msg, fail_msg):
 
     ret_dict = ret.json()[0]
 
-    retries = 10
     success = False
     while retries > 0:
         if ret.status_code == 200 and ret_dict.get('success'):
