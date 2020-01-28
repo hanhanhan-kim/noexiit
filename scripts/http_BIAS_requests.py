@@ -6,7 +6,7 @@ import sys
 import time
 
 
-def checked_command(cmd, success_msg, fail_msg):
+def command_BIAS_HTTP(cmd, success_msg, fail_msg):
 
     """
     cmd (str): The HTTP get command to use with BIAS
@@ -45,7 +45,7 @@ config_path = '/home/platyusa/Videos/bias_test_ext_trig.json'
 
 # Connect cameras:
 for _, port in enumerate(cam_ports):
-    checked_command(
+    command_BIAS_HTTP(
         cmd = "connect", 
         success_msg = "Camera on port " + f"{port}" + " connected", 
         fail_msg = "Port" + f"{port}" + " not connected"
@@ -54,7 +54,7 @@ for _, port in enumerate(cam_ports):
 
 # Load json configuration file:
 for _, port in enumerate(cam_ports):
-    checked_command(
+    command_BIAS_HTTP(
         cmd = "load-configuration" + '=' + config_path,
         success_msg = "Loaded configuration json on port " + f"{port}",
         fail_msg = "Could not load configuration json on port " + f"{port}"
@@ -64,7 +64,7 @@ time.sleep(3.0)
 
 # Acquire frames:
 for _, port in enumerate(cam_ports):
-    checked_command(
+    command_BIAS_HTTP(
         cmd = "start-capture",
         success_msg = "Started acquisition on port " + f"{port}",
         fail_msg = "Could not start acquisition on port " + f"{port}"
