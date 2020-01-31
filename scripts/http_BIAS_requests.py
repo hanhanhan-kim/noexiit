@@ -16,8 +16,8 @@ def command_BIAS_HTTP(port, cmd, success_msg, fail_msg, retries=10):
     retries (int): The number of retries if connection is 404 or request response has a False value to the success key.
     """
 
-
-    ret = requests.get("http://localhost:" + port + f"/?{cmd}")
+    url = "http://localhost:" + port + f"/?{cmd}"
+    ret = requests.get(url)
 
     ret_dict = ret.json()[0]
 
@@ -41,7 +41,7 @@ def command_BIAS_HTTP(port, cmd, success_msg, fail_msg, retries=10):
     return ret_dict
 
 
-cam_ports = ['5010', '5020']
+cam_ports = ['5010', '5020', '5030', '5040', '5050']
 config_path = '/home/platyusa/Videos/bias_test_ext_trig.json'
 
 # Connect cameras:
@@ -76,31 +76,4 @@ for _, port in enumerate(cam_ports):
 
 # Config json specifies an external trigger. 
 # Config json stops acquisition with a timer.
-
-
-'''
-commands = [
-    lambda port: {
-        'cmd': 'connect',
-        'success_msg': "Camera on port " + f"{port}" + " connected",
-        'fail_msg': "Port" + f"{port}" + " not connected"
-    },
-    lambda port: {
-        'cmd': "load-configuration" + '=' + config_path,
-        'success_msg': "Loaded configuration json on port " + f"{port}",
-        'fail_msg': "Could not load configuration json on port " + f"{port}"
-    },
-    lambda port: {
-        'cmd': "start-capture",
-        'success_msg': "Started acquisition on port " + f"{port}",
-        'fail_msg': "Could not start acquisition on port " + f"{port}"
-    },
-]
-for kwargs_fn in commands:
-    for _, port in enumerate(cam_ports):
-        kwargs = kwargs_fn(port)
-        checked_command(**kwargs)
-        time.sleep(1.0)
-
-'''
 
