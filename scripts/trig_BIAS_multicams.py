@@ -1,6 +1,6 @@
-#!/home/platyusa/.virtualenvs/behaviour/bin/python
+#!/home/platyusa/.virtualenvs/behaviour2/bin/python
 
-# CameraTrigger is compatible with only Python 2, as of 2020/02/02
+# TODO: Make camera_trigger Python 3-compatible, so I can use f-strings
 from __future__ import print_function
 from builtins import input
 import time
