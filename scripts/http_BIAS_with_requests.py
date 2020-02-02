@@ -42,6 +42,7 @@ def command_BIAS_HTTP(port, cmd, success_msg, fail_msg, retries=10):
 
 
 def main():
+    
     cam_ports = ['5010', '5020', '5030', '5040', '5050']
     config_path = '/home/platyusa/Videos/bias_test_ext_trig.json'
 
