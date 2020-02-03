@@ -1,8 +1,5 @@
-#!/home/platyusa/.virtualenvs/behaviour2/bin/python
+#!/home/platyusa/.virtualenvs/behaviour/bin/python
 
-# TODO: Make camera_trigger Python 3-compatible, so I can use f-strings
-from __future__ import print_function
-from builtins import input
 import time
 import sys
 from http_BIAS_with_requests import command_BIAS_HTTP
@@ -15,7 +12,7 @@ def main():
     trig = CameraTrigger('/dev/ttyUSB0')
     trig.set_freq(300)   # frequency (Hz)
     trig.set_width(10)  # pulse width (us); is not exposure time
-    duration = 10.0
+    duration = 10.0 # match duration of the BIAS timer
 
     # Set BIAS params:
     cam_ports = ['5010', '5020', '5030', '5040', '5050']
