@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from command_BIAS_HTTP import command_BIAS_HTTP
 from start_trigger import start_trigger
 from init_BIAS import init_BIAS
-from home_and_pt_to_pt_servo import pt_to_pt_and_servo
+from move import pt_to_pt_and_poke, home
 
 
 def main():
@@ -48,25 +48,8 @@ def main():
     # EXECUTE:
     #----------------------------------------------------------------------------------------
 
-    # If servo is extended, retract:
-    if stepper.get_servo_angle() != 0:
-        print("Retracting linear servo...")
-        stepper.set_servo_angle(0)
-        time.sleep(2.0)
-    else:
-        print("Linear servo already retracted.")
-
-    # Set the home position to 0:
-    print("Searching for home...")
-    stepper.home_to_switch(30)
-    stepper.busy_wait()
-    stepper.set_position(0)
-
-    # Wait before starting experiment:
-    pre_exp_time = 3.0
-    print("Home found. Position is %f." %stepper.get_position(), 
-          " Experiment starting in %s seconds." %pre_exp_time)
-    time.sleep(pre_exp_time)
+    # Home the motors:
+    home()
 
     # Proceed with experimental conditions once the home is set to 0:
     if stepper.get_position() == 0:

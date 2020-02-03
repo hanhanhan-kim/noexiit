@@ -20,7 +20,7 @@ stepper.set_gear_ratio(1)
 stepper.enable() 
 
 
-def pt_to_pt_and_servo(pos_list, ext_angle, wait_time):
+def pt_to_pt_and_poke(pos_list, ext_angle, wait_time):
     '''
     Specifies stepper motor and servo motor behaviours according to a list of target positions. \n
     Arguments:
@@ -55,7 +55,7 @@ def pt_to_pt_and_servo(pos_list, ext_angle, wait_time):
 
 def home(pre_exp_time = 3.0, homing_speed = 30):
     """
-    Homes the stepper and servo motors.
+    Homes the stepper to the reed switch and the linear servo to retraction.
 
     Params:
     pre_exp_time (fl): The time interval in secs after executing the home function.
