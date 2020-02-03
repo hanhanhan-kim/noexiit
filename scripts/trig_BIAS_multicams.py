@@ -2,17 +2,13 @@
 
 import time
 import sys
-from http_BIAS_with_requests import command_BIAS_HTTP
+import threading
 from camera_trigger import CameraTrigger
+from http_BIAS_with_requests import command_BIAS_HTTP
+from trig_ext_multicams import trig_ext_multicams
 
 
 def main():
-
-    # Set external trigger params:
-    trig = CameraTrigger('/dev/ttyUSB0')
-    trig.set_freq(300)   # frequency (Hz)
-    trig.set_width(10)  # pulse width (us); is not exposure time
-    duration = 10.0 # match duration of the BIAS timer
 
     # Set BIAS params:
     cam_ports = ['5010', '5020', '5030', '5040', '5050']
@@ -63,16 +59,10 @@ def main():
     # Config json specifies an external trigger. 
     # Config json stops acquisition with a timer.
 
-    # Execute external trigger:
-    print('Started camera trigger.')
-    trig.start()
+    # Execute external trigger in its own thread:
+    trig_th = threading.Thread(target=trig_ext_multicams(duration=10.0))
+    trig_th.start()
+    trig_th.join()
 
-    # TODO: Put in its own thread:
-    time.sleep(duration)
-
-    print('Stopped camera trigger.')
-    trig.stop()
-
-
-if __name__ == "main":
+if __name__ == "__main__":
     main()
