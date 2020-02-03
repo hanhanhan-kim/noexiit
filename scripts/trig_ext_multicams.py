@@ -5,7 +5,7 @@ import threading
 from camera_trigger import CameraTrigger
 
 
-def trig_ext_multicams(port='/dev/ttyUSB0', duration=10.0, freq=300, width=10):
+def trig_ext_multicams(duration, port="/dev/ttyUSB0", freq=300, width=10):
 
     """
     port (str): The port that the ATmega328P is connected to--defaulted to '/dev/ttyUSB0'.
@@ -26,18 +26,17 @@ def trig_ext_multicams(port='/dev/ttyUSB0', duration=10.0, freq=300, width=10):
     print('stop')
     trig.stop()
 
-trig_ext_multicams()
-
 
 def main():
 
     # Run the external trigger in its own thread:
-    trig_th = threading.Thread(target=trig_ext_multicams())
+    trig_th = threading.Thread(target=trig_ext_multicams(duration=10.0))
     trig_th.start()
 
     trig_th.join()
 
 
-if __name__ == "main":
+
+if __name__ == "__main__":
     main()
 
