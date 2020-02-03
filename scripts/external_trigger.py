@@ -8,6 +8,8 @@ from camera_trigger import CameraTrigger
 def trig_ext_multicams(duration, port="/dev/ttyUSB0", freq=300, width=10):
 
     """
+    Initiates ATmega328P external camera trigger, as set up by Will Dickson's camera_trigger repo.
+
     port (str): The port that the ATmega328P is connected to--defaulted to '/dev/ttyUSB0'.
     duration (fl): The duration of time to run the external trigger, in seconds.
     freq (int): The frame rate of the recording.
