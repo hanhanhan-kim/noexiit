@@ -65,5 +65,6 @@ def main():
     trig_th.start()
     trig_th.join()
 
+
 if __name__ == "__main__":
     main()

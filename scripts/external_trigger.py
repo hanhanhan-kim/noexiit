@@ -38,7 +38,5 @@ def main():
     trig_th.join()
 
 
-
 if __name__ == "__main__":
     main()
-
