@@ -53,6 +53,35 @@ def pt_to_pt_and_servo(pos_list, ext_angle, wait_time):
         time.sleep(wait_time)
 
 
+def home(pre_exp_time = 3.0, homing_speed = 30):
+    """
+    Homes the stepper and servo motors.
+
+    Params:
+    pre_exp_time (fl): The time interval in secs after executing the home function.
+    homing_speed (int): The speed in degs/sec with which the stepper reaches home. 
+    """
+    # If servo is extended, retract:
+    if stepper.get_servo_angle() != 0:
+        print("Retracting linear servo...")
+        stepper.set_servo_angle(0)
+        # Give time to reach retraction:
+        time.sleep(2.0)
+    else:
+        print("Linear servo already retracted.")
+
+    # Set the home position to 0:
+    print("Searching for home...")
+    stepper.home_to_switch(homing_speed)
+    stepper.busy_wait()
+    stepper.set_position(0)
+
+    # Wait before starting experiment:
+    print("Home found. Position is %f." %stepper.get_position(), 
+          " Experiment starting in %s seconds." %pre_exp_time)
+    time.sleep(pre_exp_time)
+
+
 def main():
 
     # Arguments for above function:
@@ -62,25 +91,8 @@ def main():
         max_ext = f.read().rstrip('\n')
     ext_angle = float(max_ext)
 
-    # If servo is extended, retract:
-    if stepper.get_servo_angle() != 0:
-        print("Retracting linear servo...")
-        stepper.set_servo_angle(0)
-        time.sleep(2.0)
-    else:
-        print("Linear servo already retracted.")
-
-    # Set the home position to 0:
-    print("Searching for home...")
-    stepper.home_to_switch(30)
-    stepper.busy_wait()
-    stepper.set_position(0)
-
-    # Wait before starting experiment:
-    pre_exp_time = 3.0
-    print("Home found. Position is %f." %stepper.get_position(), 
-          " Experiment starting in %s seconds." %pre_exp_time)
-    time.sleep(pre_exp_time)
+    # Home:
+    home()
 
     # Proceed with experimental conditions once the home is set to 0:
     if stepper.get_position() == 0:
