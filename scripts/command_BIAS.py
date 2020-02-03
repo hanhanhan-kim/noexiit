@@ -5,7 +5,7 @@ import json
 import sys
 import time
 
-def command_BIAS_HTTP(port, cmd, success_msg, fail_msg, retries=10):
+def command_BIAS(port, cmd, success_msg, fail_msg, retries=10):
 
     """
     Uses HTTP request commands to control BIAS.

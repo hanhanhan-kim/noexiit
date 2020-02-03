@@ -4,7 +4,7 @@ import time
 import sys
 import threading
 
-from command_BIAS_HTTP import command_BIAS_HTTP
+from command_BIAS import command_BIAS
 from start_trigger import start_trigger
 
 
@@ -26,7 +26,7 @@ def init_BIAS(cam_ports, config_path, backoff_time=1.0):
     
     # Connect cameras:
     for _, port in enumerate(cam_ports):
-        command_BIAS_HTTP(
+        command_BIAS(
             port = port,
             cmd = "connect", 
             success_msg = "Camera on port " + f"{port}" + " connected", 
@@ -36,7 +36,7 @@ def init_BIAS(cam_ports, config_path, backoff_time=1.0):
 
     # Load json configuration file:
     for _, port in enumerate(cam_ports):
-        command_BIAS_HTTP(
+        command_BIAS(
             port = port,
             cmd = "load-configuration" + '=' + config_path,
             success_msg = "Loaded configuration json on port " + f"{port}",
@@ -59,7 +59,7 @@ def init_BIAS(cam_ports, config_path, backoff_time=1.0):
 
     # Acquire frames:
     for _, port in enumerate(cam_ports):
-        command_BIAS_HTTP(
+        command_BIAS(
             port = port,
             cmd = "start-capture",
             success_msg = "Started acquisition on port " + f"{port}",

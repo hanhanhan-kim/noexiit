@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from command_BIAS_HTTP import command_BIAS_HTTP
 from start_trigger import start_trigger
 from init_BIAS import init_BIAS
 from move import pt_to_pt_and_poke, home
