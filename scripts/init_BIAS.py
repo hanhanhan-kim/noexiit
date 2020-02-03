@@ -65,6 +65,7 @@ def init_BIAS(cam_ports, config_path, backoff_time=1.0):
             success_msg = "Started acquisition on port " + f"{port}",
             fail_msg = "Could not start acquisition on port " + f"{port}"
         )
+        time.sleep(backoff_time)
 
     # Config json specifies an external trigger. 
     # Config json stops acquisition with a timer.
