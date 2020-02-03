@@ -8,6 +8,9 @@ import time
 def command_BIAS_HTTP(port, cmd, success_msg, fail_msg, retries=10):
 
     """
+    Uses HTTP request commands to control BIAS.
+
+    Params:
     port (str): The port number of the target camera 
     cmd (str): The HTTP get command to use with BIAS
     success_msg (str): The message if port connection and HTTP response both succeed.
