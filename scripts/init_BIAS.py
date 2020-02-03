@@ -4,8 +4,8 @@ import time
 import sys
 import threading
 
-from http_BIAS_with_requests import command_BIAS_HTTP
-from external_trigger import start_trigger
+from command_BIAS_HTTP import command_BIAS_HTTP
+from start_trigger import start_trigger
 
 
 def init_BIAS(cam_ports, config_path, duration, backoff_time=1.0):
