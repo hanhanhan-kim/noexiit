@@ -5,7 +5,7 @@ import threading
 from camera_trigger import CameraTrigger
 
 
-def trig_ext_multicams(duration, port="/dev/ttyUSB0", freq=300, width=10):
+def start_trigger(duration, port="/dev/ttyUSB0", freq=300, width=10):
 
     """
     Initiates ATmega328P external camera trigger, as set up by Will Dickson's camera_trigger repo.
