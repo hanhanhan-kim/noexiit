@@ -78,14 +78,16 @@ def main():
 
     # Wait before starting experiment:
     pre_exp_time = 3.0
-    print("Home found. Position is %f." %stepper.get_position(), " Experiment starting in %s seconds." %pre_exp_time)
+    print("Home found. Position is %f." %stepper.get_position(), 
+          " Experiment starting in %s seconds." %pre_exp_time)
     time.sleep(pre_exp_time)
 
     # Proceed with experimental conditions once the home is set to 0:
     if stepper.get_position() == 0:
         
         # Run move function in a separate thread:
-        stepper_th = threading.Thread(target=pt_to_pt_and_servo, args=(pos_list, ext_angle, wait_time))
+        stepper_th = threading.Thread(target=pt_to_pt_and_servo, 
+                                      args=(pos_list, ext_angle, wait_time))
         stepper_th.start()
         
         # Save data for plotting and csv:
@@ -144,5 +146,5 @@ def main():
         plt.savefig(t_cal_start + '_motor_commands.png')
         plt.show()
 
-if __name__ == "main":
+if __name__ == "__main__":
     main()
