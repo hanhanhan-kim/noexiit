@@ -51,7 +51,7 @@ def main():
 
     # Connect cameras:
     for _, port in enumerate(cam_ports):
-        command_BIAS_HTTP(
+        command_BIAS(
             port = port,
             cmd = "connect", 
             success_msg = "Camera on port " + f"{port}" + " connected", 
@@ -61,7 +61,7 @@ def main():
 
     # Load json configuration file:
     for _, port in enumerate(cam_ports):
-        command_BIAS_HTTP(
+        command_BIAS(
             port = port,
             cmd = "load-configuration" + '=' + config_path,
             success_msg = "Loaded configuration json on port " + f"{port}",
@@ -72,7 +72,7 @@ def main():
 
     # Acquire frames:
     for _, port in enumerate(cam_ports):
-        command_BIAS_HTTP(
+        command_BIAS(
             port = port,
             cmd = "start-capture",
             success_msg = "Started acquisition on port " + f"{port}",
