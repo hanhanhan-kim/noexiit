@@ -4,8 +4,9 @@ import time
 import sys
 import threading
 from camera_trigger import CameraTrigger
+
 from http_BIAS_with_requests import command_BIAS_HTTP
-from trig_ext_multicams import trig_ext_multicams
+from external_trigger import start_trigger
 
 
 def main():
@@ -60,7 +61,7 @@ def main():
     # Config json stops acquisition with a timer.
 
     # Execute external trigger in its own thread:
-    trig_th = threading.Thread(target=trig_ext_multicams(duration=10.0))
+    trig_th = threading.Thread(target = start_trigger(duration=10.0))
     trig_th.start()
     trig_th.join()
 
