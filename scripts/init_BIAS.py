@@ -8,7 +8,7 @@ from command_BIAS_HTTP import command_BIAS_HTTP
 from start_trigger import start_trigger
 
 
-def init_BIAS(cam_ports, config_path, duration, backoff_time=1.0):
+def init_BIAS(cam_ports, config_path, backoff_time=1.0):
 
     """
     Initializes BIAS with HTTP commands. In BIAS, connects cameras, then loads specified 
@@ -20,10 +20,10 @@ def init_BIAS(cam_ports, config_path, duration, backoff_time=1.0):
 
     cam_ports (list): A list of strings specifying the server of each camera port. 
     config_path (str): The path to the json configuration file for BIAS.
-    duration (fl): The duration of the recording.
     backoff_time (fl): The interval of time between each BIAS HTTP command.
     """
 
+    
     # Connect cameras:
     for _, port in enumerate(cam_ports):
         command_BIAS_HTTP(
@@ -69,11 +69,6 @@ def init_BIAS(cam_ports, config_path, duration, backoff_time=1.0):
     # Config json specifies an external trigger. 
     # Config json stops acquisition with a timer.
 
-    # Execute external trigger in its own thread:
-    trig_th = threading.Thread(target = start_trigger(duration=duration))
-    trig_th.start()
-    trig_th.join()
-
 
 def main():
 
@@ -82,8 +77,12 @@ def main():
     config_path = '/home/platyusa/Videos/bias_test_ext_trig.json'
 
     init_BIAS(cam_ports = cam_ports, 
-              config_path = config_path,
-              duration = 10.0)
+              config_path = config_path)
+
+    # Execute external trigger in its own thread:
+    trig_th = threading.Thread(target = start_trigger(duration=10.0))
+    trig_th.start()
+    trig_th.join()
 
 
 if __name__ == "__main__":
