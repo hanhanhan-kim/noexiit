@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 
 # Set up autostep motors:
 motor_port = '/dev/ttyACM0' # change as necessary
-
 stepper = Autostep(motor_port)
 stepper.set_step_mode('STEP_FS_128') 
 stepper.set_fullstep_per_rev(200)
@@ -52,6 +51,7 @@ def pt_to_pt_and_servo(pos_list, ext_angle, wait_time):
                 time.sleep(dt)
         # Wait at retraction:
         time.sleep(wait_time)
+
 
 def main():
 
