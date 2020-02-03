@@ -64,7 +64,7 @@ def main():
         trig_th.start()
 
         # Start move function in its own thread:
-        stepper_th = threading.Thread(target=pt_to_pt_and_servo, 
+        stepper_th = threading.Thread(target=pt_to_pt_and_poke, 
                                       args=(pos_list, ext_angle, wait_time))
         stepper_th.start()
         

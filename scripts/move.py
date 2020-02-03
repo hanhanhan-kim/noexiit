@@ -98,7 +98,7 @@ def main():
     if stepper.get_position() == 0:
         
         # Run move function in a separate thread:
-        stepper_th = threading.Thread(target=pt_to_pt_and_servo, 
+        stepper_th = threading.Thread(target=pt_to_pt_and_poke, 
                                       args=(pos_list, ext_angle, wait_time))
         stepper_th.start()
         
