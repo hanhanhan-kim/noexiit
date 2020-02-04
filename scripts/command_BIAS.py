@@ -40,7 +40,14 @@ def command_BIAS(port, cmd, success_msg, fail_msg, retries=10):
 
     if not success:
         print(fail_msg)
-        sys.exit()
+        while True:
+            proceed = input("HTTP BIAS command failed. Continue? Enter y or n: \n")
+            if proceed == "y":
+                print("Continuing ...")
+            elif proceed == "n":
+                sys.exit()
+            else:
+                print("Please input y or n: \n")
 
     return ret_dict
 
@@ -49,44 +56,60 @@ def main():
     
     cam_ports = ['5010', '5020', '5030', '5040', '5050']
     config_path = '/home/platyusa/Videos/bias_test_ext_trig.json'
+    backoff_time = 1.0
 
-    # # Connect cameras:
-    # for _, port in enumerate(cam_ports):
-    #     command_BIAS(
-    #         port = port,
-    #         cmd = "connect", 
-    #         success_msg = "Camera on port " + f"{port}" + " connected", 
-    #         fail_msg = "Port" + f"{port}" + " not connected"
-    #     )
-    #     time.sleep(1.0)
+    # Connect cameras:
+    for _, port in enumerate(cam_ports):
+        command_BIAS(
+            port = port,
+            cmd = "connect", 
+            success_msg = "Camera on port " + f"{port}" + " connected", 
+            fail_msg = "Port" + f"{port}" + " not connected"
+        )
+        time.sleep(backoff_time)
 
     # Load json configuration file:
     for _, port in enumerate(cam_ports):
 
         # First check if the target json is already loaded:
-        current_json_dict = command_BIAS(
+        current_json = command_BIAS(
             port = port,
             cmd = "get-configuration",
             success_msg = "Got config json on port " + f"{port}",
             fail_msg = "Could not get config json on port " + f"{port}"
         ).get("value")
+        
+        time.sleep(backoff_time)
 
         with open(config_path, "r") as f:
             target_json = json.load(f)
 
-        if current_json_dict == target_json:
-            continue
+        if current_json == target_json:
+            print(f"Current json on port {port} is already the target json. Continuing ...")
 
         else:
+            print(f"Current json on port {port} is not the target json. Loading target json ...")
             command_BIAS(
                 port = port,
                 cmd = "load-configuration" + '=' + config_path,
                 success_msg = "Loaded configuration json on port " + f"{port}",
                 fail_msg = "Could not load configuration json on port " + f"{port}"
             )
-            time.sleep(1.0)
+            time.sleep(backoff_time)
 
     time.sleep(3.0)
+
+    # Prompt user if they wish to continue:
+    proceed = input("Continue to acquisition of frames? Enter y or n:\n")
+    while True:
+        if proceed == "y":
+            print("Proceeding to frame acquisition . . .")
+            break
+        elif proceed == "n":
+            print("Quitting program . . .")
+            sys.exit()
+        else:
+            print("Please input y or n: \n")
 
     # Capture frames:
     for _, port in enumerate(cam_ports):
@@ -98,10 +121,12 @@ def main():
             success_msg = "Got status on port " + f"{port}",
             fail_msg = "Could not get status on port " + f"{port}"
         )
+        time.sleep(backoff_time)
 
         is_capturing = status_dict.get("value").get("capturing")
 
         if is_capturing is True:
+            print(f"Camera on port {port} is already capturing. Continuing ...")
             continue
         
         elif is_capturing is False:
