@@ -61,23 +61,56 @@ def main():
 
     # Load json configuration file:
     for _, port in enumerate(cam_ports):
-        command_BIAS(
+
+        # First check if the target json is already loaded:
+        current_json_dict = command_BIAS(
             port = port,
-            cmd = "load-configuration" + '=' + config_path,
-            success_msg = "Loaded configuration json on port " + f"{port}",
-            fail_msg = "Could not load configuration json on port " + f"{port}"
+            cmd = "get-status",
+            success_msg = "Got status on port " + f"{port}",
+            fail_msg = "Could not get status on port " + f"{port}"
         )
-        time.sleep(1.0)
+
+        with open(config_path, "r") as f:
+            target_json = json.load(f)
+
+        if current_json_dict == target_json:
+            continue
+
+        else:
+            command_BIAS(
+                port = port,
+                cmd = "load-configuration" + '=' + config_path,
+                success_msg = "Loaded configuration json on port " + f"{port}",
+                fail_msg = "Could not load configuration json on port " + f"{port}"
+            )
+            time.sleep(1.0)
+
     time.sleep(3.0)
 
-    # Acquire frames:
+    # Capture frames:
     for _, port in enumerate(cam_ports):
-        command_BIAS(
+
+        # First check if camera is already capturing:
+        status_dict = command_BIAS(
             port = port,
-            cmd = "start-capture",
-            success_msg = "Started acquisition on port " + f"{port}",
-            fail_msg = "Could not start acquisition on port " + f"{port}"
+            cmd = "get-status",
+            success_msg = "Got status on port " + f"{port}",
+            fail_msg = "Could not get status on port " + f"{port}"
         )
+
+        is_capturing = status_dict.get("value").get("capturing")
+
+        if is_capturing is True:
+            continue
+        
+        elif is_capturing is False:
+            command_BIAS(
+                port = port,
+                cmd = "start-capture",
+                success_msg = "Started acquisition on port " + f"{port}",
+                fail_msg = "Could not start acquisition on port " + f"{port}"
+            )
+
 
     # Config json specifies an external trigger. 
     # Config json stops acquisition with a timer.
