@@ -53,9 +53,21 @@ def main():
     # Proceed with experimental conditions once the home is set to 0:
     if stepper.get_position() == 0:
         
-        # Initialize BIAS--say yes to acquisition:
-        init_BIAS(cam_ports = cam_ports,
-                  config_path = config_path)
+        # Initialize BIAS, if desired:
+        
+        while True:
+            proceed = input("Initialize BIAS? That is, connect cams, load jsons, and start capture? Input y or n: \n")
+            if proceed == "y":
+                init_BIAS(cam_ports = cam_ports,
+                        config_path = config_path)
+                break
+            elif proceed == "n":
+                print("Skipping BIAS initialization ...")
+                break
+            else:
+                print("Please input y or n.")
+                time.sleep(1.0)
+                continue
 
         # Start external cam trigger in its own thread:
         trig_th = threading.Thread(target = start_trigger, 

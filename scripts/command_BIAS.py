@@ -100,8 +100,8 @@ def main():
     time.sleep(3.0)
 
     # Prompt user if they wish to continue:
-    proceed = input("Continue to acquisition of frames? Enter y or n:\n")
     while True:
+        proceed = input("Continue to acquisition of frames? Enter y or n:\n")
         if proceed == "y":
             print("Proceeding to frame acquisition . . .")
             break
@@ -109,7 +109,8 @@ def main():
             print("Quitting program . . .")
             sys.exit()
         else:
-            print("Please input y or n: \n")
+            print("Please input y or n.")
+            continue
 
     # Capture frames:
     for _, port in enumerate(cam_ports):

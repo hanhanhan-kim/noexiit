@@ -48,6 +48,7 @@ if stepper.get_position() == 0:
                 continue
             else:
                 print("Please input y or n: \n")
+                continue
         else:
             print("Please enter a valid servo extension angle from 0 to 180! \n")
 
