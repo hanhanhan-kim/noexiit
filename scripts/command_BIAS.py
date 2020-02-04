@@ -5,6 +5,7 @@ import json
 import sys
 import time
 
+
 def command_BIAS(port, cmd, success_msg, fail_msg, retries=10):
 
     """
@@ -49,15 +50,15 @@ def main():
     cam_ports = ['5010', '5020', '5030', '5040', '5050']
     config_path = '/home/platyusa/Videos/bias_test_ext_trig.json'
 
-    # Connect cameras:
-    for _, port in enumerate(cam_ports):
-        command_BIAS(
-            port = port,
-            cmd = "connect", 
-            success_msg = "Camera on port " + f"{port}" + " connected", 
-            fail_msg = "Port" + f"{port}" + " not connected"
-        )
-        time.sleep(1.0)
+    # # Connect cameras:
+    # for _, port in enumerate(cam_ports):
+    #     command_BIAS(
+    #         port = port,
+    #         cmd = "connect", 
+    #         success_msg = "Camera on port " + f"{port}" + " connected", 
+    #         fail_msg = "Port" + f"{port}" + " not connected"
+    #     )
+    #     time.sleep(1.0)
 
     # Load json configuration file:
     for _, port in enumerate(cam_ports):
@@ -65,10 +66,10 @@ def main():
         # First check if the target json is already loaded:
         current_json_dict = command_BIAS(
             port = port,
-            cmd = "get-status",
-            success_msg = "Got status on port " + f"{port}",
-            fail_msg = "Could not get status on port " + f"{port}"
-        )
+            cmd = "get-configuration",
+            success_msg = "Got config json on port " + f"{port}",
+            fail_msg = "Could not get config json on port " + f"{port}"
+        ).get("value")
 
         with open(config_path, "r") as f:
             target_json = json.load(f)
