@@ -54,7 +54,6 @@ def main():
     if stepper.get_position() == 0:
         
         # Initialize BIAS, if desired:
-        
         while True:
             proceed = input("Initialize BIAS? That is, connect cams, load jsons, and start capture? Input y or n: \n")
             if proceed == "y":
