@@ -8,27 +8,19 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Set up autostep motors:
-motor_port = '/dev/ttyACM0' # change as necessary
-stepper = Autostep(motor_port)
-stepper.set_step_mode('STEP_FS_128') 
-stepper.set_fullstep_per_rev(200)
-stepper.set_kval_params({'accel':30, 'decel':30, 'run':30, 'hold':30})
-stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) # deg/s and deg/s2
-stepper.set_move_mode_to_jog()
-stepper.set_gear_ratio(1)
-stepper.enable() 
 
-
-def pt_to_pt_and_poke(pos_list, ext_angle, wait_time):
+def pt_to_pt_and_poke(stepper, pos_list, ext_angle, wait_time):
+    
     '''
     Specifies stepper motor and servo motor behaviours according to a list of target positions. \n
     Arguments:
+        stepper (Autostep obj): the Autostep object, defined with respect to the correct port
         pos_list: (list) list of target absolute positions to move to
         ext_angle: (float) the linear servo's extension 'angle' for full extension
         wait_time: (float) duration of time (s) for which to wait at each position in pos_list
     Returns nothing. 
     '''
+
     angle_list_fwd = list(np.linspace(0, ext_angle, int(ext_angle)))
     angle_list_rev = list(angle_list_fwd[::-1])
     dt = 0.01
@@ -53,14 +45,19 @@ def pt_to_pt_and_poke(pos_list, ext_angle, wait_time):
         time.sleep(wait_time)
 
 
-def home(pre_exp_time = 3.0, homing_speed = 30):
+def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
+
     """
     Homes the stepper to the reed switch and the linear servo to retraction.
 
     Params:
+    stepper (Autostep obj): the Autostep object, defined with respect to the correct port
     pre_exp_time (fl): The time interval in secs after executing the home function.
     homing_speed (int): The speed in degs/sec with which the stepper reaches home. 
+    motor_port (str): The port that the Autostep Teensy connects to
     """
+
+
     # If servo is extended, retract:
     if stepper.get_servo_angle() != 0:
         print("Retracting linear servo...")
@@ -82,7 +79,7 @@ def home(pre_exp_time = 3.0, homing_speed = 30):
     time.sleep(pre_exp_time)
 
 
-def main():
+def main(stepper):
 
     # Arguments for above function:
     pos_list = [0.0, 180.0, 360.0, 2*360, 540.0]
@@ -92,14 +89,14 @@ def main():
     ext_angle = float(max_ext)
 
     # Home:
-    home()
+    home(stepper)
 
     # Proceed with experimental conditions once the home is set to 0:
     if stepper.get_position() == 0:
         
         # Run move function in a separate thread:
         stepper_th = threading.Thread(target=pt_to_pt_and_poke, 
-                                      args=(pos_list, ext_angle, wait_time))
+                                      args=(stepper, pos_list, ext_angle, wait_time))
         stepper_th.start()
         
         # Save data for plotting and csv:
@@ -160,4 +157,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+
+    # Set up Autostep motors:
+    motor_port = '/dev/ttyACM0' # change as necessary
+    stepper = Autostep(motor_port)
+    stepper.set_step_mode('STEP_FS_128') 
+    stepper.set_fullstep_per_rev(200)
+    stepper.set_kval_params({'accel':30, 'decel':30, 'run':30, 'hold':30})
+    stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) # deg/s and deg/s2
+    stepper.set_move_mode_to_jog()
+    stepper.set_gear_ratio(1)
+    stepper.enable()
+
+    main(stepper)

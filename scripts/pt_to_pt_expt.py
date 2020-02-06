@@ -10,8 +10,7 @@ import matplotlib.pyplot as plt
 
 from start_trigger import start_trigger
 from init_BIAS import init_BIAS
-from move import pt_to_pt_and_poke, home
-
+from move import home, pt_to_pt_and_poke
 
 def main():
 
@@ -31,15 +30,15 @@ def main():
 
     # Set BIAS params:
     cam_ports = ['5010', '5020', '5030', '5040', '5050']
-    config_path = '/home/platyusa/Videos/bias_test_ext_trig.json'
+    config_path = '/home/platyusa/Videos/bias_behaviour_300hz_1000us.json'
 
     # Set external cam trigger params:
     trig_port = "/dev/ttyUSB0"
-    duration = 10.0
+    duration = 60.0
 
     # Set motor function params:
-    pos_list = [0.0, 180.0, 360.0, 2*360, 540.0]
-    wait_time = 2.0
+    pos_list = [0.0, 90.0, 180.0, 360, 0.0]
+    wait_time = 5.0
     with open ("calib_servo.noexiit", "r") as f:
         max_ext = f.read().rstrip('\n')
     ext_angle = float(max_ext)
@@ -47,35 +46,35 @@ def main():
     # EXECUTE:
     #----------------------------------------------------------------------------------------
 
+    # Initialize BIAS, if desired:
+    while True:
+        proceed = input("Initialize BIAS? That is, connect cams, load jsons, and start capture? Input y or n: \n")
+        if proceed == "y":
+            init_BIAS(cam_ports = cam_ports,
+                    config_path = config_path)
+            break
+        elif proceed == "n":
+            print("Skipping BIAS initialization ...")
+            break
+        else:
+            print("Please input y or n.")
+            time.sleep(1.0)
+            continue
+
     # Home the motors:
-    home()
+    home(stepper)
 
     # Proceed with experimental conditions once the home is set to 0:
     if stepper.get_position() == 0:
-        
-        # Initialize BIAS, if desired:
-        while True:
-            proceed = input("Initialize BIAS? That is, connect cams, load jsons, and start capture? Input y or n: \n")
-            if proceed == "y":
-                init_BIAS(cam_ports = cam_ports,
-                        config_path = config_path)
-                break
-            elif proceed == "n":
-                print("Skipping BIAS initialization ...")
-                break
-            else:
-                print("Please input y or n.")
-                time.sleep(1.0)
-                continue
 
         # Start external cam trigger in its own thread:
-        trig_th = threading.Thread(target = start_trigger, 
-                                   args = (duration, trig_port))
-        trig_th.start()
+        # trig_th = threading.Thread(target = start_trigger, 
+        #                            args = (duration, trig_port))
+        # trig_th.start()
 
         # Start move function in its own thread:
-        stepper_th = threading.Thread(target = pt_to_pt_and_poke, 
-                                      args = (pos_list, ext_angle, wait_time))
+        stepper_th = threading.Thread(target=pt_to_pt_and_poke, 
+                                      args=(stepper, pos_list, ext_angle, wait_time))
         stepper_th.start()
         
         # Save data for plotting and csv:
@@ -94,11 +93,14 @@ def main():
             stepper_pos.append(stepper.get_position())
             servo_pos.append(stepper.get_servo_angle())
 
+            # print("Elapsed time: %f" %(time.time()-t_start))
+
+
         # Join the stepper thread back to the main:
         stepper_th.join()
 
         # Join the trigger thread back to the main:
-        trig_th.join()
+        # trig_th.join()
 
         # SAVE DATA:
         #----------------------------------------------------------------------------------------
