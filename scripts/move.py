@@ -14,10 +14,11 @@ def pt_to_pt_and_poke(stepper, pos_list, ext_angle, wait_time):
     '''
     Specifies stepper motor and servo motor behaviours according to a list of target positions. \n
     Arguments:
-        stepper (Autostep obj): the Autostep object, defined with respect to the correct port
-        pos_list: (list) list of target absolute positions to move to
-        ext_angle: (float) the linear servo's extension 'angle' for full extension
-        wait_time: (float) duration of time (s) for which to wait at each position in pos_list
+        stepper (Autostep obj): The Autostep object, defined with respect to the correct port.
+                                Do NOT make this object more than once.
+        pos_list (list): List of target absolute positions to move to.
+        ext_angle (float): The linear servo's extension 'angle' for full extension.
+        wait_time (float): Duration of time (s) for which to wait at each position in pos_list.
     Returns nothing. 
     '''
 
@@ -51,7 +52,8 @@ def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
     Homes the stepper to the reed switch and the linear servo to retraction.
 
     Params:
-    stepper (Autostep obj): the Autostep object, defined with respect to the correct port
+    stepper (Autostep obj): The Autostep object, defined with respect to the correct port.
+                            Do NOT make this object more than once.
     pre_exp_time (fl): The time interval in secs after executing the home function.
     homing_speed (int): The speed in degs/sec with which the stepper reaches home. 
     motor_port (str): The port that the Autostep Teensy connects to

@@ -68,9 +68,9 @@ def main():
     if stepper.get_position() == 0:
 
         # Start external cam trigger in its own thread:
-        # trig_th = threading.Thread(target = start_trigger, 
-        #                            args = (duration, trig_port))
-        # trig_th.start()
+        trig_th = threading.Thread(target = start_trigger, 
+                                   args = (duration, trig_port))
+        trig_th.start()
 
         # Start move function in its own thread:
         stepper_th = threading.Thread(target=pt_to_pt_and_poke, 
