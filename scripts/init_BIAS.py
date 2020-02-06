@@ -1,7 +1,6 @@
 #!/home/platyusa/.virtualenvs/behaviour/bin/python
 
 import time
-import sys
 import json
 import threading
 
@@ -67,46 +66,49 @@ def init_BIAS(cam_ports, config_path, backoff_time=1.0):
     time.sleep(3.0)
 
     # Prompt user if they wish to continue:
+    skip = False
     while True:
         proceed = input("Continue to acquisition of frames? Enter y or n:\n")
         if proceed == "y":
             print("Proceeding to frame acquisition . . .")
             break
         elif proceed == "n":
-            print("Quitting program . . .")
-            sys.exit()
+            print("Skipping acquisition . . .")
+            skip = True
+            break
         else:
             print("Please input y or n.")
             continue
 
     # Capture frames:
-    for _, port in enumerate(cam_ports):
+    if skip is False:
+        for _, port in enumerate(cam_ports):
 
-        # First check if camera is already capturing:
-        status_dict = command_BIAS(
-            port = port,
-            cmd = "get-status",
-            success_msg = "Got status on port " + f"{port}",
-            fail_msg = "Could not get status on port " + f"{port}"
-        )
-        time.sleep(backoff_time)
-
-        is_capturing = status_dict.get("value").get("capturing")
-
-        if is_capturing is True:
-            print(f"Camera on port {port} is already capturing. Continuing ...")
-            continue
-        
-        elif is_capturing is False:
-            command_BIAS(
+            # First check if camera is already capturing:
+            status_dict = command_BIAS(
                 port = port,
-                cmd = "start-capture",
-                success_msg = "Started acquisition on port " + f"{port}",
-                fail_msg = "Could not start acquisition on port " + f"{port}"
+                cmd = "get-status",
+                success_msg = "Got status on port " + f"{port}",
+                fail_msg = "Could not get status on port " + f"{port}"
             )
+            time.sleep(backoff_time)
 
-    # Config json specifies an external trigger. 
-    # Config json stops acquisition with a timer.
+            is_capturing = status_dict.get("value").get("capturing")
+
+            if is_capturing is True:
+                print(f"Camera on port {port} is already capturing. Continuing ...")
+                continue
+            
+            elif is_capturing is False:
+                command_BIAS(
+                    port = port,
+                    cmd = "start-capture",
+                    success_msg = "Started acquisition on port " + f"{port}",
+                    fail_msg = "Could not start acquisition on port " + f"{port}"
+                )
+
+        # Config json specifies an external trigger. 
+        # Config json stops acquisition with a timer.
 
 
 def main():
