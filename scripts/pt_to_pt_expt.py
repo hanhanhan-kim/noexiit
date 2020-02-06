@@ -93,14 +93,12 @@ def main():
             stepper_pos.append(stepper.get_position())
             servo_pos.append(stepper.get_servo_angle())
 
-            # print("Elapsed time: %f" %(time.time()-t_start))
-
 
         # Join the stepper thread back to the main:
         stepper_th.join()
 
         # Join the trigger thread back to the main:
-        # trig_th.join()
+        trig_th.join()
 
         # SAVE DATA:
         #----------------------------------------------------------------------------------------
