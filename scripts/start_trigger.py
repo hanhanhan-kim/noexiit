@@ -1,4 +1,4 @@
-#!/home/platyusa/.virtualenvs/behaviour/bin/python
+#!/home/platyusa/anaconda3/envs/behaviour/bin/python
 
 import time
 import threading
@@ -32,7 +32,7 @@ def start_trigger(duration, port="/dev/ttyUSB0", freq=300, width=10):
 def main():
 
     # Run the external trigger in its own thread:
-    trig_th = threading.Thread(target=start_trigger(duration=10.0))
+    trig_th = threading.Thread(target=start_trigger(duration=120.0))
     trig_th.start()
 
     trig_th.join()
