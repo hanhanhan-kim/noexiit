@@ -26,9 +26,10 @@ def get_fictrac_kins(heading, speed, delta_ts, ball_radius = 5):
     # Stepper:
     pos_set_fxn = -1 * heading_centred * ball_radius
     # Do I need a velocity set fxn, or just position?
-    vel_set_fxn = heading_centred / delta_ts 
+    vel_set_fxn = np.divide(heading_centred, delta_ts) 
+    if delta_ts == 0:
+        pass
     # Linear rc servo:
-    # TODO: Do I need to set limits? Probably. 
     rc_set_fxn = speed * np.cos(heading_centred) 
     
     return pos_set_fxn, vel_set_fxn, rc_set_fxn
