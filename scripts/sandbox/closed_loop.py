@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+from __future__ import print_function
+
 import socket
 import time
+
 import numpy as np
 import matplotlib.pyplot as plt
-from __future__ import print_function
 
 from autostep import Autostep
 
@@ -20,15 +22,14 @@ def get_fictrac_kins(heading, speed, delta_ts, ball_radius = 5):
         delta_ts (fl): 
         ball_radius (int): The ball radius in mm
     """
-
-    heading_centred = (heading - np.pi)/(-1 * np.pi)
+    heading_centred = heading - np.pi
     # Stepper:
     pos_set_fxn = -1 * heading_centred * ball_radius
     # Do I need a velocity set fxn, or just position?
     vel_set_fxn = heading_centred / delta_ts 
     # Linear rc servo:
     # TODO: Do I need to set limits? Probably. 
-    rc_set_fxn = np.abs(speed) * np.cos(heading) 
+    rc_set_fxn = speed * np.cos(heading_centred) 
     
     return pos_set_fxn, vel_set_fxn, rc_set_fxn
 
@@ -41,7 +42,26 @@ def main(dev):
     # # Servo:
     # rc_period = 8.0
     # rc_amplitude = 80.0
-    # t_end = 2*step_period 
+    # t_end = 2*step_period
+
+    # Motor movements:
+    gain = 5.0
+    sleep_dt = 0.005
+    t_end = 10.0 # secs
+
+    t_start = time.time()
+
+    # TODO change these hardcoded values to something appropriate
+    # or initialize from first fictrac data
+    pos_last = 0
+    dev.set_position(pos_last)
+    
+    vel_last = 0
+    dev.run(vel_last)
+
+    t_list = []
+    pos_tru_list = []
+    pos_set_list = []
     
     # Open the connection (FicTrac must be waiting for socket connection)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -95,40 +115,19 @@ def main(dev):
             delta_ts = float(toks[24])
             # alt_ts = float(toks[25])
 
-            # Motor movements:
-            gain = 5.0
-            sleep_dt = 0.005
-            t_end = 10.0 # secs
-
+            # Get new setpoint values
             fictrac_kins = get_fictrac_kins(heading=heading, 
                                             speed=step_mag, 
                                             delta_ts=delta_ts)
-            pos_set_fxn = fictrac_kins[0]
-            vel_set_fxn = fictrac_kins[1]
-            rc_set_fxn = fictrac_kins[2]
+            pos_set = fictrac_kins[0]
+            vel_set = fictrac_kins[1]
+            rc_set = fictrac_kins[2]
 
-            t_start = time.time()
-            t_last = t_start
-            
-            t_list = []
-            pos_tru_list = []
-            pos_set_list = []
-            
-            pos_last = pos_set_fxn(0)
-            dev.set_position(pos_last)
-            
-            vel_last = vel_set_fxn(0) 
-            dev.run(vel_last)
-
-            t = time.time() - t_start
+            # Tom: still not clear we want to use this kind of formula, as opposed
+            # to basically directly passing some fictrac value.
 
             # Compute estimated position (since last update)
-            pos_est = pos_last + (t-t_last) * vel_last
-
-            # Get new setpoint values
-            pos_set = pos_set_fxn(t)
-            vel_set = vel_set_fxn(t)
-            rc_set  = rc_set_fxn(t)
+            pos_est = pos_last + delta_ts * vel_last
         
             # Caluculate position error and use to determine correction velocity
             pos_err = pos_set - pos_est
@@ -138,10 +137,11 @@ def main(dev):
             pos_tru = dev.run_with_feedback(vel_adj,rc_set)
 
             # Save update time and position/velocity information from update
-            t_last = t
+            
             pos_last = pos_tru
             vel_last = vel_adj
 
+            t = time.time() - t_start
             # Check if we are done
             if t >= t_end:
                 done = True
