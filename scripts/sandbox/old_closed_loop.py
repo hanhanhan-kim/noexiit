@@ -6,7 +6,6 @@ import time
 import socket
 
 import numpy as np
-from scipy.spatial.transform import Rotation as R
 
 
 def write_servo_and_stepper(serial_obj, mm, deg,

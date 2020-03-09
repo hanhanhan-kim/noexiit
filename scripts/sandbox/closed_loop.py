@@ -24,15 +24,13 @@ def get_fictrac_kins(heading, speed, delta_ts, ball_radius = 5):
     """
     heading_centred = heading - np.pi
     # Stepper:
-    pos_set_fxn = -1 * heading_centred * ball_radius
+    pos_set = -1 * heading_centred * ball_radius
     # Do I need a velocity set fxn, or just position?
-    vel_set_fxn = np.divide(heading_centred, delta_ts) 
-    if delta_ts == 0:
-        pass
+    vel_set = np.rad2deg(heading_centred / delta_ts)
     # Linear rc servo:
-    rc_set_fxn = speed * np.cos(heading_centred) 
+    rc_set = speed * np.cos(heading_centred) 
     
-    return pos_set_fxn, vel_set_fxn, rc_set_fxn
+    return pos_set, vel_set, rc_set
 
 
 def main(dev):
@@ -114,6 +112,9 @@ def main(dev):
             # ts = float(toks[22])
             # seq = int(toks[23])
             delta_ts = float(toks[24])
+            if delta_ts == 0:
+                print("delta_ts is 0")
+                continue
             # alt_ts = float(toks[25])
 
             # Get new setpoint values
@@ -121,7 +122,7 @@ def main(dev):
                                             speed=step_mag, 
                                             delta_ts=delta_ts)
             pos_set = fictrac_kins[0]
-            vel_set = fictrac_kins[1]
+            vel_set = fictrac_kins[1] # needs to be in degs/sec, not 
             rc_set = fictrac_kins[2]
 
             # Tom: still not clear we want to use this kind of formula, as opposed
@@ -133,9 +134,14 @@ def main(dev):
             # Caluculate position error and use to determine correction velocity
             pos_err = pos_set - pos_est
             vel_adj = vel_set + gain * pos_err
+            print("vel_set: ", vel_set)
+            print("pos_err: ", pos_err)
 
             # Set stepper to run at correction velocity and get current position
-            pos_tru = dev.run_with_feedback(vel_adj,rc_set)
+            #pos_tru = dev.run_with_feedback(vel_adj, rc_set)
+            print(f'vel_adj: {vel_adj:.3f}')
+            print(f'rc_set: {rc_set:.3f}')
+            pos_tru = pos_est
 
             # Save update time and position/velocity information from update
             
