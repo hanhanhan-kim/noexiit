@@ -13,34 +13,8 @@ import matplotlib.pyplot as plt
 from autostep import Autostep
 
 
-def set_motor_rotation_deg_per_s(ang_vel_deg_per_s, dev):
-    max_speed_deg_per_s = 360
-
-    if ang_vel_deg_per_s > max_speed_deg_per_s:
-        warnings.warn('max speed exceeded')
-        ang_vel_deg_per_s = max_speed_deg_per_s
-
-    elif ang_vel_deg_per_s < -max_speed_deg_per_s:
-        warnings.warn('max (negative) speed exceeded')
-        ang_vel_deg_per_s = -max_speed_deg_per_s
-
-    # return dev.run_with_feedback(ang_vel_deg_per_s)
-
-
-def angular_diff_rad(a0_rad, a1_rad):
-    periodicity = 2 * np.pi
-    half_period = periodicity / 2
-    
-    raw_diff_rad = a1_rad - a0_rad
-    if raw_diff_rad > half_period:
-        diff_rad = raw_diff_rad - periodicity
-        assert diff_rad <= half_period
-    else:
-        diff_rad = raw_diff_rad
-    return diff_rad
-
-
 def main():
+
     port = '/dev/ttyACM0'
     
     dev = Autostep(port)
@@ -57,22 +31,13 @@ def main():
     HOST = '127.0.0.1'  # The server's hostname or IP address
     PORT = 27654         # The port used by the server
 
-    t_end = 10.0 # secs
+    t_end = 20.0 # secs
     t_start = time.time()
 
-    # TODO change these hardcoded values to something appropriate
-    # or initialize from first fictrac data; I might want to change this
-    # based on the homing position as 0:
-    dev.set_position(0)
-
-    # This is also what FicTrac will report as first heading.
-    last_heading = 0.0
-    last_ts = None
-
-    def stop_rotation():
+    # Stop the stepper when script is killed:
+    def stop_stepper():
         dev.run(0.0)
-
-    atexit.register(stop_rotation)
+    atexit.register(stop_stepper)
     
     # Open the connection (FicTrac must be waiting for socket connection)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -80,8 +45,9 @@ def main():
         
         # Initialize:
         data = ""
+        time_list = []
+        yaw_delta_list = []
         heading_list = []
-        delta_rotn_rads_per_frame_list = []
 
         # Keep receiving data until FicTrac closes:
         done = False
@@ -123,81 +89,46 @@ def main():
             # step_mag = float(toks[19])
             # intx = float(toks[20])
             # inty = float(toks[21])
-            ts = float(toks[22])
+            # ts = float(toks[22])
             # seq = int(toks[23])
-            delta_ts = float(toks[24]) / 1e9
+            delta_ts = float(toks[24]) / 1e9 # FicTrac is using camera time, which is us, not ms. Convert to s
+            # alt_ts = float(toks[25])
             
             if delta_ts == 0:
-                if last_ts is None:
-                    last_ts = ts
-                    last_heading = heading
-
                 print("delta_ts is 0")
                 continue
-            # alt_ts = float(toks[25])
-
-            # Old value of computing angular velocity in rad / sec.
-            '''
-            ang_vel_rad_per_frame = dr_lab[2]
-            ang_vel_deg_per_frame = np.rad2deg(ang_vel_rad_per_frame)
-            ang_vel_deg_per_s = ang_vel_deg_per_frame / delta_ts
-            '''
-
-            # NOTE: it seems this new way is wrong, perhaps because integrated
-            # heading is not what we expect.
-            #'''
-            # Alternative way of computing angular velocity in rad / sec.
-            if last_ts is None:
-                last_ts = ts
-                last_heading = heading
-                continue
-
-            time_since_last_update_s = (ts - last_ts) / 1e9
-
-            heading_delta_since_last_update_rad = angular_diff_rad(
-                last_heading, heading
-            )
-            heading_delta_since_last_update_deg = \
-                np.rad2deg(heading_delta_since_last_update_rad)
-
-            ang_vel_deg_per_s = \
-                heading_delta_since_last_update_deg / time_since_last_update_s
-            
-            # (end alternative way)
-            #'''
 
             # Move stepper based on heading difference:
 
-            print("delta_ts is ", delta_ts)
-            print('old way of calculating ang_vel (deg):', np.rad2deg(dr_lab[2]) / delta_ts)
-            print("time_since_last_update_s: ", time_since_last_update_s)
-            print("heading_delta_since_last_update_rad:", heading_delta_since_last_update_rad)
-            print("ang_vel_deg_per_s:", ang_vel_deg_per_s)
-            print("\n")
-            # stim_disp = step_mag * np.cos()
+            # Method 1:
+            yaw_delta = np.rad2deg(dr_lab[2]) # deg
+            yaw_vel = yaw_delta / delta_ts # deg/s
 
-            # (also part of alternative way of calculating angular vel)
-            last_ts = ts
-            last_heading = heading
+            dev.run_with_feedback(yaw_vel)
 
-            #set_motor_rotation_deg_per_s(ang_vel_deg_per_s)
-
+            print(f"yaw (deg): {yaw_delta} \n \
+                    time delta bw frames:  {delta_ts} \n  \
+                    angular velocity (deg/s):  {yaw_vel}")
+            
+            # Method 2:
+            
+            
+            # Check if we are done:
             t = time.time() - t_start
-            # Check if we are done
             if t >= t_end:
                 done = True
             
             # Save data for plotting
-            heading_list.append(heading)
-            delta_rotn_rads_per_frame_list.append(dr_lab[2])
+            time_list.append(t_start + delta_ts)
+            yaw_delta_list.append(yaw_delta)
+            heading_list.append(np.rad2deg(heading))
 
-            # print('t: {:1.2f}, pos: {:1.2f}'.format(t, ang_vel))
 
     # Plot results
-    plt.plot(delta_rotn_rads_per_frame_list, np.gradient(heading_list), '.b')
+    plt.plot(time_list, yaw_delta_list, '.b')
     # plt.plot(t_list, pos_set_list, 'r')
-    plt.xlabel('delta rotn vector around z (yaw)')
-    plt.ylabel('derivative of integrated heading')
+    plt.xlabel("time")
+    plt.ylabel("delta rotn vector around z (yaw)")
     plt.grid(True)
     
     plt.show()
