@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from autostep import Autostep
 
 
-def set_motor_rotation_deg_per_s(ang_vel_deg_per_s):
+def set_motor_rotation_deg_per_s(ang_vel_deg_per_s, dev):
     max_speed_deg_per_s = 360
 
     if ang_vel_deg_per_s > max_speed_deg_per_s:
@@ -24,7 +24,7 @@ def set_motor_rotation_deg_per_s(ang_vel_deg_per_s):
         warnings.warn('max (negative) speed exceeded')
         ang_vel_deg_per_s = -max_speed_deg_per_s
 
-    return dev.run_with_feedback(ang_vel_deg_per_s)
+    # return dev.run_with_feedback(ang_vel_deg_per_s)
 
 
 def angular_diff_rad(a0_rad, a1_rad):
@@ -33,7 +33,7 @@ def angular_diff_rad(a0_rad, a1_rad):
     
     raw_diff_rad = a1_rad - a0_rad
     if raw_diff_rad > half_period:
-        diff_rad = raw_diff_rad - half_period
+        diff_rad = raw_diff_rad - periodicity
         assert diff_rad <= half_period
     else:
         diff_rad = raw_diff_rad
@@ -57,7 +57,7 @@ def main():
     HOST = '127.0.0.1'  # The server's hostname or IP address
     PORT = 27654         # The port used by the server
 
-    t_end = 120.0 # secs
+    t_end = 10.0 # secs
     t_start = time.time()
 
     # TODO change these hardcoded values to something appropriate
@@ -80,6 +80,8 @@ def main():
         
         # Initialize:
         data = ""
+        heading_list = []
+        delta_rotn_rads_per_frame_list = []
 
         # Keep receiving data until FicTrac closes:
         done = False
@@ -186,18 +188,19 @@ def main():
                 done = True
             
             # Save data for plotting
-            # ang_vel.append(ang_vel)
+            heading_list.append(heading)
+            delta_rotn_rads_per_frame_list.append(dr_lab[2])
 
             # print('t: {:1.2f}, pos: {:1.2f}'.format(t, ang_vel))
 
     # Plot results
-    # plt.plot(t_list, pos_tru_list,'.b')
+    plt.plot(delta_rotn_rads_per_frame_list, np.gradient(heading_list), '.b')
     # plt.plot(t_list, pos_set_list, 'r')
-    # plt.xlabel('t (sec)')
-    # plt.ylabel('ang (deg)')
-    # plt.grid(True)
+    plt.xlabel('delta rotn vector around z (yaw)')
+    plt.ylabel('derivative of integrated heading')
+    plt.grid(True)
     
-    # plt.show()
+    plt.show()
     
 
 if __name__ == '__main__':
