@@ -1,4 +1,3 @@
-
 #!/home/platyusa/anaconda3/envs/behaviour/bin/python
 
 import sys
@@ -6,16 +5,22 @@ import traceback
 from datetime import datetime
 import time
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
 import u3
 import u6
 import ue9
 
-
-# MAX_REQUESTS is the number of packets to be read.
-MAX_REQUESTS = 75
+duration =  60.0
+# num_channels = 1
 # SCAN_FREQUENCY is the scan frequency of stream mode in Hz
 SCAN_FREQUENCY = 5000
+# num_samples = (duration * SCAN_FREQUENCY) 
+# MAX_REQUESTS is the number of packets to be read.
+# MAX_REQUESTS = int(round(num_samples/48))
+# MAX_REQUESTS = 75 
+MAX_REQUESTS = int(round(duration * SCAN_FREQUENCY / 1200)) # to record for 10 s
 
 d = None
 
@@ -96,6 +101,7 @@ try:
 
     num_AIN0_readings = []
     avg_AIN0_readings = []
+    AIN0_readings = []
     elapsed_time = []
     t_start = time.time()
 
@@ -123,6 +129,7 @@ try:
             
             num_AIN0_readings.append(len(r["AIN0"]))
             avg_AIN0_readings.append(sum(r["AIN0"])/len(r["AIN0"]))
+            AIN0_readings.extend(r["AIN0"])
             elapsed_time.append(time.time()-t_start)
 
             dataCount += 1
@@ -157,10 +164,26 @@ finally:
     print("Timed Sample Rate = %s samples / %s seconds = %s Hz" %
           (sampleTotal, runTime, float(sampleTotal)/runTime))
 
-    df = pd.DataFrame({"Number of AIN0 readings": num_AIN0_readings, 
-                        "Average value of AIN0 readings": avg_AIN0_readings,
-                        'Calendar time': [time.ctime(int() + t_start) for t in elapsed_time],
-                        "Elapsed time": elapsed_time})
-
+    # Convert elapsed time to calendar time:
     t_cal_start = str(time.ctime(int(elapsed_time[0]) + t_start))
+    cal_time = []
+    for t in elapsed_time:
+        cal_time.append(time.ctime(int(t) + t_start))
+
+    # Save output to csv:
+    df = pd.DataFrame({"Elapsed time": elapsed_time,
+                       "Calendar time": cal_time, 
+                       "Number of AIN0 readings": num_AIN0_readings, 
+                       "Average value of AIN0 readings": avg_AIN0_readings})
+    
     df.to_csv(t_cal_start + "AIN0_readings.csv", index=False)
+
+    # Plot:
+    AIN0_readings = np.array(AIN0_readings)
+    AIN0_readings = AIN0_readings[AIN0_readings < 9]
+    time = np.linspace(0, duration, len(AIN0_readings))
+    plt.plot(time, AIN0_readings)
+    plt.show()
+
+    # plt.plot(elapsed_time, avg_AIN0_readings)
+    # plt.show() 
