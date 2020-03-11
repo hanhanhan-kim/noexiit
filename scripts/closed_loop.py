@@ -54,6 +54,13 @@ def main():
         yaw_delta_filt_list = []
         yaw_vel_filt_list = []
 
+        # Define filter;
+        freq_cutoff = 5 # in Hz
+        n = 10 # order of the filter
+        sampling_rate = 100 # in Hz, in this case, the camera FPS
+
+        filt = ButterFilter(freq_cutoff, n, sampling_rate)
+
         # Keep receiving data until FicTrac closes:
         done = False
         while not done:
@@ -107,12 +114,8 @@ def main():
             yaw_delta = np.rad2deg(dr_lab[2]) # deg
             yaw_vel = yaw_delta / delta_ts # deg/s
 
-            # Define filter;
-            freq_cutoff = 2.0 # in Hz
-            n = 10 # order of the filter
-            sampling_rate = 300 # in Hz, in this case, the camera FPS
-
-            filt = ButterFilter(freq_cutoff, n, sampling_rate)
+            
+            
 
             # Apply filter:
             yaw_delta_filt = filt.update(yaw_delta)
@@ -135,8 +138,8 @@ def main():
             # Save data for plotting
             time_list.append(t)
             yaw_delta_list.append(yaw_delta)
-            yaw_vel_list.append(yaw_vel)
             yaw_delta_filt_list.append(yaw_delta_filt)
+            yaw_vel_list.append(yaw_vel)
             yaw_vel_filt_list.append(yaw_vel_filt)
 
     # Plot results
