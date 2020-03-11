@@ -34,7 +34,7 @@ def main():
     HOST = '127.0.0.1'  # The server's hostname or IP address
     PORT = 27654         # The port used by the server
 
-    t_end = 20.0 # secs
+    t_end = 10.0 # secs
     t_start = time.time()
 
     # Stop the stepper when script is killed:
@@ -108,25 +108,24 @@ def main():
             yaw_vel = yaw_delta / delta_ts # deg/s
 
             # Define filter;
-            freq_cutoff = 5.0 # in Hz
+            freq_cutoff = 2.0 # in Hz
             n = 10 # order of the filter
-            sampling_rate = 320 # in Hz, in this case, the camer FPS
+            sampling_rate = 300 # in Hz, in this case, the camera FPS
+
             filt = ButterFilter(freq_cutoff, n, sampling_rate)
 
             # Apply filter:
-            yaw_delta_filt, _ = filt.update(yaw_delta)
+            yaw_delta_filt = filt.update(yaw_delta)
             yaw_vel_filt = yaw_delta_filt / delta_ts
 
             # dev.run_with_feedback(yaw_vel)
 
-            print(f"yaw delta (deg): {yaw_delta}")
             print(f"time delta bw frames (s): {delta_ts}")
+            print(f"yaw delta (deg): {yaw_delta}")
+            print(f"filtered yaw delta (deg): {yaw_delta_filt}")
             print(f"angular velocity (deg/s): {yaw_vel}")
+            print(f"filtered yaw velocity (deg/s): {yaw_vel_filt}")
             print("\n")
-            print(f"yaw delta FILTERED (deg): {yaw_delta_filt}")
-            print(f"yaw velocity FILTERED (deg/s): {yaw_vel_filt}")
-            print("\n")
-
     
             # Check if we are done:
             t = time.time() - t_start
