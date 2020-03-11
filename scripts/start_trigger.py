@@ -5,7 +5,7 @@ import threading
 from camera_trigger import CameraTrigger
 
 
-def start_trigger(duration, port="/dev/ttyUSB0", freq=300, width=10):
+def start_trigger(duration, port="/dev/ttyUSB0", freq=100, width=10):
 
     """
     Initiates ATmega328P external camera trigger, as set up by Will Dickson's camera_trigger repo.
@@ -32,7 +32,7 @@ def start_trigger(duration, port="/dev/ttyUSB0", freq=300, width=10):
 def main():
 
     # Run the external trigger in its own thread:
-    trig_th = threading.Thread(target=start_trigger(duration=10.0))
+    trig_th = threading.Thread(target=start_trigger(duration=60.0))
     trig_th.start()
 
     trig_th.join()
