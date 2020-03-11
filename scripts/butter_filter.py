@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+
+# Written by Will Dickson:
+
 import scipy
 import numpy
 import scipy.signal as signal
@@ -66,7 +70,8 @@ if __name__ == '__main__':
 
     period = 1.0/1.5
 
-    filt = ButterFilter(fcut, n, fs)
+    # Define filter:
+    filt = ButterFilter(fcut, n, fs) 
 
     t = scipy.arange(0,1000)*dt
     x = scipy.sin(2.0*scipy.pi*t/period)
@@ -74,6 +79,7 @@ if __name__ == '__main__':
 
     y_list = []
     for x_val in x:
+        # Apply filter:
         y_val = filt.update(x_val)
         y_list.append(y_val)
     y = numpy.array(y_list)

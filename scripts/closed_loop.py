@@ -13,41 +13,7 @@ import matplotlib.pyplot as plt
 from scipy import signal
 from scipy import interpolate
 from autostep import Autostep
-
-# FFT functions written by Kellan Moorse
-
-# Return the smallest power of 2 greater than or equal to a number
-def expceil(x, a=2):
-
-    temp = np.log(x)/np.log(a)
-    return a**np.ceil(temp)
-
-# Take the fourier transform of the windowed input function
-# Return amplitude, phase, and frequency-spacing
-def fft(ft, t, pad=1, window=np.hanning):
-
-    # Extract sample period
-    if len(t) > 0:
-        dt = np.diff(t[:2])[0]
-        assert np.all(np.diff(t) - dt < dt/1e6)
-    else:
-        dt = t
-
-    if window:
-        ft = window(len(ft))*ft
-
-    # Find power-of-two pad length and apply transform
-    N = int(expceil(len(ft)*pad))
-    ff = np.fft.fft(ft, N)
-    ff = ff[:N//2]
-    f = np.fft.fftfreq(N, dt)[:N//2]
-
-    # Separate amplitude and phase
-    amp = np.abs(ff)
-    print(np.sum(amp**2))
-    ph = np.angle(ff)
-
-    return (amp, ph, f)
+from butter_filter import ButterFilter
 
 
 def main():
@@ -85,7 +51,8 @@ def main():
         time_list = []
         yaw_delta_list = []
         yaw_vel_list = []
-        heading_list = []
+        yaw_delta_filt_list = []
+        yaw_vel_filt_list = []
 
         # Keep receiving data until FicTrac closes:
         done = False
@@ -122,7 +89,7 @@ def main():
             # r_lab = [float(toks[12]), float(toks[13]), float(toks[14])]
             # posx = float(toks[15])
             # posy = float(toks[16])
-            heading = float(toks[17]) # goes from 0 to 2pi
+            # heading = float(toks[17]) # goes from 0 to 2pi
             # step_dir = float(toks[18])
             # step_mag = float(toks[19])
             # intx = float(toks[20])
@@ -137,28 +104,30 @@ def main():
                 continue
 
             # Move stepper based on heading difference:
-
-            # Method 1:
             yaw_delta = np.rad2deg(dr_lab[2]) # deg
             yaw_vel = yaw_delta / delta_ts # deg/s
 
-            # Filter:
-            # yaw_delta_filt, _ = signal.lf(yaw_delta, delta_ts)
-            # yaw_vel_filt = yaw_delta_filt / delta_ts
+            # Define filter;
+            freq_cutoff = 5.0 # in Hz
+            n = 10 # order of the filter
+            sampling_rate = 320 # in Hz, in this case, the camer FPS
+            filt = ButterFilter(freq_cutoff, n, sampling_rate)
+
+            # Apply filter:
+            yaw_delta_filt, _ = filt.update(yaw_delta)
+            yaw_vel_filt = yaw_delta_filt / delta_ts
 
             # dev.run_with_feedback(yaw_vel)
 
             print(f"yaw delta (deg): {yaw_delta}")
             print(f"time delta bw frames (s): {delta_ts}")
             print(f"angular velocity (deg/s): {yaw_vel}")
-            # print("\n")
-            # print(f"yaw delta FILTERED (deg): {yaw_delta_filt}")
-            # print(f"yaw velocity FILTERED (deg/s): {yaw_vel_filt}")
+            print("\n")
+            print(f"yaw delta FILTERED (deg): {yaw_delta_filt}")
+            print(f"yaw velocity FILTERED (deg/s): {yaw_vel_filt}")
             print("\n")
 
-            # Method 2:
-            # Maybe don't need ...
-            
+    
             # Check if we are done:
             t = time.time() - t_start
             if t >= t_end:
@@ -168,40 +137,24 @@ def main():
             time_list.append(t)
             yaw_delta_list.append(yaw_delta)
             yaw_vel_list.append(yaw_vel)
-            heading_list.append(np.rad2deg(heading))
-
-    # Find frequency domain with an FFT:
-    f = interpolate.interp1d(time_list, yaw_delta_list)
-    t_interp = np.linspace(time_list[0], time_list[-1], len(time_list))
-    y_interp = f(t_interp)
-    amp, _, freq = fft(np.array(y_interp), np.array(t_interp))
-
-    # Apply Butterworth filter, given frequency vs. power plot (see below)
-    b, a = signal.butter(10, 5, fs=320)
-    print("SHAPES: ", a.shape, b.shape)
-    y_filtered = signal.lfilter(b, a, y_interp)
+            yaw_delta_filt_list.append(yaw_delta_filt)
+            yaw_vel_filt_list.append(yaw_vel_filt)
 
     # Plot results
     # Raw:
-    plt.subplot(3, 1, 1)
-    plt.plot(time_list, np.array(yaw_delta_list), '.b')
-    plt.plot(t_interp, y_filtered)
+    plt.subplot(2, 1, 1)
+    plt.plot(time_list, yaw_delta_list, '.b', label="raw")
+    plt.plot(time_list, yaw_delta_filt_list, label="filtered")
     plt.xlabel("time (s)")
     plt.ylabel("yaw delta (deg)")
     plt.grid(True)
 
     # Filtered:
-    plt.subplot(3, 1, 2)
-    plt.plot(freq, amp, 'r')
-    plt.xlabel("frequency")
-    plt.ylabel("approx power")
-    plt.grid(True)
-
-    # Filtered on log scale:
-    plt.subplot(3,1,3)
-    plt.semilogy(freq, amp, 'r')
-    plt.xlabel("frequency")
-    plt.ylabel("log approx power")
+    plt.subplot(2, 1, 2)
+    plt.plot(time_list, yaw_vel_list, '.b', label="raw")
+    plt.plot(time_list, yaw_vel_filt_list, label="filtered")
+    plt.xlabel("time (s)")
+    plt.ylabel("yaw vel (deg/s)")
     plt.grid(True)
 
     plt.show()
