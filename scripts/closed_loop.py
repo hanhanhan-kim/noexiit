@@ -5,15 +5,21 @@ from __future__ import print_function
 import socket
 import time
 import atexit
-import warnings
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scipy import signal
-from scipy import interpolate
 from autostep import Autostep
 from butter_filter import ButterFilter
+
+
+def stop_stepper(dev):
+    """
+    A wrapper function that stops the motor when the script exits. 
+
+    dev: Autostep object
+    """
+    dev.run(0.0)
 
 
 def main():
@@ -34,13 +40,12 @@ def main():
     HOST = '127.0.0.1'  # The server's hostname or IP address
     PORT = 27654         # The port used by the server
 
-    t_end = 10.0 # secs
+    # Set duration of closed loop mode:
+    t_end = 60.0 # secs
     t_start = time.time()
 
     # Stop the stepper when script is killed:
-    def stop_stepper():
-        dev.run(0.0)
-    atexit.register(stop_stepper)
+    atexit.register(stop_stepper(dev))
     
     # Open the connection (FicTrac must be waiting for socket connection)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -53,12 +58,12 @@ def main():
         yaw_vel_list = []
         yaw_delta_filt_list = []
         yaw_vel_filt_list = []
+        stepper_pos_list = []
 
         # Define filter;
         freq_cutoff = 5 # in Hz
-        n = 10 # order of the filter
+        n = 2 # order of the filter
         sampling_rate = 100 # in Hz, in this case, the camera FPS
-
         filt = ButterFilter(freq_cutoff, n, sampling_rate)
 
         # Keep receiving data until FicTrac closes:
@@ -110,18 +115,16 @@ def main():
                 print("delta_ts is 0")
                 continue
 
-            # Move stepper based on heading difference:
+            # Compute yaw velocity:
             yaw_delta = np.rad2deg(dr_lab[2]) # deg
-            yaw_vel = yaw_delta / delta_ts # deg/s
-
-            
-            
+            yaw_vel = yaw_delta / delta_ts # deg/s            
 
             # Apply filter:
             yaw_delta_filt = filt.update(yaw_delta)
             yaw_vel_filt = yaw_delta_filt / delta_ts
 
-            # dev.run_with_feedback(yaw_vel)
+            # Move!
+            stepper_pos = dev.run_with_feedback(-1 * yaw_vel_filt)
 
             print(f"time delta bw frames (s): {delta_ts}")
             print(f"yaw delta (deg): {yaw_delta}")
@@ -137,27 +140,47 @@ def main():
             
             # Save data for plotting
             time_list.append(t)
+
             yaw_delta_list.append(yaw_delta)
             yaw_delta_filt_list.append(yaw_delta_filt)
             yaw_vel_list.append(yaw_vel)
             yaw_vel_filt_list.append(yaw_vel_filt)
 
+            stepper_pos_list.append(stepper_pos)
+            stepper_pos_delta_list = list(np.diff(stepper_pos_list))
+            stepper_pos_delta_list.insert(0, None) # Add None object to beginning of list, so its length matches with time_list
+
+    # Stop stepper:
+    dev.run(0.0)
+    
     # Plot results
     # Raw:
-    plt.subplot(2, 1, 1)
+    plt.subplot(3, 1, 1)
     plt.plot(time_list, yaw_delta_list, '.b', label="raw")
     plt.plot(time_list, yaw_delta_filt_list, label="filtered")
-    plt.xlabel("time (s)")
+    # plt.xlabel("time (s)")
     plt.ylabel("yaw delta (deg)")
+    plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
     plt.grid(True)
 
     # Filtered:
-    plt.subplot(2, 1, 2)
+    plt.subplot(3, 1, 2)
     plt.plot(time_list, yaw_vel_list, '.b', label="raw")
     plt.plot(time_list, yaw_vel_filt_list, label="filtered")
-    plt.xlabel("time (s)")
+    # plt.xlabel("time (s)")
     plt.ylabel("yaw vel (deg/s)")
+    plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
     plt.grid(True)
+    
+    # Stepper:
+    plt.subplot(3, 1, 3)
+    plt.plot(time_list, yaw_delta_filt_list, '.b', label="filtered yaw delta (deg)")
+    plt.plot(time_list, stepper_pos_delta_list, 'r', label="stepper position delta (deg)")
+    plt.xlabel("time (s)")
+    plt.ylabel("yaw delta (deg)")
+    plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
+    plt.grid(True)
+    plt.legend()
 
     plt.show()
     
