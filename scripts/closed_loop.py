@@ -147,7 +147,8 @@ def main():
     # Stop stepper:
     dev.run(0.0)
     
-    # Plot results
+    # Plot results:
+    
     # Raw:
     plt.subplot(3, 1, 1)
     plt.plot(time_list, yaw_delta_list, '.b', label="raw")
