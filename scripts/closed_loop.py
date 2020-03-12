@@ -5,21 +5,13 @@ from __future__ import print_function
 import socket
 import time
 import atexit
+import warnings
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from autostep import Autostep
 from butter_filter import ButterFilter
-
-
-def stop_stepper(dev):
-    """
-    A wrapper function that stops the motor when the script exits. 
-
-    dev: Autostep object
-    """
-    dev.run(0.0)
 
 
 def main():
@@ -45,7 +37,9 @@ def main():
     t_start = time.time()
 
     # Stop the stepper when script is killed:
-    atexit.register(stop_stepper(dev))
+    def stop_stepper():
+        dev.run(0.0)
+    atexit.register(stop_stepper)
     
     # Open the connection (FicTrac must be waiting for socket connection)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
