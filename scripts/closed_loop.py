@@ -24,7 +24,7 @@ def main():
     dev.set_gear_ratio(1.0)
     dev.set_jog_mode_params({'speed': 200,  'accel': 1000, 'decel': 1000})
     dev.set_max_mode_params({'speed': 1000,  'accel': 30000, 'decel': 30000})
-    dev.set_move_mode_to_max()
+    dev.set_move_mode_to_max() # change to jog for debugging
     dev.enable()
     dev.print_params()
     dev.run(0.0)  
