@@ -6,9 +6,11 @@ import socket
 import time
 import atexit
 import warnings
+import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from autostep import Autostep
 from butter_filter import ButterFilter
@@ -36,6 +38,9 @@ def main():
     t_end = 60.0 # secs
     t_start = time.time()
 
+    # Specify trackball size:
+    ball_radius = 5 # mm
+
     # Stop the stepper when script is killed:
     def stop_stepper():
         dev.run(0.0)
@@ -48,10 +53,16 @@ def main():
         # Initialize:
         data = ""
         time_list = []
+
         yaw_delta_list = []
         yaw_vel_list = []
         yaw_delta_filt_list = []
         yaw_vel_filt_list = []
+
+        heading_list = []
+        speed_list = []
+        servo_angle_list = []
+
         stepper_pos_list = []
 
         # Define filter;
@@ -95,9 +106,9 @@ def main():
             # r_lab = [float(toks[12]), float(toks[13]), float(toks[14])]
             # posx = float(toks[15])
             # posy = float(toks[16])
-            # heading = float(toks[17]) # goes from 0 to 2pi
+            heading = float(toks[17]) # rads, goes from 0 to 2pi
             # step_dir = float(toks[18])
-            # step_mag = float(toks[19])
+            speed = float(toks[19]) * ball_radius # rads per frame, goes from 0 to 2pi; scale by ball radius to get mm/frame
             # intx = float(toks[20])
             # inty = float(toks[21])
             # ts = float(toks[22])
@@ -117,13 +128,21 @@ def main():
             yaw_delta_filt = filt.update(yaw_delta)
             yaw_vel_filt = yaw_delta_filt / delta_ts
 
+            # Compute extension size of linear servo:
+            # TODO: Add filters to servo inputs?
+            # TODO: Add an explicit gain term for servo?
+            extend_delta = speed * np.cos(heading) # use heading or direction as theta? unit is mm/frame
+            servo_angle = dev.get_servo_angle()
+            extend_by = servo_angle + extend_delta 
+
             # Move!
-            stepper_pos = dev.run_with_feedback(-1 * yaw_vel_filt)
+            gain = 1 
+            stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt, extend_by)
 
             print(f"time delta bw frames (s): {delta_ts}")
             print(f"yaw delta (deg): {yaw_delta}")
             print(f"filtered yaw delta (deg): {yaw_delta_filt}")
-            print(f"angular velocity (deg/s): {yaw_vel}")
+            print(f"yaw velocity (deg/s): {yaw_vel}")
             print(f"filtered yaw velocity (deg/s): {yaw_vel_filt}")
             print("\n")
     
@@ -133,15 +152,19 @@ def main():
                 done = True
             
             # Save data for plotting
-            time_list.append(t)
+            time_list.append(t) # s
 
-            yaw_delta_list.append(yaw_delta)
-            yaw_delta_filt_list.append(yaw_delta_filt)
-            yaw_vel_list.append(yaw_vel)
-            yaw_vel_filt_list.append(yaw_vel_filt)
+            yaw_delta_list.append(yaw_delta) # deg
+            yaw_delta_filt_list.append(yaw_delta_filt) # deg
+            yaw_vel_list.append(yaw_vel) # deg/s
+            yaw_vel_filt_list.append(yaw_vel_filt) # deg/s
 
-            stepper_pos_list.append(stepper_pos)
-            stepper_pos_delta_list = list(np.diff(stepper_pos_list))
+            heading_list.append(heading) # rad
+            speed_list.append(speed) # mm/frame
+            servo_angle.append(servo_angle_list)
+
+            stepper_pos_list.append(stepper_pos) # deg
+            stepper_pos_delta_list = list(np.diff(stepper_pos_list)) # deg
             stepper_pos_delta_list.insert(0, None) # Add None object to beginning of list, so its length matches with time_list
 
     # Stop stepper:
@@ -178,6 +201,23 @@ def main():
     plt.legend()
 
     plt.show()
+
+    # Save data to csv:
+    cal_time = [datetime.datetime.fromtimestamp(t).strftime('"%Y_%m_%d, %H:%M:%S"') for t in time_list]
+    cal_time_filename = [datetime.datetime.fromtimestamp(t).strftime('"%Y_%m_%d_%H_%M_%S"') for t in time_list]
+
+    df = pd.DataFrame({"Elapsed time": time_list,
+                       "Calendar time": cal_time,
+
+                       "Yaw delta (deg)": yaw_delta_list,
+                       "Yaw filtered delta (deg)": yaw_delta_filt_list,
+                       "Yaw velocity (deg)": yaw_vel_list,
+                       "Yaw filtered velocity (deg)": yaw_vel_filt_list,
+
+                       "Stepper position (deg)": stepper_pos_list,
+                       "Stepper delta (deg)": stepper_pos_delta_list})
+    
+    df.to_csv(cal_time_filename[0], index=False)
     
 
 if __name__ == '__main__':
