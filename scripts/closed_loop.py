@@ -97,9 +97,9 @@ def main():
             # r_lab = [float(toks[12]), float(toks[13]), float(toks[14])]
             # posx = float(toks[15])
             # posy = float(toks[16])
-            # heading = float(toks[17]) # goes from 0 to 2pi
+            heading = float(toks[17]) # rads per frmae, goes from 0 to 2pi
             # step_dir = float(toks[18])
-            # step_mag = float(toks[19])
+            step_mag = float(toks[19]) # rads per frame, goes from 0 to 2pi; scale by ball radius
             # intx = float(toks[20])
             # inty = float(toks[21])
             # ts = float(toks[22])
@@ -119,8 +119,14 @@ def main():
             yaw_delta_filt = filt.update(yaw_delta)
             yaw_vel_filt = yaw_delta_filt / delta_ts
 
+            # Compute step size of linear servo :
+            ball_radius = 5 # mm
+            speed = step_mag * ball_radius
+            extend_delta = speed * np.cos(heading) # use heading or direction as theta?
+
             # Move!
-            stepper_pos = dev.run_with_feedback(-1 * yaw_vel_filt)
+            gain = 1 
+            stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt)
 
             print(f"time delta bw frames (s): {delta_ts}")
             print(f"yaw delta (deg): {yaw_delta}")
