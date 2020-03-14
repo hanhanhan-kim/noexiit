@@ -6,9 +6,11 @@ import socket
 import time
 import atexit
 import warnings
+import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from autostep import Autostep
 from butter_filter import ButterFilter
@@ -123,7 +125,7 @@ def main():
             print(f"time delta bw frames (s): {delta_ts}")
             print(f"yaw delta (deg): {yaw_delta}")
             print(f"filtered yaw delta (deg): {yaw_delta_filt}")
-            print(f"angular velocity (deg/s): {yaw_vel}")
+            print(f"yaw velocity (deg/s): {yaw_vel}")
             print(f"filtered yaw velocity (deg/s): {yaw_vel_filt}")
             print("\n")
     
@@ -178,6 +180,23 @@ def main():
     plt.legend()
 
     plt.show()
+
+    # Save data to csv:
+    cal_time = [datetime.datetime.fromtimestamp(t).strftime('"%Y_%m_%d, %H:%M:%S"') for t in time_list]
+    cal_time_filename = [datetime.datetime.fromtimestamp(t).strftime('"%Y_%m_%d_%H_%M_%S"') for t in time_list]
+
+    df = pd.DataFrame({"Elapsed time": time_list,
+                       "Calendar time": cal_time,
+
+                       "Yaw delta (deg)": yaw_delta_list,
+                       "Yaw filtered delta (deg)": yaw_delta_filt_list,
+                       "Yaw velocity (deg)": yaw_vel_list,
+                       "Yaw filtered velocity (deg)": yaw_vel_filt_list,
+
+                       "Stepper position (deg)": stepper_pos_list,
+                       "Stepper delta (deg)": stepper_pos_delta_list})
+    
+    df.to_csv(cal_time_filename[0], index=False)
     
 
 if __name__ == '__main__':
