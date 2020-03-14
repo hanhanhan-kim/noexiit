@@ -3,7 +3,9 @@
 from __future__ import print_function
 from autostep import Autostep
 import time
+import datetime
 import threading
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -120,11 +122,19 @@ def main(stepper):
         # Join the stepper thread back to the main:
         stepper_th.join()
 
-        t_cal_start = str(time.ctime(int(elapsed_time[0]) + t_start))
+        # Save results to a csv:
+        cal_time = [datetime.datetime.fromtimestamp(t).strftime('"%Y_%m_%d, %H:%M:%S"') for t in elapsed_time]
+        cal_time_filename = [datetime.datetime.fromtimestamp(t).strftime('"%Y_%m_%d_%H_%M_%S"') for t in elapsed_time]
+        
+        df = pd.DataFrame({'Elapsed time': elapsed_time, 
+                        'Calendar time': cal_time,
+                        'Stepper output (degs)': stepper_pos,
+                        'Servo output (degs)': servo_pos})
+        df.to_csv(cal_time_filename[0] + '_motor_commands.csv', index=False)
 
         stepper.print_params()
         # Save the stepper settings and servo extension angle: 
-        with open(t_cal_start + "_motor_settings.txt", "a") as f:
+        with open(cal_time_filename[0] + "_motor_settings.txt", "a") as f:
             print("autostep parameters", file=f)
             print("--------------------------", file=f)
             print('fullstep/rev:  {0}\n'.format(stepper.get_fullstep_per_rev()) +
@@ -144,17 +154,10 @@ def main(stepper):
             print("--------------------------", file=f)
             print("max extension angle: %f" %ext_angle, file =f)
 
-        # Save outputs to a csv:
-        df = pd.DataFrame({'Elapsed time': elapsed_time, 
-                        'Calendar time': [time.ctime(int() + t_start) for t in elapsed_time],
-                        'Stepper output (degs)': stepper_pos,
-                        'Servo output (degs)': servo_pos})
-        df.to_csv(t_cal_start + '_motor_commands.csv', index=False)
-
-        # Plot and save outputs:
+        # Plot and save results:
         plt.plot(elapsed_time, stepper_pos, 
                 elapsed_time, servo_pos)
-        plt.savefig(t_cal_start + '_motor_commands.png')
+        plt.savefig(cal_time_filename[0] + '_motor_commands.png')
         plt.show()
 
 
