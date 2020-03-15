@@ -47,7 +47,12 @@ See [Will Dickson's official repo](https://github.com/willdickson/autostep) for 
 - Array v1.1.2
 - [SparkFun's L6470 AutoDriver library](https://github.com/sparkfun/L6470-AutoDriver/tree/master/Libraries/Arduino) (commit `734489ea1eaeb96cfab712c96817e35d9c942eb8`).
 
+### Spinnaker 
+
+I use FLIR Blackfly S cameras (BFS-U3-04S2M-CS) and Spinnaker 1.27.0.48 for Ubuntu 18.04. This Spinnaker version is available for download [here](https://flir.app.boxcn.net/v/SpinnakerSDK/folder/74729115388). 
+
 ### FicTrac
+
 See [Richard Moore's official repo](https://github.com/rjdmoore/fictrac) for additional details. My cloned repo is rolled back to commit `f60cae42ec747ad8e050f46079b49df2f7698749`. I use the following dependencies:
 - `vcpkg` rolled back to commit `85211f3ab66e15c7669a1c14a25564afcf31e2e6`. 
 - [cmake v.3.15.0](https://github.com/Kitware/CMake/releases/tag/v3.15.0).
