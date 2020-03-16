@@ -145,6 +145,7 @@ def main():
             print(f"filtered yaw delta (deg): {yaw_delta_filt}")
             print(f"yaw velocity (deg/s): {yaw_vel}")
             print(f"filtered yaw velocity (deg/s): {yaw_vel_filt}")
+            print(f"servo extension delta (units?): {extend_by}")
             print("\n")
     
             # Check if we are done:
@@ -205,7 +206,7 @@ def main():
 
     # Save data to csv:
     cal_time = [datetime.datetime.fromtimestamp(t).strftime('"%Y_%m_%d, %H:%M:%S"') for t in time_list]
-    cal_time_filename = [datetime.datetime.fromtimestamp(t).strftime('"%Y_%m_%d_%H_%M_%S"') for t in time_list]
+    cal_time_filename = [datetime.datetime.fromtimestamp(t + t_start).strftime('"%Y_%m_%d_%H_%M_%S"') for t in time_list]
 
     df = pd.DataFrame({"Elapsed time": time_list,
                        "Calendar time": cal_time,
@@ -218,7 +219,7 @@ def main():
                        "Stepper position (deg)": stepper_pos_list,
                        "Stepper delta (deg)": stepper_pos_delta_list})
     
-    df.to_csv(cal_time_filename[0], index=False)
+    df.to_csv("HK_" + (cal_time_filename[0]).replace('"', '') + ".csv", index=False)
     
 
 if __name__ == '__main__':
