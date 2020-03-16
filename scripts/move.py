@@ -1,4 +1,4 @@
-#!/home/platyusa/.virtualenvs/behaviour/bin/python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 from autostep import Autostep
@@ -48,7 +48,7 @@ def pt_to_pt_and_poke(stepper, pos_list, ext_angle, wait_time):
         time.sleep(wait_time)
 
 
-def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
+def home(stepper, pre_exp_time = 5.0, homing_speed = 30):
 
     """
     Homes the stepper to the reed switch and the linear servo to retraction.
