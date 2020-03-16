@@ -52,6 +52,7 @@ def main():
                     continue
             else:
                 print("Please enter a valid servo extension angle from 0 to 180! \n")
+                continue
 
         # Reset servo to 0:
         stepper.set_servo_angle(0)
