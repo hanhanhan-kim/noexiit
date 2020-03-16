@@ -1,4 +1,4 @@
-#!/home/platyusa/.virtualenvs/behaviour/bin/python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 from autostep import Autostep
@@ -7,6 +7,7 @@ import threading
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import datetime
 
 from start_trigger import start_trigger
 from init_BIAS import init_BIAS
@@ -34,7 +35,7 @@ def main():
 
     # Set external cam trigger params:
     trig_port = "/dev/ttyUSB0"
-    duration = 60.0
+    duration = 120.0
 
     # Set motor function params:
     pos_list = [0.0, 90.0, 180.0, 360, 0.0]
@@ -103,11 +104,13 @@ def main():
         # SAVE DATA:
         #----------------------------------------------------------------------------------------
 
-        t_cal_start = str(time.ctime(int(elapsed_time[0]) + t_start))
+        # Format to calendar time:
+        cal_time = [datetime.datetime.fromtimestamp(t).strftime('"%Y_%m_%d, %H:%M:%S"') for t in elapsed_time]
+        cal_time_filename = [datetime.datetime.fromtimestamp(t).strftime('"%Y_%m_%d_%H_%M_%S"') for t in elapsed_time]
 
         stepper.print_params()
         # Save the stepper settings and servo extension angle: 
-        with open(t_cal_start + "_motor_settings.txt", "a") as f:
+        with open((cal_time_filename[0]).replace('"','') + "_motor_settings.txt", "a") as f:
             print("autostep parameters", file=f)
             print("--------------------------", file=f)
             print('fullstep/rev:  {0}\n'.format(stepper.get_fullstep_per_rev()) +
@@ -129,15 +132,15 @@ def main():
 
         # Save outputs to a csv:
         df = pd.DataFrame({'Elapsed time': elapsed_time, 
-                        'Calendar time': [time.ctime(int() + t_start) for t in elapsed_time],
+                        'Calendar time': cal_time,
                         'Stepper output (degs)': stepper_pos,
                         'Servo output (degs)': servo_pos})
-        df.to_csv(t_cal_start + '_motor_commands.csv', index=False)
+        df.to_csv((cal_time_filename[0]).replace('"','') + '_motor_commands.csv', index=False)
 
         # Plot and save outputs:
         plt.plot(elapsed_time, stepper_pos, 
                 elapsed_time, servo_pos)
-        plt.savefig(t_cal_start + '_motor_commands.png')
+        plt.savefig((cal_time_filename[0]).replace('"','') + '_motor_commands.png')
         plt.show()
 
 

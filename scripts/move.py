@@ -48,7 +48,7 @@ def pt_to_pt_and_poke(stepper, pos_list, ext_angle, wait_time):
         time.sleep(wait_time)
 
 
-def home(stepper, pre_exp_time = 5.0, homing_speed = 30):
+def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
 
     """
     Homes the stepper to the reed switch and the linear servo to retraction.
@@ -157,7 +157,7 @@ def main(stepper):
         # Plot and save results:
         plt.plot(elapsed_time, stepper_pos, 
                 elapsed_time, servo_pos)
-        plt.savefig(cal_time_filename[0] + '_motor_commands.png')
+        plt.savefig((cal_time_filename[0]).replace('"', '') + '_motor_commands.png')
         plt.show()
 
 
