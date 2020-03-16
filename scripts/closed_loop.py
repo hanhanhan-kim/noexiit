@@ -29,6 +29,7 @@ def main():
     dev.set_move_mode_to_max() # change to jog for debugging
     dev.enable()
     dev.print_params()
+
     dev.run(0.0)  
 
     HOST = '127.0.0.1'  # The server's hostname or IP address
@@ -161,7 +162,7 @@ def main():
 
             heading_list.append(heading) # rad
             speed_list.append(speed) # mm/frame
-            servo_angle.append(servo_angle_list)
+            servo_angle_list.append(servo_angle)
 
             stepper_pos_list.append(stepper_pos) # deg
             stepper_pos_delta_list = list(np.diff(stepper_pos_list)) # deg
