@@ -11,6 +11,7 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from scipy.interpolate import interp1d
 
 from autostep import Autostep
 from butter_filter import ButterFilter
@@ -133,19 +134,25 @@ def main():
             # TODO: Add filters to servo inputs?
             # TODO: Add an explicit gain term for servo?
             extend_delta = speed * np.cos(heading) # use heading or direction as theta? unit is mm/frame
-            servo_angle = dev.get_servo_angle()
-            extend_by = servo_angle + extend_delta 
+            # Map the range of my linear servo, 0 to 27 mm, to 0-180. Account for negatives: 
+            servo_map = interp1d([-27,27],[-180,180])
+            # Add extend_delta to current position:
+            extend_to = dev.get_servo_angle() + servo_map(extend_delta) 
+            if extend_to < 0:
+                extend_to = 0
+            elif extend_to > 180:
+                extend_to = 180
 
             # Move!
             gain = 1 
-            stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt, extend_by)
+            stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt, extend_to)
 
             print(f"time delta bw frames (s): {delta_ts}")
             print(f"yaw delta (deg): {yaw_delta}")
             print(f"filtered yaw delta (deg): {yaw_delta_filt}")
             print(f"yaw velocity (deg/s): {yaw_vel}")
             print(f"filtered yaw velocity (deg/s): {yaw_vel_filt}")
-            print(f"servo extension delta (units?): {extend_by}")
+            print(f"servo extension angle (0-180): {extend_to}")
             print("\n")
     
             # Check if we are done:
@@ -163,7 +170,7 @@ def main():
 
             heading_list.append(heading) # rad
             speed_list.append(speed) # mm/frame
-            servo_angle_list.append(servo_angle)
+            servo_angle_list.append(extend_to)
 
             stepper_pos_list.append(stepper_pos) # deg
             stepper_pos_delta_list = list(np.diff(stepper_pos_list)) # deg
@@ -205,7 +212,7 @@ def main():
     plt.show()
 
     # Save data to csv:
-    cal_time = [datetime.datetime.fromtimestamp(t).strftime('"%Y_%m_%d, %H:%M:%S"') for t in time_list]
+    cal_time = [datetime.datetime.fromtimestamp(t + t_start).strftime('"%Y_%m_%d, %H:%M:%S"') for t in time_list]
     cal_time_filename = [datetime.datetime.fromtimestamp(t + t_start).strftime('"%Y_%m_%d_%H_%M_%S"') for t in time_list]
 
     df = pd.DataFrame({"Elapsed time": time_list,
