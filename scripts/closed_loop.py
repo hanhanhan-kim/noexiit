@@ -62,7 +62,6 @@ def main():
         yaw_vel_filt_list = []
 
         heading_list = []
-        speed_list = []
         servo_angle_list = []
 
         stepper_pos_list = []
@@ -133,26 +132,27 @@ def main():
             # Compute extension size of linear servo:
             # TODO: Add filters to servo inputs?
             # TODO: Add an explicit gain term for servo?
-            extend_delta = speed * np.cos(heading) # use heading or direction as theta? unit is mm/frame
-            # Map the range of my linear servo, 0 to 27 mm, to 0-180. Account for negatives: 
-            servo_map = interp1d([-27,27],[-180,180])
-            # Add extend_delta to current position:
-            extend_to = dev.get_servo_angle() + servo_map(extend_delta) 
-            if extend_to < 0:
-                extend_to = 0
-            elif extend_to > 180:
-                extend_to = 180
+
+            # extend_delta = speed * np.cos(heading) # use heading or direction as theta? unit is mm/frame
+            # # Map the range of my linear servo, 0 to 27 mm, to 0-180. Account for negatives: 
+            # servo_map = interp1d([-27,27],[-180,180])
+            # # Add extend_delta to current position:
+            # extend_to = dev.get_servo_angle() + servo_map(extend_delta) 
+            # if extend_to < 0:
+            #     extend_to = 0
+            # elif extend_to > 180:
+            #     extend_to = 180
 
             # Move!
             gain = 1 
-            stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt, extend_to)
+            stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt)
 
             print(f"time delta bw frames (s): {delta_ts}")
             print(f"yaw delta (deg): {yaw_delta}")
             print(f"filtered yaw delta (deg): {yaw_delta_filt}")
             print(f"yaw velocity (deg/s): {yaw_vel}")
             print(f"filtered yaw velocity (deg/s): {yaw_vel_filt}")
-            print(f"servo extension angle (0-180): {extend_to}")
+            # print(f"servo extension angle (0-180): {extend_to}")
             print("\n")
     
             # Check if we are done:
@@ -169,8 +169,7 @@ def main():
             yaw_vel_filt_list.append(yaw_vel_filt) # deg/s
 
             heading_list.append(heading) # rad
-            speed_list.append(speed) # mm/frame
-            servo_angle_list.append(extend_to)
+            # servo_angle_list.append(extend_to)
 
             stepper_pos_list.append(stepper_pos) # deg
             stepper_pos_delta_list = list(np.diff(stepper_pos_list)) # deg
