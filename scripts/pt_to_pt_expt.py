@@ -105,8 +105,8 @@ def main():
         #----------------------------------------------------------------------------------------
 
         # Format to calendar time:
-        cal_time = [datetime.datetime.fromtimestamp(t).strftime('"%Y_%m_%d, %H:%M:%S"') for t in elapsed_time]
-        cal_time_filename = [datetime.datetime.fromtimestamp(t).strftime('"%Y_%m_%d_%H_%M_%S"') for t in elapsed_time]
+        cal_time = [datetime.datetime.fromtimestamp(t + t_start).strftime('"%Y_%m_%d, %H:%M:%S"') for t in elapsed_time]
+        cal_time_filename = [datetime.datetime.fromtimestamp(t + t_start).strftime('"%Y_%m_%d_%H_%M_%S"') for t in elapsed_time]
 
         stepper.print_params()
         # Save the stepper settings and servo extension angle: 
