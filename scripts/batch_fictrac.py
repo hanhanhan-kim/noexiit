@@ -19,7 +19,6 @@ for vid in vids:
     # Specify fictrac vid to src_fn:
     with open(config_fname, "r") as f:
         config = f.readlines()
-        # import pprint; pprint.pprint(config)
 
     new_lines = []
     for line in config:
@@ -28,8 +27,6 @@ for vid in vids:
             line = f"src_fn: {vid}\n"
 
         new_lines.append(line)
-    # pprint.pprint(new_lines)
-    # import ipdb; ipdb.set_trace()
 
     with open(config_fname, "w") as f:
         f.writelines(new_lines)
