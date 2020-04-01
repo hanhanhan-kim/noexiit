@@ -25,6 +25,7 @@ def main():
             the output files.")
     args = parser.parse_args()
 
+    #---------------------------------------------------------------------------
     root = str(args.root)
     nesting = int(args.nesting)
 
