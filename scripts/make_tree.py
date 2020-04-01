@@ -2,12 +2,12 @@
 
 import glob
 import os
-from os.path import join, split
+from os.path import join, split, isdir
 from shutil import move
 
 
 # Change root as needed:
-root = "/mnt/2TB/data_in/HK_20200317/"
+root = "/mnt/2TB/data_in/test/"
 
 # How many folders are nested from root?
 nesting = 1
@@ -18,6 +18,13 @@ subdirs = ["fictrac/",
            "pose/"]
 
 for folder in folders:
+
+    assert glob.glob(join(folder, "*.*")), \
+        f"The folder {folder} has only subdirectories and no loose files."
+
+    for subdir in subdirs:
+        assert not isdir(join(folder, subdir)), \
+            f"The folder {subdir} already exists"
 
     # Make my subdirs:
     [os.mkdir(join(folder, subdir)) for subdir in subdirs]
