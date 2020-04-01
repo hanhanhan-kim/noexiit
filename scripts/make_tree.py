@@ -6,10 +6,13 @@ from os.path import join, split
 from shutil import move
 
 
-# root = "/mnt/2TB/data_in/HK_20200317/"
-root = "/mnt/2TB/data_in/test/"
+# Change root as needed:
+root = "/mnt/2TB/data_in/HK_20200317/"
 
-folders = glob.glob(join(root, "*/"))
+# How many folders are nested from root?
+nesting = 1
+
+folders = glob.glob(join(root, nesting * "*/"))
 subdirs = ["fictrac/",
            "stimulus/",
            "pose/"]
@@ -25,6 +28,7 @@ for folder in folders:
     vids = fmfs + avis
 
     for vid in vids:
+        # This digit string is the FicTrac cam serial no.
         if "18475996" in vid:
             move(vid, join(folder, "fictrac/"))
         else:
