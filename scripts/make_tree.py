@@ -18,11 +18,11 @@ def main():
     parser.add_argument("root",
         help="Absolute path to the root directory. I.e. the outermost\
             folder that houses the output files.\
-            E.g. '/mnt/2TB/data_in/test/'")
+            E.g. /mnt/2TB/data_in/test/")
     parser.add_argument("nesting", 
         help="Specifies the number of folders that are nested from\
             the root directory. I.e. The number of folders between root\
-            and the subdirectory that houses the output files.")
+            and the subdirectory that houses the output files. E.g. 1")
     args = parser.parse_args()
 
     #---------------------------------------------------------------------------
