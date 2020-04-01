@@ -16,13 +16,13 @@ def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root",
-        help="Absolute path to the root directory. I.e. the outermost \
-            folder that houses the output files. \
+        help="Absolute path to the root directory. I.e. the outermost\
+            folder that houses the output files.\
             E.g. '/mnt/2TB/data_in/test/'")
     parser.add_argument("nesting", 
-        help="Specifies the number of folders that are nested from \
-            the root directory, before reaching the subdirectory that houses \
-            the output files.")
+        help="Specifies the number of folders that are nested from\
+            the root directory. I.e. The number of folders between root\
+            and the subdirectory that houses the output files.")
     args = parser.parse_args()
 
     #---------------------------------------------------------------------------
