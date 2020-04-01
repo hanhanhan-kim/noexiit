@@ -1,48 +1,68 @@
 #!/usr/bin/env python3
 
+"""
+Batch sorts NOEXIIT rig output files into subdirectories. 
+Simplifies batch processing with different analyses. 
+"""
+
 import glob
 import os
 from os.path import join, split, isdir
 from shutil import move
+import argparse
 
 
-# Change root as needed:
-root = "/mnt/2TB/data_in/test/"
+def main():
 
-# How many folders are nested from root?
-nesting = 1
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("root",
+        help="Absolute path to the root directory. I.e. the outermost \
+            folder that houses the output files. \
+            E.g. '/mnt/2TB/data_in/test/'")
+    parser.add_argument("nesting", 
+        help="Specifies the number of folders that are nested from \
+            the root directory, before reaching the subdirectory that houses \
+            the output files.")
+    args = parser.parse_args()
 
-folders = glob.glob(join(root, nesting * "*/"))
-subdirs = ["fictrac/",
-           "stimulus/",
-           "pose/"]
+    root = str(args.root)
+    nesting = int(args.nesting)
 
-for folder in folders:
+    folders = glob.glob(join(root, nesting * "*/"))
+    subdirs = ["fictrac/",
+               "stimulus/",
+               "pose/"]
 
-    assert glob.glob(join(folder, "*.*")), \
-        f"The folder {folder} has only subdirectories and no loose files."
+    for folder in folders:
 
-    for subdir in subdirs:
-        assert not isdir(join(folder, subdir)), \
-            f"The folder {subdir} already exists"
+        assert glob.glob(join(folder, "*.*")), \
+            f"The folder {folder} has only subdirectories and no loose files."
 
-    # Make my subdirs:
-    [os.mkdir(join(folder, subdir)) for subdir in subdirs]
+        for subdir in subdirs:
+            assert not isdir(join(folder, subdir)), \
+                f"The folder {subdir} already exists"
 
-    # Put videos in corresponding subdirs:
-    fmfs = glob.glob(join(folder, "*.fmf"))
-    avis = glob.glob(join(folder, "*.avi"))
-    vids = fmfs + avis
+        # Make my subdirs:
+        [os.mkdir(join(folder, subdir)) for subdir in subdirs]
 
-    for vid in vids:
-        # This digit string is the FicTrac cam serial no.
-        if "18475996" in vid:
-            move(vid, join(folder, "fictrac/"))
-        else:
-            move(vid, join(folder, "pose/"))
+        # Put videos in corresponding subdirs:
+        fmfs = glob.glob(join(folder, "*.fmf"))
+        avis = glob.glob(join(folder, "*.avi"))
+        vids = fmfs + avis
 
-    # Put non-vid files into stimulus subdir:
-    nonvids = glob.glob(join(folder, "*"))
-    for nonvid in nonvids:
-        if "motor" in nonvid:
-            move(nonvid, join(folder, "stimulus/"))
+        for vid in vids:
+            # This digit string is the FicTrac cam serial no.
+            if "18475996" in vid:
+                move(vid, join(folder, "fictrac/"))
+            else:
+                move(vid, join(folder, "pose/"))
+
+        # Put non-vid files into stimulus subdir:
+        nonvids = glob.glob(join(folder, "*"))
+        for nonvid in nonvids:
+            if "motor" in nonvid:
+                move(nonvid, join(folder, "stimulus/"))
+
+
+if __name__ == "__main__":
+    main()
