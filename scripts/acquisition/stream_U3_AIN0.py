@@ -1,4 +1,4 @@
-#!/home/platyusa/anaconda3/envs/behaviour/bin/python
+#!/usr/bin/env python3
 
 import sys
 import traceback

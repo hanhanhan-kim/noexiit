@@ -1,4 +1,4 @@
-#!/home/platyusa/.virtualenvs/behaviour/bin/python
+#!/usr/bin/env python3
 
 import requests
 import json
