@@ -25,7 +25,6 @@ def main():
             and the subdirectory that houses the output files. E.g. 1")
     args = parser.parse_args()
 
-    #---------------------------------------------------------------------------
     root = args.root
     nesting = args.nesting
 

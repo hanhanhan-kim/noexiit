@@ -28,7 +28,6 @@ def main():
              E.g. /mnt/2TB/data_in/HK_20200316/config_fictrac.txt")
     args = parser.parse_args()
 
-    #----------------------------------------------------------------------------
     root = args.root
     nesting = args.nesting
     vids = sorted(glob.glob(join(root, nesting * "*/", "fictrac/*.avi")))
