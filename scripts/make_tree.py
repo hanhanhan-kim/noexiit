@@ -19,15 +19,15 @@ def main():
         help="Absolute path to the root directory. I.e. the outermost\
             folder that houses the output files.\
             E.g. /mnt/2TB/data_in/test/")
-    parser.add_argument("nesting", 
+    parser.add_argument("nesting", type=int,
         help="Specifies the number of folders that are nested from\
             the root directory. I.e. The number of folders between root\
             and the subdirectory that houses the output files. E.g. 1")
     args = parser.parse_args()
 
     #---------------------------------------------------------------------------
-    root = str(args.root)
-    nesting = int(args.nesting)
+    root = args.root
+    nesting = args.nesting
 
     folders = glob.glob(join(root, nesting * "*/"))
     subdirs = ["fictrac/",
