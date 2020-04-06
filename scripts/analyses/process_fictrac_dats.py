@@ -152,8 +152,14 @@ def plot_fictrac_fft(dfs, time_col, val_col, even=False,
 
         p1, p2 = bokeh_freq_domain(freq, amp)
 
-        output_file(f"frequency_domain_{animal}.html", 
-                    title=f"frequency_domain_{animal}")
+        p1.title.text = f"frequency domain: animal {animal}"
+        p1.title.text_font_size = "16pt"
+        p1.yaxis.axis_label_text_font_size = '12pt'
+        p2.yaxis.axis_label_text_font_size = '12pt'
+        p2.xaxis.axis_label_text_font_size = '12pt'
+
+        output_file(f"fictrac_freqs_{animal}.html", 
+                    title=f"fictrac_freqs_{animal}")
         show(gridplot([p1, p2], ncols=1))
         
         
