@@ -129,6 +129,10 @@ def plot_fictrac_fft(dfs, time_col, val_col, even=False,
 
         assert (len(df[time_col] == len(df[val_col]))), \
             "time and val are different lengths! They must be the same."
+        assert (time_col in dfs), \
+            f"The column, {time_col}, is not in the input dataframe, {dfs}"
+        assert (val_col in dfs), \
+            f"The column, {val_col}, is not in the input dataframe, {dfs}"
 
         time = list(df[str(time_col)])
         val = list(df[str(val_col)])
@@ -154,13 +158,14 @@ def plot_fictrac_fft(dfs, time_col, val_col, even=False,
 
         p1.title.text = f"frequency domain: animal {animal}"
         p1.title.text_font_size = "16pt"
-        p1.yaxis.axis_label_text_font_size = '12pt'
-        p2.yaxis.axis_label_text_font_size = '12pt'
-        p2.xaxis.axis_label_text_font_size = '12pt'
+        p1.yaxis.axis_label_text_font_size = "12pt"
+        p2.yaxis.axis_label_text_font_size = "12pt"
+        p2.xaxis.axis_label_text_font_size = "12pt"
 
         output_file(f"fictrac_freqs_{animal}.html", 
                     title=f"fictrac_freqs_{animal}")
         show(gridplot([p1, p2], ncols=1))
         
-        
+        # TODO: Add .png and .svg programmatic saving in a subdir--maybe in each FicTrac subdir?
+
             
