@@ -7,9 +7,13 @@ Process and visualize FicTrac data with helper functions.
 import numpy as np
 import pandas as pd
 import scipy.interpolate as spi
+import scipy.signal as sps
+import scipy.signal as sps
 
-from bokeh.plotting import figure, output_file, show
+from bokeh.plotting import figure
+from bokeh.io import output_file, show, export_png, export_svgs
 from bokeh.layouts import gridplot
+from bokeh.palettes import brewer
 
 from fourier_transform import fft, bokeh_freq_domain
 
@@ -102,9 +106,9 @@ def parse_dats(names, framerate, ball_radius):
     return dfs
 
 
-def plot_fictrac_fft(dfs, time_col, val_col, even=False, 
+def plot_fictrac_fft(dfs, val_col, time_col, even=False, 
                      window=np.hanning, pad=1, save=True):
-    # dfs.time and dfs.val? will it work?
+    
     """
     Perform a Fourier transform on FicTrac data for each animal. Generate \
     frequency domain plots for each animal. Outputs plots. 
@@ -114,13 +118,13 @@ def plot_fictrac_fft(dfs, time_col, val_col, even=False,
     dfs (DataFrame): Concatenated dataframe of FicTrac data generated from \
     parse_dats()
 
-    time_col (str): Column name of the dfs dataframe that specifies time. 
-
     val_col (str): Column name of the dfs dataframe to be Fourier-transformed.  
+
+    time_col (str): Column name of the dfs dataframe that specifies time. 
 
     even (bool): If False, will interpolate even sampling. 
 
-    save (bool): If True, will save plots. 
+    save (bool): If True, will save plots. Default is true. 
     """
 
     for animal in range(len(dfs["animal"].unique())):
@@ -133,17 +137,18 @@ def plot_fictrac_fft(dfs, time_col, val_col, even=False,
             f"The column, {time_col}, is not in the input dataframe, {dfs}"
         assert (val_col in dfs), \
             f"The column, {val_col}, is not in the input dataframe, {dfs}"
+        assert ("animal" in dfs), \
+            f"The column 'animal' is not in in the input dataframe, {dfs}"
 
         time = list(df[str(time_col)])
         val = list(df[str(val_col)])
 
-
+        # Fourier-transform:
         f = spi.interp1d(time, val)
 
         if even is False:
             time_interp = np.linspace(time[0], time[-1], len(time))
             val_interp = f(time_interp)
-
         else:
             time_interp = time
             val_interp = val
@@ -154,6 +159,7 @@ def plot_fictrac_fft(dfs, time_col, val_col, even=False,
                             window=window, 
                             post=True)
 
+        # Plot:
         p1, p2 = bokeh_freq_domain(freq, amp)
 
         p1.title.text = f"frequency domain: animal {animal}"
@@ -161,11 +167,102 @@ def plot_fictrac_fft(dfs, time_col, val_col, even=False,
         p1.yaxis.axis_label_text_font_size = "12pt"
         p2.yaxis.axis_label_text_font_size = "12pt"
         p2.xaxis.axis_label_text_font_size = "12pt"
+        p = gridplot([p1, p2], ncols=1)
 
-        output_file(f"fictrac_freqs_{animal}.html", 
-                    title=f"fictrac_freqs_{animal}")
-        show(gridplot([p1, p2], ncols=1))
+        # Save:
+        if save is True:
+            # Bokeh does not atm support gridplot svg exports
+            export_png(p, f"fictrac_freqs_{animal}.png")
+            output_file(f"fictrac_freqs_{animal}.html", 
+                        title=f"fictrac_freqs_{animal}")
+        show(p)
         
-        # TODO: Add .png and .svg programmatic saving in a subdir--maybe in each FicTrac subdir?
+        # TODO: save in each FicTrac subdir?            
 
+
+def plot_fictrac_filter(dfs, val_col, time_col, 
+                        order, cutoff_freq, framerate, 
+                        val_label=None, time_label=None,
+                        view_perc=1.0, 
+                        save=True):
+    
+    """
+    Apply a low-pass Butterworth filter on offline FicTrac data. 
+    # TODO: Compute framerate, rather than accept as arg
+    # TODO: FINISH DOCSTRING!
+    """
+    
+    assert (0 <= view_perc <= 1), \
+        f"The view percentage, {view_perc}, must be between 0 and 1."
+    
+    for animal in range(len(dfs["animal"].unique())):
+        
+        df = dfs.loc[dfs["animal"]==animal]
+        
+        assert (len(df[time_col] == len(df[val_col]))), \
+            "time and val are different lengths! They must be the same."
+        assert (time_col in dfs), \
+            f"The column, {time_col}, is not in the input dataframe, {dfs}"
+        assert (val_col in dfs), \
+            f"The column, {val_col}, is not in the input dataframe, {dfs}"
+        assert ("animal" in dfs), \
+            f"The column 'animal' is not in in the input dataframe, {dfs}"
+        
+        time = list(df[str(time_col)])
+        val = val = list(df[str(val_col)])
+        
+        # Design low-pass filter:
+        b, a = sps.butter(order, cutoff_freq, fs=framerate)
+        # Apply filter:
+        val_filtered = sps.lfilter(b, a, val)
+        
+        # View the first _% of the data:
+        domain = int(view_perc * len(val))
+        
+        # Plot:
+        if val_label is None:
+            val_label = val_col.replace("_", " ")
+        if time_label is None:
+            time_label = time_col.replace("_", " ")
+        
+        p = figure(
+        background_fill_color="#efe8e2",
+        width=1600,
+        height=500,
+        x_axis_label=time_label,
+        y_axis_label=val_label 
+        )
+
+        p.line(
+            x=time[:domain],
+            y=val[:domain],
+            color=brewer["Paired"][3][0],
+            legend_label="raw"
+        )
+        p.line(
+            x=time[:domain],
+            y=val_filtered[:domain],
+            color=brewer["Paired"][3][1],
+            legend_label="filtered"
+        )
+        
+        p.title.text = f"animal {animal}, first {view_perc * 100}% with butterworth filter: cutoff={cutoff_freq} Hz, order={order}"
+        p.title.text_font_size = "14pt"
+        p.yaxis.axis_label_text_font_size = "12pt"
+        p.yaxis.axis_label_text_font_size = "12pt"
+        p.xaxis.axis_label_text_font_size = "12pt"
+        
+        # Save:
+        if save is True:
+            filename = f"fictrac_filter_{animal}"
             
+            p.output_backend = "svg"
+            export_svgs(p, filename=filename + ".svg")
+            export_png(p, filename=filename + ".png")
+            output_file(filename=filename + ".html", 
+                        title=filename)
+            # In case this script is run in Jupyter, change output_backend 
+            # back to "canvas" for faster performance:
+            p.output_backend = "canvas"
+
+        show(p)
