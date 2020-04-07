@@ -152,13 +152,13 @@ def plot_fictrac_fft(dfs, val_col, time_col,
     
     if both show_plots and save are True, will show plots and save .png and .html 
         plots. 
-        
+
     if both show_plots and save are False, will return nothing. 
     """
     if ("sec" or "secs") not in time_col:
-        safe_secs = input(f"The substrings 'sec' or 'secs' was not detected in 
-            the 'time_col' variable, {time_col}. The units of the values in 
-            {time_col} MUST be in seconds. If the units are in seconds, please 
+        safe_secs = input(f"The substrings 'sec' or 'secs' was not detected in \
+            the 'time_col' variable, {time_col}. The units of the values in \
+            {time_col} MUST be in seconds. If the units are in seconds, please \
             input 'y'. Otherwise input 'n' to exit.")
         while True:
             if safe_secs.lower() == "y":
