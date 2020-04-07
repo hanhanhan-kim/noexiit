@@ -10,7 +10,7 @@ import scipy.interpolate as spi
 import scipy.signal as sps
 import scipy.signal as sps
 
-from bokeh.io import output_file, show, export_png, export_svgs
+from bokeh.io import output_file, export_png, export_svgs, show
 from bokeh.plotting import figure
 from bokeh.models import Span
 from bokeh.layouts import gridplot
@@ -110,7 +110,7 @@ def parse_dats(names, framerate, ball_radius):
 def plot_fictrac_fft(dfs, val_col, time_col, 
                     even=False, window=np.hanning, pad=1, 
                     cutoff_freq=None, 
-                    save=True, show=True):
+                    save=True, show_plots=True):
     
     """
     Perform a Fourier transform on FicTrac data for each animal. Generate \
@@ -130,11 +130,15 @@ def plot_fictrac_fft(dfs, val_col, time_col,
     cutoff_freq (float): x-intercept value for plotting a vertical line. \
         To be used to visualize a candidate cut-off frequency. Default is None.
 
-    save (bool): If True, will save plots. Default is True. 
+    save (bool): If True, will save .png plots. Default is True. 
 
-    show (bool): If True, will show plots, but will not output Bokeh plotting \
-        objects. If False, will not show plots, but will output a list of Bokeh \
-        plotting objects. Default is True.
+    show_plots (bool): If True, will show and save .html plots, but will not \
+        output Bokeh plotting objects. If False, will not show or save .html \
+        plots, but will output a list of Bokeh plotting objects. Default is True.
+
+    Returns:
+    ---------
+
     """
 
     bokeh_ps = []
@@ -197,12 +201,13 @@ def plot_fictrac_fft(dfs, val_col, time_col,
             export_png(p, f"fictrac_freqs_{animal}.png")
             output_file(f"fictrac_freqs_{animal}.html", 
                         title=f"fictrac_freqs_{animal}")
-        if show is True:
+
+        if show_plots is True:
             show(p)
         else:
             bokeh_ps.append(p)
         
-    if show is False:
+    if show_plots is False:
         return bokeh_ps
 
         # TODO: save in each FicTrac subdir? I think output_file 
@@ -213,7 +218,7 @@ def plot_fictrac_filter(dfs, val_col, time_col,
                         order, cutoff_freq, framerate, 
                         val_label=None, time_label=None,
                         view_perc=1.0, 
-                        show=True, save=True):
+                        show_plots=True, save=True):
     
     """
     Apply a low-pass Butterworth filter on offline FicTrac data. 
@@ -222,11 +227,11 @@ def plot_fictrac_filter(dfs, val_col, time_col,
 
     Parameters:
     -----------
-    save (bool): If True, will save plots. Default is True. 
+    save (bool): If True, will save .svg and .png plots. Default is True. 
 
-    show (bool): If True, will show plots, but will not output Bokeh plotting \
-        objects. If False, will not show plots, but will output a list of Bokeh \
-        plotting objects. Default is True.
+    show_plots (bool): If True, will show and save .html plots, but will not \
+        output Bokeh plotting objects. If False, will not show or save .html \
+        plots, but will output a list of Bokeh plotting objects. Default is True.
     """
     
     assert (0 <= view_perc <= 1), \
@@ -299,14 +304,14 @@ def plot_fictrac_filter(dfs, val_col, time_col,
             export_png(p, filename=filename + ".png")
             output_file(filename=filename + ".html", 
                         title=filename)
+            
+        if show_plots is True:
             # In case this script is run in Jupyter, change output_backend 
             # back to "canvas" for faster performance:
             p.output_backend = "canvas"
-
-        if show is True:
             show(p)
         else:
             bokeh_ps.append(p)
         
-    if show is False:
+    if show_plots is False:
         return bokeh_ps
