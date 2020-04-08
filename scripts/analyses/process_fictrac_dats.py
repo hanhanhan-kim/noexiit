@@ -12,6 +12,7 @@ import argparse
 import glob
 from sys import exit
 from os.path import join
+from os import mkdir
 import re
 
 import numpy as np
@@ -231,8 +232,7 @@ def plot_fictrac_fft(dfs, val_col, time_col,
     if both show_plots and save are False, will return nothing. 
     """
     if ("sec" or "secs") not in time_col:
-        safe_secs = input(f"The substrings 'sec' or 'secs' was not detected in the 'time_col' variable, {time_col}. The units of the values in \
-            {time_col} MUST be in seconds. If the units are in seconds, please input 'y'. Otherwise input anything else to exit.")
+        safe_secs = input(f"The substrings 'sec' or 'secs' was not detected in the 'time_col' variable, {time_col}. The units of the values in {time_col} MUST be in seconds. If the units are in seconds, please input 'y'. Otherwise input anything else to exit.")
         while True:
             if safe_secs.lower() == "y":
                 break
@@ -308,8 +308,7 @@ def plot_fictrac_fft(dfs, val_col, time_col,
     if show_plots is False:
         return bokeh_ps
 
-        # TODO: save in each FicTrac subdir? I think output_file 
-        # has a root_dir arg         
+        # TODO: save in each FicTrac subdir?    
 
 
 def plot_fictrac_filter(dfs, val_col, time_col, 
@@ -520,13 +519,17 @@ def main():
     save = args.nosave
     show_plots = args.show
     
+    # TODO: Figure out how to save each individual animal bokeh plot to its 
+    # respective animal folder. 
+    # mkdir(join(root, "plots"))
+
     # Parse FicTrac inputs:
     concat_df = parse_dats(root, nesting, ball_radius, framerate)
 
     # Plot FFT frequency domain:
     plot_fictrac_fft(concat_df, 
-                    val_col, 
-                    time_col, 
+                     val_col, 
+                     time_col, 
                      cutoff_freq=cutoff_freq, 
                      show_plots=show_plots, 
                      save=save)
@@ -541,7 +544,12 @@ def main():
                         view_perc=view_perc,
                         show_plots=False, 
                         save=save) 
+    
+    # TODO: In the future I might want to generate population aggregate plots. 
+    # My current plots are all for individual animals. I might want an 'agg' 
+    # switch in my argparser in the future, so I can choose to output just 
+    # individual animal plots, or also population aggregate plots. 
 
-
+    
 if __name__ == "__main__":
     main()
