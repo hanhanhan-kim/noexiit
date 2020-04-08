@@ -313,7 +313,8 @@ def plot_fictrac_fft(dfs, val_col, time_col,
 
 
 def plot_fictrac_filter(dfs, val_col, time_col, 
-                        framerate, order, cutoff_freq,  
+                        order, cutoff_freq,  
+                        framerate=None,
                         val_label=None, time_label=None,
                         view_perc=1.0, 
                         show_plots=True, save=True):
@@ -330,11 +331,13 @@ def plot_fictrac_filter(dfs, val_col, time_col,
 
     time_col (str): Column name of the dfs dataframe that specifies time. 
 
-    framerate (float): The acquisition framerate of the FicTrac camera.
-
     order (int): Order of the filter.
 
-    cutoff_freq (float): The cutoff frequency for the filter in Hz.  
+    cutoff_freq (float): The cutoff frequency for the filter in Hz.
+
+    framerate (float): The mean framerate used for acquisition with FicTrac. 
+        If None, will use the average frame rate as computed in the input 'dfs'. 
+        Can be overridden with a provided manual value. Default is None.
 
     val_label (str): Label for the plot's y-axis. 
 
@@ -386,9 +389,12 @@ def plot_fictrac_filter(dfs, val_col, time_col,
         assert ("animal" in dfs), \
             f"The column 'animal' is not in in the input dataframe, {dfs}"
         
+        if framerate is None:
+            framerate = df["avg_framerate"][0]
+
         time = list(df[str(time_col)])
         val = val = list(df[str(val_col)])
-        
+
         # Design low-pass filter:
         b, a = sps.butter(int(order), float(cutoff_freq), fs=framerate)
         # Apply filter:
@@ -518,18 +524,23 @@ def main():
     concat_df = parse_dats(root, nesting, ball_radius, framerate)
 
     # Plot FFT frequency domain:
-    plot_fictrac_fft(concat_df, val_col, time_col, 
+    plot_fictrac_fft(concat_df, 
+                    val_col, 
+                    time_col, 
                      cutoff_freq=cutoff_freq, 
-                     show_plots=show_plots, save=save)
+                     show_plots=show_plots, 
+                     save=save)
 
     # Plot filter:
     plot_fictrac_filter(concat_df, val_col, time_col, 
                         framerate = framerate,
                         val_label=val_label, 
                         time_label=time_label,
-                        order = order, cutoff_freq = cutoff_freq, 
+                        cutoff_freq = cutoff_freq, 
+                        order = order, 
                         view_perc=view_perc,
-                        show_plots=False, save=save) 
+                        show_plots=False, 
+                        save=save) 
 
 
 if __name__ == "__main__":
