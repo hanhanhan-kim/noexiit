@@ -58,10 +58,10 @@ def parse_dats(names, framerate, ball_radius):
     confirm = input("The ball_radius argument must be in mm. Confirm by inputting \
         'y'. Otherwise, hit any other key to quit.")
     while True:
-            if confirm.lower() == "y":
-                break
-            else:
-                exit("Re-run this function with a ball_radius that's in mm.")
+        if confirm.lower() == "y":
+            break
+        else:
+            exit("Re-run this function with a ball_radius that's in mm.")
 
     headers = [ "frame_cntr",
                 "delta_rotn_vector_cam_x", 
