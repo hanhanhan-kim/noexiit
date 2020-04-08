@@ -142,6 +142,10 @@ def main():
             #     extend_to = 0
             # elif extend_to > 180:
             #     extend_to = 180
+            # # Move!
+            # gain = 1
+            # stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt)
+
 
             # Move!
             gain = 1 
