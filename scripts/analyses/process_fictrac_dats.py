@@ -11,6 +11,7 @@ low-pass Butterworth filtering, ___.
 import argparse
 import glob
 from sys import exit
+from os.path import join
 
 import numpy as np
 import pandas as pd
@@ -45,7 +46,6 @@ def parse_dats(names, framerate, ball_radius):
     framerate: The framerate of the acquisition of the videos FicTrac 
     analyzes. 
     # TODO: compute the framerate, rather than take as an arg
-    # TODO: input asking for verification that the ball_radius is in mm
 
     ball_radius (float): The radius of the ball (mm) the insect was on. 
     Used to compute the real-world values in mm.  
@@ -54,6 +54,15 @@ def parse_dats(names, framerate, ball_radius):
     --------
     A single Pandas dataframe that concatenates all the input .dat files.
     '''
+
+    confirm = input("The ball_radius argument must be in mm. Confirm by inputting \
+        'y'. Otherwise, hit any other key to quit.")
+    while True:
+            if confirm.lower() == "y":
+                break
+            else:
+                exit("Re-run this function with a ball_radius that's in mm.")
+
     headers = [ "frame_cntr",
                 "delta_rotn_vector_cam_x", 
                 "delta_rotn_vector_cam_y", 
@@ -168,7 +177,7 @@ def plot_fictrac_fft(dfs, val_col, time_col,
         safe_secs = input(f"The substrings 'sec' or 'secs' was not detected in \
             the 'time_col' variable, {time_col}. The units of the values in \
             {time_col} MUST be in seconds. If the units are in seconds, please \
-            input 'y'. Otherwise input 'n' to exit.")
+            input 'y'. Otherwise input anything else to exit.")
         while True:
             if safe_secs.lower() == "y":
                 break
@@ -429,30 +438,23 @@ def main():
         help="If enabled, does not save the plots. By default, saves the plots.")
     parser.add_argument("-sh", "--show", action="store_true", default=False,
         help="If enabled, shows the plots. By default, does not show the plots.")
-    
     args = parser.parse_args()
 
     root = args.root
-    nesting = args.nesting #TODO: use nesting and root
-
+    nesting = args.nesting 
     framerate = args.framerate #TODO: compute, rather than input
     ball_radius = args.ball_radius # mm
-
     val_col = args.val_col
     val_label = args.val_label
     time_col = args.time_col
     time_label = args.time_label
-
     cutoff_freq = args.cutoff_freq
     order = args.order
     view_perc =args.view_percent
-
     save = args.save
     show_plots = args.show
-
-    "*.dat"
-
-    dats = sorted(glob.glob(root))
+    
+    dats = sorted(glob.glob(join(root, nesting * "*/", "*.dat")))
     concat_df = parse_dats(dats, framerate, ball_radius)
 
     # Plot FFT frequency domain:
