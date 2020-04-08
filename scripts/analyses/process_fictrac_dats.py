@@ -94,8 +94,7 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
     A single Pandas dataframe that concatenates all the input .dat files.
     """
 
-    confirm = input(f"The ball_radius argument must be in mm. Confirm by inputting \
-        'y'. Otherwise, hit any other key to quit.")
+    confirm = input(f"The ball_radius argument must be in mm. Confirm by inputting 'y'. Otherwise, hit any other key to quit.")
     while True:
         if confirm.lower() == "y":
             break
@@ -232,10 +231,8 @@ def plot_fictrac_fft(dfs, val_col, time_col,
     if both show_plots and save are False, will return nothing. 
     """
     if ("sec" or "secs") not in time_col:
-        safe_secs = input(f"The substrings 'sec' or 'secs' was not detected in \
-            the 'time_col' variable, {time_col}. The units of the values in \
-            {time_col} MUST be in seconds. If the units are in seconds, please \
-            input 'y'. Otherwise input anything else to exit.")
+        safe_secs = input(f"The substrings 'sec' or 'secs' was not detected in the 'time_col' variable, {time_col}. The units of the values in \
+            {time_col} MUST be in seconds. If the units are in seconds, please input 'y'. Otherwise input anything else to exit.")
         while True:
             if safe_secs.lower() == "y":
                 break
@@ -427,7 +424,7 @@ def plot_fictrac_filter(dfs, val_col, time_col,
             legend_label="filtered"
         )
         
-        p.title.text = f"animal {animal}, first {view_perc * 100}% with butterworth filter: cutoff={cutoff_freq} Hz, order={order}"
+        p.title.text = f"animal {animal}, first {view_perc * 100}% with butterworth filter: cutoff = {cutoff_freq} Hz, order = {order}"
         p.title.text_font_size = "14pt"
         p.yaxis.axis_label_text_font_size = "12pt"
         p.yaxis.axis_label_text_font_size = "12pt"
@@ -517,6 +514,7 @@ def main():
     save = args.nosave
     show_plots = args.show
     
+    # Parse FicTrac inputs:
     concat_df = parse_dats(root, nesting, ball_radius, framerate)
 
     # Plot FFT frequency domain:
