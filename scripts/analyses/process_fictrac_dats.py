@@ -323,7 +323,6 @@ def plot_fictrac_filter(dfs, val_col, time_col,
     
     """
     Apply a low-pass Butterworth filter on offline FicTrac data. 
-    # TODO: Compute framerate, rather than accept as arg
 
     Parameters:
     -----------
@@ -394,7 +393,7 @@ def plot_fictrac_filter(dfs, val_col, time_col,
         val = val = list(df[str(val_col)])
         
         # Design low-pass filter:
-        b, a = sps.butter(int(order), cutoff_freq, fs=framerate)
+        b, a = sps.butter(int(order), float(cutoff_freq), fs=framerate)
         # Apply filter:
         val_filtered = sps.lfilter(b, a, val)
         
@@ -467,24 +466,14 @@ def main():
         help="Specifies the number of folders that are nested from \
             the root directory. I.e. The number of folders between root \
             and the subdirectory that houses the .dat and .log files. E.g. 1")
-    parser.add_argument("framerate", nargs="?", default=None, type=float,
-        help="The mean framerate used for acquisition with FicTrac. \
-            If None, will compute the average framerate. Can be overridden with a \
-            provided manual value. Default is None.") 
     parser.add_argument("ball_radius", type=float,
         help="The radius of the ball used with the insect-on-a-ball tracking rig. \
             Must be in mm.")
     parser.add_argument("val_col", 
         help="Column name of the Pandas dataframe to be used as the dependent \
             variable for analyses.")
-    parser.add_argument("val_label", nargs="?", default=None,
-        help="y-axis label of the generated plots. Default is a formatted \
-            val_col")
     parser.add_argument("time_col",
         help="Column name of the Pandas dataframe specifying the time.")
-    parser.add_argument("time_label", nargs="?", default=None,
-        help="time-axis label of the generated plots. Default is a formatted \
-            time_col")
     parser.add_argument("cutoff_freq", type=float,
         help="Cutoff frequency to be used for filtering the FicTrac data.")
     parser.add_argument("order", type=int,
@@ -494,6 +483,18 @@ def main():
             percentage. Useful for assessing the effectieness of the filter over \
             longer timecourses. Default is set to 1, i.e. plot the data over the \
             entire timecourse. Must be a value between 0 and 1.")
+
+    parser.add_argument("val_label", nargs="?", default=None,
+        help="y-axis label of the generated plots. Default is a formatted \
+            val_col")
+    parser.add_argument("time_label", nargs="?", default=None,
+        help="time-axis label of the generated plots. Default is a formatted \
+            time_col")
+    parser.add_argument("framerate", nargs="?", default=None, type=float,
+        help="The mean framerate used for acquisition with FicTrac. \
+            If None, will compute the average framerate. Can be overridden with a \
+            provided manual value. Default is None.") 
+
     parser.add_argument("-ns", "--nosave", action="store_false", default=True,
         help="If enabled, does not save the plots. By default, saves the plots.")
     parser.add_argument("-sh", "--show", action="store_true", default=False,
@@ -504,14 +505,16 @@ def main():
     nesting = args.nesting 
     framerate = args.framerate 
     ball_radius = args.ball_radius # mm
+
     val_col = args.val_col
     val_label = args.val_label
     time_col = args.time_col
     time_label = args.time_label
     cutoff_freq = args.cutoff_freq
     order = args.order
+
     view_perc =args.view_percent
-    save = args.save
+    save = args.nosave
     show_plots = args.show
     
     concat_df = parse_dats(root, nesting, ball_radius, framerate)
@@ -524,9 +527,9 @@ def main():
     # Plot filter:
     plot_fictrac_filter(concat_df, val_col, time_col, 
                         framerate = framerate,
-                        order = order, cutoff_freq = cutoff_freq, 
                         val_label=val_label, 
                         time_label=time_label,
+                        order = order, cutoff_freq = cutoff_freq, 
                         view_perc=view_perc,
                         show_plots=False, save=save) 
 
