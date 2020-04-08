@@ -469,3 +469,7 @@ def main():
                         time_label=time_label,
                         view_perc=view_perc,
                         show_plots=False, save=save) 
+
+
+if __name__ == "__main__":
+    main()
