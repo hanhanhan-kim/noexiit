@@ -303,7 +303,7 @@ def plot_fictrac_fft(dfs, val_col, time_col,
         # Plot:
         p1, p2 = bokeh_freq_domain(freq, amp)
 
-        p1.title.text = f"frequency domain: animal {i}"
+        p1.title.text = f"frequency domain"
         p1.title.text_font_size = "16pt"
         p1.yaxis.axis_label_text_font_size = "12pt"
         p2.yaxis.axis_label_text_font_size = "12pt"
