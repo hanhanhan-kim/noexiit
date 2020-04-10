@@ -2,7 +2,7 @@
 data/
 
 # Sandbox:
-scripts/sandbox/
+software/sandbox/
 
 # Special output files:
 *.noexiit
