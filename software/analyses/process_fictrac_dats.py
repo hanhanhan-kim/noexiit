@@ -156,16 +156,17 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
         df['frame_cntr'] = df['frame_cntr'].astype(int)
         df['seq_cntr'] = df['seq_cntr'].astype(int)
 
-        # Compute real-world values:
-        df['X_mm'] = df['integrat_x_posn'] * ball_radius
-        df['Y_mm'] = df['integrat_y_posn'] * ball_radius
-        df['speed_mm'] = df['animal_mvmt_spd'] * ball_radius
-
+        # Compute average framerate:
         if framerate is None:
             # Add framerates from .logs:
             f_rate = framerates[i] 
 
         df['avg_framerate'] = f_rate
+
+        # Compute real-world values:
+        df['X_mm'] = df['integrat_x_posn'] * ball_radius
+        df['Y_mm'] = df['integrat_y_posn'] * ball_radius
+        df['speed_mm'] = df['animal_mvmt_spd'] * f_rate * ball_radius
 
         # Compute elapsed time:
         df['secs_elapsed'] = df['frame_cntr'] / f_rate
