@@ -1,5 +1,5 @@
 # NOEXIIT
-> "*Hell is other [insects].*"
+> "*Hell is other [insect species].*"
 >
 > \- Most non-myrmecophilous beetles
 
