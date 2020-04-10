@@ -23,9 +23,10 @@ import scipy.signal as sps
 
 from bokeh.io import output_file, export_png, export_svgs, show
 from bokeh.plotting import figure
-from bokeh.models import Span
+from bokeh.models import ColorBar, ColumnDataSource, Span
 from bokeh.layouts import gridplot
 from bokeh.palettes import brewer
+import colorcet as cc
 
 from fourier_transform import fft, bokeh_freq_domain
 
