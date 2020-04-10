@@ -559,17 +559,11 @@ def main():
     for i, folder in enumerate(folders):
 
         mkdir(join(folder, "plots/"))
-
         df = dfs_list[i]
 
-        import ipdb; ipdb.set_trace() # I think the problem is not this loop, but the loop I use in each plotting fxn. 
-
         if nosave is False:
-
             save_path = join(folder, "plots/")
-
         elif nosave is True:
-
             save_path = None
 
         # Plot FFT frequency domain:
