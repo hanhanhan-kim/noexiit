@@ -490,12 +490,13 @@ def main():
     parser = argparse.ArgumentParser(description = __doc__)
     parser.add_argument("root",
         help="Absolute path to the root directory. I.e. the outermost \
-            folder that houses the output files.\
+            folder that houses the FicTrac files.\
             E.g. /mnt/2TB/data_in/test/")
     parser.add_argument("nesting", type=int,
         help="Specifies the number of folders that are nested from \
             the root directory. I.e. The number of folders between root \
-            and the subdirectory that houses the .dat and .log files. E.g. 1")
+            and the 'fictrac' subdirectory that houses the .dat and .log files. \
+            This subdirectory MUST be called 'fictrac'.")
     parser.add_argument("ball_radius", type=float,
         help="The radius of the ball used with the insect-on-a-ball tracking rig. \
             Must be in mm.")
