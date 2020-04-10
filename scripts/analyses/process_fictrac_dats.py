@@ -46,8 +46,8 @@ def get_framerate_from_logs(log):
     with open (log, "r") as f:
 
         log_lines = f.readlines()
-        hz_lines = []
 
+        hz_lines = []
         for line in log_lines:
             if "frame rate" in line:
                 # Pull out substring between [in/out] and [:
@@ -143,7 +143,7 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
                 "alt_timestamp" ]
     
     dfs = []
-    for idx, dat in enumerate(dats):
+    for i, dat in enumerate(dats):
         with open(dat, 'r') as f:
             next(f) # skip first row
             df = pd.DataFrame((l.strip().split(',') for l in f), columns=headers)
@@ -162,7 +162,7 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
 
         if framerate is None:
             # Add framerates from .logs:
-            framerate = framerates[idx]
+            framerate = framerates[i]
 
         df['avg_framerate'] = framerate
 
@@ -175,7 +175,7 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
         df['min_int'] = df['min_int'].apply(str)
 
         # Assign animal number:
-        df['animal'] = idx 
+        df['animal'] = i 
 
         dfs.append(df)
 
@@ -184,11 +184,38 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
     return dfs
 
 
+def unconcat_df(dfs, col_name="animal"):
+    """
+    Splits up a concatenated dataframe according to each unique animal.
+    Returns a list of datafrmaes. 
+
+    Parameters:
+    -----------
+    dfs: A Pandas dataframe
+    col_name (str): A column name in 'dfs' with which to split into smaller dataframes. 
+        Default is "animal". 
+
+    Returns:
+    --------
+    A list of dataframes, split up by each unique animal. 
+    """
+
+    assert (col_name in dfs), \
+        f"The column, {col_name}, is not in in the input dataframe, {dfs}"
+
+    dfs_list = []
+
+    for _, df in enumerate(dfs[col_name].unique()):
+        df = dfs.loc[dfs[col_name]==df]
+        dfs_list.append(df)
+
+    return(dfs_list)
+
+
 def plot_fictrac_fft(dfs, val_col, time_col, 
                     even=False, window=np.hanning, pad=1, 
                     cutoff_freq=None, 
-                    save=True, show_plots=True):
-    
+                    save_path=None, show_plots=True):  
     """
     Perform a Fourier transform on FicTrac data for each animal. Generate 
     frequency domain plots for each animal. Outputs plots. 
@@ -208,7 +235,8 @@ def plot_fictrac_fft(dfs, val_col, time_col,
     cutoff_freq (float): x-intercept value for plotting a vertical line. 
         To be used to visualize a candidate cut-off frequency. Default is None.
 
-    save (bool): If True, will save .png plots. Default is True. 
+    save_path (str): Absolute path to which to save the plots as .png files. 
+        If None, will not save the plots. Default is None. 
 
     show_plots (bool): If True, will show plots, but will not 
         output a list of Bokeh plotting objects. If False, will not show 
@@ -239,10 +267,10 @@ def plot_fictrac_fft(dfs, val_col, time_col,
             else:
                 exit("Re-run this function with a 'time_col' whose units are secs.")
 
-    bokeh_ps = []
-    for animal in range(len(dfs["animal"].unique())):
+    dfs_list = unconcat_df(dfs, col_name="animal")
 
-        df = dfs.loc[dfs["animal"]==animal]
+    bokeh_ps = []
+    for i, df in enumerate(dfs_list): 
 
         assert (len(df[time_col] == len(df[val_col]))), \
             "time and val are different lengths! They must be the same."
@@ -275,7 +303,7 @@ def plot_fictrac_fft(dfs, val_col, time_col,
         # Plot:
         p1, p2 = bokeh_freq_domain(freq, amp)
 
-        p1.title.text = f"frequency domain: animal {animal}"
+        p1.title.text = f"frequency domain: animal {i}"
         p1.title.text_font_size = "16pt"
         p1.yaxis.axis_label_text_font_size = "12pt"
         p2.yaxis.axis_label_text_font_size = "12pt"
@@ -294,11 +322,13 @@ def plot_fictrac_fft(dfs, val_col, time_col,
         p = gridplot([p1, p2], ncols=1)
 
         # Output:
-        if save is True:
+        if save_path is not None:
+            filename = save_path + f"fictrac_freqs"
+
             # Bokeh does not atm support gridplot svg exports
-            export_png(p, f"fictrac_freqs_{animal}.png")
-            output_file(f"fictrac_freqs_{animal}.html", 
-                        title=f"fictrac_freqs_{animal}")
+            export_png(p, filename = filename + ".png")
+            output_file(filename = filename + ".html", 
+                        title=f"fictrac_freqs")
 
         if show_plots is True:
             show(p)
@@ -308,16 +338,13 @@ def plot_fictrac_fft(dfs, val_col, time_col,
     if show_plots is False:
         return bokeh_ps
 
-        # TODO: save in each FicTrac subdir?    
-
 
 def plot_fictrac_filter(dfs, val_col, time_col, 
                         order, cutoff_freq,  
                         framerate=None,
                         val_label=None, time_label=None,
                         view_perc=1.0, 
-                        show_plots=True, save=True):
-    
+                        save_path=None, show_plots=True):
     """
     Apply a low-pass Butterworth filter on offline FicTrac data. 
 
@@ -347,7 +374,8 @@ def plot_fictrac_filter(dfs, val_col, time_col,
         timecourses. Default is set to 1, i.e. plot the data over the entire \
         timecourse. Must be a value between 0 and 1.
 
-    save (bool): If True, will save .svg and .png plots. Default is True. 
+    save_path (str): Absolute path to which to save the plots as .png and .svg files. 
+        If None, will not save the plots. Default is None. 
 
     show_plots (bool): If True, will show plots, but will not 
         output a list of Bokeh plotting objects. If False, will not show 
@@ -374,10 +402,10 @@ def plot_fictrac_filter(dfs, val_col, time_col,
     assert (0 <= view_perc <= 1), \
         f"The view percentage, {view_perc}, must be between 0 and 1."
     
+    dfs_list = unconcat_df(dfs, col_name="animal")
+
     bokeh_ps = []
-    for animal in range(len(dfs["animal"].unique())):
-        
-        df = dfs.loc[dfs["animal"]==animal]
+    for i, df in enumerate(dfs_list):
         
         assert (len(df[time_col] == len(df[val_col]))), \
             "time and val are different lengths! They must be the same."
@@ -429,15 +457,15 @@ def plot_fictrac_filter(dfs, val_col, time_col,
             legend_label="filtered"
         )
         
-        p.title.text = f"animal {animal}, first {view_perc * 100}% with butterworth filter: cutoff = {cutoff_freq} Hz, order = {order}"
+        p.title.text = f"first {view_perc * 100}% with butterworth filter: cutoff = {cutoff_freq} Hz, order = {order}"
         p.title.text_font_size = "14pt"
         p.yaxis.axis_label_text_font_size = "12pt"
         p.yaxis.axis_label_text_font_size = "12pt"
         p.xaxis.axis_label_text_font_size = "12pt"
         
         # Output:
-        if save is True:
-            filename = f"fictrac_filter_{animal}"
+        if save_path is not None:
+            filename = save_path + f"fictrac_filter"
             
             p.output_backend = "svg"
             export_svgs(p, filename=filename + ".svg")
@@ -496,9 +524,9 @@ def main():
         help="The mean framerate used for acquisition with FicTrac. \
             If None, will compute the average framerate. Can be overridden with a \
             provided manual value. Default is None.") 
-
-    parser.add_argument("-ns", "--nosave", action="store_false", default=True,
-        help="If enabled, does not save the plots. By default, saves the plots.")
+    
+    parser.add_argument("-ns", "--nosave", action="store_true", default=False,
+        help="If enabled, does not save the plots. By default, saves plots.")
     parser.add_argument("-sh", "--show", action="store_true", default=False,
         help="If enabled, shows the plots. By default, does not show the plots.")
     args = parser.parse_args()
@@ -514,36 +542,57 @@ def main():
     time_label = args.time_label
     cutoff_freq = args.cutoff_freq
     order = args.order
-
     view_perc =args.view_percent
-    save = args.nosave
+
+    nosave = args.nosave
     show_plots = args.show
-    
-    # TODO: Figure out how to save each individual animal bokeh plot to its 
-    # respective animal folder. 
-    # mkdir(join(root, "plots"))
 
     # Parse FicTrac inputs:
     concat_df = parse_dats(root, nesting, ball_radius, framerate)
 
-    # Plot FFT frequency domain:
-    plot_fictrac_fft(concat_df, 
-                     val_col, 
-                     time_col, 
-                     cutoff_freq=cutoff_freq, 
-                     show_plots=show_plots, 
-                     save=save)
+    # Unconcatenate the concatenated df:
+    dfs_list = unconcat_df(concat_df, col_name="animal")
 
-    # Plot filter:
-    plot_fictrac_filter(concat_df, val_col, time_col, 
-                        framerate = framerate,
-                        val_label=val_label, 
-                        time_label=time_label,
-                        cutoff_freq = cutoff_freq, 
-                        order = order, 
-                        view_perc=view_perc,
-                        show_plots=False, 
-                        save=save) 
+    # Save each individual animal bokeh plot to its respective animal folder. 
+    folders = sorted(glob.glob(join(root, nesting * "*/", "fictrac/")))
+
+    for i, folder in enumerate(folders):
+
+        mkdir(join(folder, "plots/"))
+
+        df = dfs_list[i]
+
+        import ipdb; ipdb.set_trace() # I think the problem is not this loop, but the loop I use in each plotting fxn. 
+
+        if nosave is False:
+
+            save_path = join(folder, "plots/")
+
+        elif nosave is True:
+
+            save_path = None
+
+        # Plot FFT frequency domain:
+        plot_fictrac_fft(df, 
+                        val_col, 
+                        time_col, 
+                        cutoff_freq=cutoff_freq, 
+                        show_plots=show_plots, 
+                        save_path=save_path)
+
+        # Plot filter:
+        plot_fictrac_filter(df, 
+                            val_col, 
+                            time_col, 
+                            framerate = framerate,
+                            val_label=val_label, 
+                            time_label=time_label,
+                            cutoff_freq = cutoff_freq, 
+                            order = order, 
+                            view_perc=view_perc,
+                            show_plots=False, 
+                            save_path=save_path)
+
     
     # TODO: In the future I might want to generate population aggregate plots. 
     # My current plots are all for individual animals. I might want an 'agg' 
