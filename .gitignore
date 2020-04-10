@@ -2,7 +2,7 @@
 data/
 
 # Sandbox:
-python_scripts/sandbox/
+scripts/sandbox/
 
 # Special output files:
 *.noexiit
