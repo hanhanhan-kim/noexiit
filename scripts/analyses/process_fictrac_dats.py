@@ -270,14 +270,14 @@ def plot_fictrac_fft(dfs, val_col, time_col,
     dfs_list = unconcat_df(dfs, col_name="animal")
 
     bokeh_ps = []
-    for i, df in enumerate(dfs_list): 
+    for _, df in enumerate(dfs_list): 
 
         assert (len(df[time_col] == len(df[val_col]))), \
             "time and val are different lengths! They must be the same."
-        assert (time_col in dfs), \
-            f"The column, {time_col}, is not in the input dataframe, {dfs}"
         assert (val_col in dfs), \
             f"The column, {val_col}, is not in the input dataframe, {dfs}"
+        assert (time_col in dfs), \
+            f"The column, {time_col}, is not in the input dataframe, {dfs}"
         assert ("animal" in dfs), \
             f"The column 'animal' is not in in the input dataframe, {dfs}"
 
@@ -588,7 +588,6 @@ def main():
                             show_plots=False, 
                             save_path=save_path)
 
-    
     # TODO: In the future I might want to generate population aggregate plots. 
     # My current plots are all for individual animals. I might want an 'agg' 
     # switch in my argparser in the future, so I can choose to output just 
