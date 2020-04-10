@@ -105,17 +105,6 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
     logs = sorted(glob.glob(join(root, nesting * "*/", "fictrac/*.log"))) 
     dats = sorted(glob.glob(join(root, nesting * "*/", "fictrac/*.dat")))
     
-    if framerate is None: 
-        # Compute framerates from .log files:
-        framerates = []
-        for log in logs:
-            hz = get_framerate_from_logs(log)
-            framerates.append(hz)
-
-    else: 
-        assert(float(framerate)), \
-            "'framerate' must be a float, if inputting manually."
-
     headers = [ "frame_cntr",
                 "delta_rotn_vector_cam_x", 
                 "delta_rotn_vector_cam_y", 
@@ -141,6 +130,17 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
                 "seq_cntr",
                 "delta_timestamp",
                 "alt_timestamp" ]
+
+    if framerate is None: 
+        # Compute framerates from .log files:
+        framerates = []
+        for log in logs:
+            hz = get_framerate_from_logs(log)
+            framerates.append(hz)
+
+    else: 
+        assert(float(framerate)), \
+            "'framerate' must be a float, if inputting manually."
     
     dfs = []
     for i, dat in enumerate(dats):
@@ -162,12 +162,12 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
 
         if framerate is None:
             # Add framerates from .logs:
-            framerate = framerates[i]
+            f_rate = framerates[i] 
 
-        df['avg_framerate'] = framerate
+        df['avg_framerate'] = f_rate
 
         # Compute elapsed time:
-        df['secs_elapsed'] = df['frame_cntr'] / framerate
+        df['secs_elapsed'] = df['frame_cntr'] / f_rate
         df['mins_elapsed'] = df['secs_elapsed'] / 60
         
         # Discretize minute intervals as strings:
