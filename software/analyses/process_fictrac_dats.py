@@ -166,7 +166,7 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
         # Compute real-world values:
         df['X_mm'] = df['integrat_x_posn'] * ball_radius
         df['Y_mm'] = df['integrat_y_posn'] * ball_radius
-        df['speed_mm'] = df['animal_mvmt_spd'] * f_rate * ball_radius
+        df['speed_mm_s'] = df['animal_mvmt_spd'] * f_rate * ball_radius
 
         # Compute elapsed time:
         df['secs_elapsed'] = df['frame_cntr'] / f_rate
@@ -487,7 +487,106 @@ def plot_fictrac_filter(dfs, val_col, time_col,
         return bokeh_ps
 
 
-def main():
+def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, normalize=False, 
+                         cmap_col="speed_mm_s", cmap_title="speed (mm/s)", 
+                         palette = cc.CET_L16, size=2.5, alpha=0.1, 
+                         show_start=True, 
+                         save_path=None, show_plots=True):
+    """
+    #TODO: Docstring
+    """
+    assert (low >= 0), \
+        f"The low end of the colour map range must be non-negative"
+    assert ("X_mm" in dfs), \
+        f"The column, 'X_mm', is not in the input dataframe, {dfs}"
+    assert ("Y_mm" in dfs), \
+        f"The column, 'Y_mm', is not in the input dataframe, {dfs}"
+    assert (cmap_col in dfs), \
+        f"The column, {cmap_col}, is not in the input dataframe, {dfs}"
+    assert ("animal" in dfs), \
+            f"The column 'animal' is not in in the input dataframe, {dfs}"
+    
+    dfs_list = unconcat_df(dfs, col_name="animal")
+    
+    if normalize is False:
+        high = np.percentile(dfs[cmap_col], high_percentile)
+
+    bokeh_ps = []
+    for _, df in enumerate(dfs_list):
+        
+        assert (len(df["X_mm"] == len(df["Y_mm"]))), \
+            "X_mm and Y_mm are different lengths! They must be the same."
+        
+        source = ColumnDataSource(df)
+        speed = df[cmap_col]
+        
+        if normalize is True:
+            high = np.percentile(df[cmap_col], high_percentile)
+            # also change colorbar labels from min -> max?
+        
+        mapper = linear_cmap(field_name=cmap_col, 
+                             palette=palette, 
+                             low=low, 
+                             high=high)
+        
+        p = figure(background_fill_color="#efe8e2", 
+                   width=800,
+                   height=800,
+                   x_axis_label="X (mm)",
+                   y_axis_label="Y (mm)")
+        
+        p.circle(source=source,
+                 x="X_mm",
+                 y="Y_mm",
+                 color=mapper,
+                 size=size,
+                 alpha=alpha)
+        
+        if show_start = True:
+            # Other options include .cross, .circle_x, and .hex:
+            p.circle(x=df["X_mm"][0], 
+                     y=df["Y_mm"][0], 
+                     size=12,
+                     color="darkgray",
+                     fill_alpha=0.5)
+
+        color_bar = ColorBar(color_mapper=mapper['transform'], 
+                             title=cmap_title,
+                             title_text_font_size="7pt",
+                             width=10,
+                             location=(0,0))
+
+        p.add_layout(color_bar, "right")
+
+        p.title.text_font_size = "14pt"
+        p.xaxis.axis_label_text_font_size = '10pt'
+        p.yaxis.axis_label_text_font_size = '10pt'
+
+        bokeh_ps.append(p)
+
+        # Output:
+        if save_path is not None:
+            filename = save_path + f"fictrac_XY_speed"
+            
+            p.output_backend = "svg"
+            export_svgs(p, filename=filename + ".svg")
+            export_png(p, filename=filename + ".png")
+            output_file(filename=filename + ".html", 
+                        title=filename)
+            
+        if show_plots is True:
+            # In case this script is run in Jupyter, change output_backend 
+            # back to "canvas" for faster performance:
+            p.output_backend = "canvas"
+            show(p)
+        else:
+            bokeh_ps.append(p)
+        
+    if show_plots is False:
+        return bokeh_ps
+
+
+def main(): #TODO: Add XY plotter
 
     parser = argparse.ArgumentParser(description = __doc__)
     parser.add_argument("root",
@@ -593,7 +692,8 @@ def main():
     # TODO: In the future I might want to generate population aggregate plots. 
     # My current plots are all for individual animals. I might want an 'agg' 
     # switch in my argparser in the future, so I can choose to output just 
-    # individual animal plots, or also population aggregate plots. 
+    # individual animal plots, or also population aggregate plots.
+    # TODO: Add histogram and ECDF population plots for speed, ang_vel, etc. 
 
     
 if __name__ == "__main__":
