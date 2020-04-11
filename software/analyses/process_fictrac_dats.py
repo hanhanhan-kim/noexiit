@@ -11,7 +11,7 @@ low-pass Butterworth filtering, ___.
 import argparse
 import glob
 from sys import exit
-from os.path import join
+from os.path import join, expanduser
 from os import mkdir
 import re
 
@@ -29,6 +29,10 @@ from bokeh.palettes import brewer
 import colorcet as cc
 
 from fourier_transform import fft, bokeh_freq_domain
+
+# TODO: Sym link my local into noexiit src? 
+sys.path.insert(1, expanduser('~/src/cmocean-bokeh'))
+from cmocean_cmaps import get_all_cmocean_colours
 
 
 def get_framerate_from_logs(log):
@@ -688,6 +692,10 @@ def main(): #TODO: Add XY plotter
                             view_perc=view_perc,
                             show_plots=False, 
                             save_path=save_path)
+
+        # Plot XY
+        cm = get_all_cmocean_colours()
+
 
     # TODO: In the future I might want to generate population aggregate plots. 
     # My current plots are all for individual animals. I might want an 'agg' 
