@@ -494,7 +494,7 @@ def plot_fictrac_filter(dfs, val_col, time_col,
 def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, normalize=False, 
                          cmap_col="speed_mm_s", cmap_title="speed (mm/s)", 
                          palette = cc.CET_L16, size=2.5, alpha=0.1, 
-                         show_start=True, 
+                         show_start=False, 
                          save_path=None, show_plots=True):
     """
     #TODO: Docstring
@@ -546,7 +546,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, normalize=False,
                  size=size,
                  alpha=alpha)
         
-        if show_start = True:
+        if show_start is True:
             # Other options include .cross, .circle_x, and .hex:
             p.circle(x=df["X_mm"][0], 
                      y=df["Y_mm"][0], 
