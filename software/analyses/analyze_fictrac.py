@@ -10,7 +10,7 @@ low-pass Butterworth filtering, ___.
 
 import argparse
 import glob
-from sys import exit
+from sys import exit, path
 from os.path import join, expanduser
 from os import mkdir
 import re
@@ -22,6 +22,7 @@ import scipy.signal as sps
 import scipy.signal as sps
 
 from bokeh.io import output_file, export_png, export_svgs, show
+from bokeh.transform import linear_cmap
 from bokeh.plotting import figure
 from bokeh.models import ColorBar, ColumnDataSource, Span
 from bokeh.layouts import gridplot
@@ -31,7 +32,7 @@ import colorcet as cc
 from fourier_transform import fft, bokeh_freq_domain
 
 # TODO: Sym link my local into noexiit src? 
-sys.path.insert(1, expanduser('~/src/cmocean-bokeh'))
+path.insert(1, expanduser('~/src/cmocean-bokeh'))
 from cmocean_cmaps import get_all_cmocean_colours
 
 
