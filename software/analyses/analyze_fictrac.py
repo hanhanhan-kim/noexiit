@@ -5,7 +5,7 @@ Process and visualize FicTrac data with helper functions.
 When run as a script, transforms .dat FicTrac files into a single concatenated \
 Pandas dataframe with some additional columns. Then performs various processing \
 and plotting of the FicTrac data. Includes visualization of the frequency domain, \
-low-pass Butterworth filtering, ___. 
+low-pass Butterworth filtering, XY path with a colour map, ___. 
 """
 
 import argparse
@@ -493,7 +493,7 @@ def plot_fictrac_filter(dfs, val_col, time_col,
 
 
 def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False, 
-                         cmap_col="speed_mm_s", cmap_title="speed (mm/s)", 
+                         cmap_col="speed_mm_s", cmap_label="speed (mm/s)", 
                          palette = cc.CET_L16, size=2.5, alpha=0.1, 
                          show_start=False, 
                          save_path=None, show_plots=True):
@@ -521,7 +521,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
         the 'high_percentile' value computed from the population, i.e. the
         concatenated 'dfs' dataframe. Default is False. 
     cmap_col (str): Column name of the dfs dataframe to be colour-mapped. 
-    cmap_title (str): Label for the colour map. 
+    cmap_label (str): Label for the colour map. 
     palette (list): A list of hexadecimal colours to be used for the colour map.
     size (float): The size of each datapoint specifying XY location. 
     alpha(float): The transparency of each datapoint specifying XY location.
@@ -608,7 +608,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
                      fill_alpha=0.5)
 
         color_bar = ColorBar(color_mapper=mapper['transform'], 
-                             title=cmap_title,
+                             title=cmap_label,
                              title_text_font_size="7pt",
                              width=10,
                              location=(0,0))
@@ -643,7 +643,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
         return bokeh_ps
 
 
-def main(): #TODO: Add XY plotter
+def main():
 
     parser = argparse.ArgumentParser(description = __doc__)
     parser.add_argument("root",
@@ -663,6 +663,9 @@ def main(): #TODO: Add XY plotter
             variable for analyses.")
     parser.add_argument("time_col",
         help="Column name of the Pandas dataframe specifying the time.")
+    parser.add_argument("cmap_col",
+        help="Column name of the Pandas dataframe specifying the variable to be \
+            colour-mapped.")
     parser.add_argument("cutoff_freq", type=float,
         help="Cutoff frequency to be used for filtering the FicTrac data.")
     parser.add_argument("order", type=int,
@@ -679,6 +682,8 @@ def main(): #TODO: Add XY plotter
     parser.add_argument("time_label", nargs="?", default=None,
         help="time-axis label of the generated plots. Default is a formatted \
             time_col")
+    parser.add_argument("cmap_label", nargs="?", default=None,
+        help="label of the colour map legend")
     parser.add_argument("framerate", nargs="?", default=None, type=float,
         help="The mean framerate used for acquisition with FicTrac. \
             If None, will compute the average framerate. Can be overridden with a \
@@ -699,12 +704,14 @@ def main(): #TODO: Add XY plotter
     val_label = args.val_label
     time_col = args.time_col
     time_label = args.time_label
+    cmap_col = args.cmap_col
+    cmap_label = args.cmap_label 
     cutoff_freq = args.cutoff_freq
     order = args.order
-    view_perc =args.view_percent
+    view_perc = args.view_percent
 
     nosave = args.nosave
-    show_plots = args.show
+    show_plots = args.show 
 
     # Parse FicTrac inputs:
     concat_df = parse_dats(root, nesting, ball_radius, framerate)
@@ -748,13 +755,21 @@ def main(): #TODO: Add XY plotter
 
         # Plot XY
         cm = get_all_cmocean_colours()
-        # TODO
+        plot_fictrac_XY_cmap(df,
+                             cmap_col=cmap_col,
+                             cmap_label=cmap_label,
+                             palette=cm["thermal"],
+                             show_plots=False,
+                             save_path=save_path)
 
     # TODO: In the future I might want to generate population aggregate plots. 
     # My current plots are all for individual animals. I might want an 'agg' 
     # switch in my argparser in the future, so I can choose to output just 
     # individual animal plots, or also population aggregate plots.
     # TODO: Add histogram and ECDF population plots for speed, ang_vel, etc. 
+
+    # Example terminal command:
+    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/ 2 5 delta_rotn_vector_lab_z secs_elapsed 10 2 0.01 delta\ yaw\ \(rads/frame\) time\ \(secs\) 
 
     
 if __name__ == "__main__":
