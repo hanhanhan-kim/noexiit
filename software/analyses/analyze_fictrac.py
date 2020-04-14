@@ -412,7 +412,7 @@ def plot_fictrac_filter(dfs, val_col, time_col,
     dfs_list = unconcat_df(dfs, col_name="animal")
 
     bokeh_ps = []
-    for i, df in enumerate(dfs_list):
+    for _, df in enumerate(dfs_list):
         
         assert (len(df[time_col] == len(df[val_col]))), \
             "time and val are different lengths! They must be the same."
@@ -492,13 +492,66 @@ def plot_fictrac_filter(dfs, val_col, time_col,
         return bokeh_ps
 
 
-def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, normalize=False, 
+def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False, 
                          cmap_col="speed_mm_s", cmap_title="speed (mm/s)", 
                          palette = cc.CET_L16, size=2.5, alpha=0.1, 
                          show_start=False, 
                          save_path=None, show_plots=True):
     """
-    #TODO: Docstring
+    Plot XY FicTrac coordinates of the animal with a linear colourmap for 
+    a FicTrac 
+    variable of choice. 
+    
+    Parameters:
+    -----------
+    dfs (DataFrame): Concatenated dataframe of FicTrac data generated from 
+        parse_dats()
+    low (float): The minimum value of the colour map range. Any value below the set 
+        'low' value will be 'clamped', i.e. will appear as the same colour as 
+        the 'low' value. The 'low' value must be 0 or greater. Default value 
+        is 0.
+    high_percentile (float): The max of the colour map range, as a percentile of the 
+        'cmap_col' variable's distribution. Any value above the 'high_percentile'
+        will be clamped, i.e. will appear as the same colour as the 
+        'high_percentile' value. E.g. if set to 95, all values below the 95th 
+        percentile will be mapped to the colour map, and all values above the
+        95th percentile will be clamped. 
+    respective (bool): If True, will re-scale colourmap for each individual animal to 
+        their respective 'high_percentile' cut-off value. If False, will use
+        the 'high_percentile' value computed from the population, i.e. the
+        concatenated 'dfs' dataframe. Default is False. 
+    cmap_col (str): Column name of the dfs dataframe to be colour-mapped. 
+    cmap_title (str): Label for the colour map. 
+    palette (list): A list of hexadecimal colours to be used for the colour map.
+    size (float): The size of each datapoint specifying XY location. 
+    alpha(float): The transparency of each datapoint specifying XY location.
+        Must be between 0 and 1.
+    show_start (bool): If True, will plot a marking to explicitly denote the start 
+        site. Default is False. 
+    
+    save_path (str): Absolute path to which to save the plots as .png and .svg files. 
+        If None, will not save the plots. Default is None. 
+
+    show_plots (bool): If True, will show plots, but will not 
+        output a list of Bokeh plotting objects. If False, will not show 
+        plots, but will output a list of Bokeh plotting objects. If both 
+        save and show_plots are True, .html plots will be generated, in addition 
+        to the .svg and .png plots. Default is True.
+
+    Returns:
+    --------
+    if show_plots is True: will show plots but will not output bokeh.plotting.figure
+         object.
+
+    if show_plots is False: will output a list of bokeh.plotting.figure objects, 
+        but will not show plots.
+
+    if save is True: will save .svg and .png plots.
+    
+    if both show_plots and save are True, will show plots and save .svg, .png and 
+        .html plots. 
+
+    if both show_plots and save are False, will return nothing. 
     """
     assert (low >= 0), \
         f"The low end of the colour map range must be non-negative"
@@ -513,7 +566,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, normalize=False,
     
     dfs_list = unconcat_df(dfs, col_name="animal")
     
-    if normalize is False:
+    if respective is False:
         high = np.percentile(dfs[cmap_col], high_percentile)
 
     bokeh_ps = []
@@ -523,9 +576,8 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, normalize=False,
             "X_mm and Y_mm are different lengths! They must be the same."
         
         source = ColumnDataSource(df)
-        speed = df[cmap_col]
         
-        if normalize is True:
+        if respective is True:
             high = np.percentile(df[cmap_col], high_percentile)
             # also change colorbar labels from min -> max?
         
@@ -696,7 +748,7 @@ def main(): #TODO: Add XY plotter
 
         # Plot XY
         cm = get_all_cmocean_colours()
-
+        # TODO
 
     # TODO: In the future I might want to generate population aggregate plots. 
     # My current plots are all for individual animals. I might want an 'agg' 
