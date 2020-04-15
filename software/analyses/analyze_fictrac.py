@@ -769,7 +769,7 @@ def main():
     # TODO: Add histogram and ECDF population plots for speed, ang_vel, etc. 
 
     # Example terminal command:
-    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/ 2 5 delta_rotn_vector_lab_z secs_elapsed 10 2 0.01 delta\ yaw\ \(rads/frame\) time\ \(secs\) 
+    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/ 2 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 0.01 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
 
     
 if __name__ == "__main__":
