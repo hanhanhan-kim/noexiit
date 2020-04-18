@@ -4,8 +4,8 @@
 Process and visualize FicTrac data with helper functions. 
 When run as a script, transforms .dat FicTrac files into a single concatenated \
 Pandas dataframe with some additional columns. Then performs various processing \
-and plotting of the FicTrac data. Includes visualization of the frequency domain, \
-low-pass Butterworth filtering, XY path with a colour map, ___. 
+and plotting of the FicTrac data. Includes individual animal visualizations of \
+the frequency domain, low-pass Butterworth filtering, XY path with a colour map, ___. 
 """
 
 import argparse
@@ -28,6 +28,8 @@ from bokeh.models import ColorBar, ColumnDataSource, Span
 from bokeh.layouts import gridplot
 from bokeh.palettes import brewer
 import colorcet as cc
+
+import bokeh_catplot
 
 from fourier_transform import fft, bokeh_freq_domain
 
@@ -225,7 +227,7 @@ def plot_fictrac_fft(dfs, val_col, time_col,
                     save_path=None, show_plots=True):  
     """
     Perform a Fourier transform on FicTrac data for each animal. Generate 
-    frequency domain plots for each animal. Outputs plots. 
+    frequency domain plots for each animal. 
 
     Parameters:
     ------------
@@ -353,7 +355,7 @@ def plot_fictrac_filter(dfs, val_col, time_col,
                         view_perc=1.0, 
                         save_path=None, show_plots=True):
     """
-    Apply a low-pass Butterworth filter on offline FicTrac data. 
+    Apply a low-pass Butterworth filter on offline FicTrac data for plotting. 
 
     Parameters:
     -----------
@@ -499,8 +501,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
                          save_path=None, show_plots=True):
     """
     Plot XY FicTrac coordinates of the animal with a linear colourmap for 
-    a FicTrac 
-    variable of choice. 
+    a FicTrac variable of choice. 
     
     Parameters:
     -----------
@@ -643,6 +644,113 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
         return bokeh_ps
 
 
+def plot_fictrac_histograms(dfs, cols=None, labels=None, save_path=None, show_plots=True):
+    """
+    Generate histograms for multiple FicTrac kinematic variables. 
+
+    Parameters:
+    -----------
+    dfs (DataFrame): Concatenated dataframe of FicTrac data generated from 
+        parse_dats()
+    cols (list): List of strings specifying column names in 'dfs'. If None, 
+        uses default columns that specify real-world and 'lab' kinematic measurements.
+        Otherwise, will use both input arguments and the default columns. Default is None.
+    labels (list): List of strings specifying the labels for the histograms' x-axes.
+        Its order must correspond to 'cols'. 
+
+    Returns:
+    --------
+    if show_plots is True: will show plots but will not output bokeh.plotting.figure
+         object.
+
+    if show_plots is False: will output a list of bokeh.plotting.figure objects, 
+        but will not show plots.
+
+    if save is True: will save .svg and .png plots.
+    
+    if both show_plots and save are True, will show plots and save .svg, .png and 
+        .html plots. 
+
+    if both show_plots and save are False, will return nothing. 
+    """
+    assert ("animal" in dfs), \
+            f"The column 'animal' is not in in the input dataframe, {dfs}"
+    
+    all_cols = list(dfs.columns)
+        
+    banned_substrings = ["integrat_x_posn", 
+                         "integrat_y_posn", 
+                         "X_mm", 
+                         "Y_mm", 
+                         "seq_cntr", 
+                         "timestamp", 
+                         "cam", 
+                         "frame", 
+                         "elapse", 
+                         "min",
+                         "animal",
+                         "__"] 
+    banned_cols = []
+    for col in all_cols:
+        for substring in banned_substrings:
+            if substring in col:
+                banned_cols.append(col)
+
+    ok_cols = [col for col in all_cols if col not in banned_cols]
+    
+    if cols is None:
+        cols = ok_cols
+    else:
+        cols = ok_cols + cols 
+        for col in cols:
+            assert (col in dfs), f"The column, {col}, is not in the input dataframe, {dfs}"
+    
+    if labels is None:
+        labels = [col.replace("_", " ") for col in cols] 
+    
+    bokeh_ps = []
+    for i, col in enumerate(cols):
+        p = bokeh_catplot.histogram(data=dfs,
+                                    cats=['animal'],
+                                    val=col,
+                                    density=True,
+                                    width=1000,
+                                    height=500)
+
+        p.legend.location = 'top_left'
+        p.legend.title = "animal ID"
+        p.background_fill_color = "#efe8e2"
+        p.xaxis.axis_label = labels[i]
+        p.xaxis.axis_label_text_font_size = "12pt"
+        p.yaxis.axis_label_text_font_size = "12pt"
+        
+        # Output:
+        if save_path is not None:
+            filename = save_path + f"fictrac_histogram_{col}"
+            
+            p.output_backend = "svg"
+            export_svgs(p, filename=filename + ".svg")
+            export_png(p, filename=filename + ".png")
+            output_file(filename=filename + ".html", 
+                        title=filename)
+            
+        if show_plots is True:
+            # In case this script is run in Jupyter, change output_backend 
+            # back to "canvas" for faster performance:
+            p.output_backend = "canvas"
+            show(p)
+        else:
+            bokeh_ps.append(p)
+    
+    if show_plots is False:
+        return bokeh_ps
+    
+    # TODO: Provide a Span argument
+    # TODO: Generate no_cats plots with Span
+    
+    
+# TODO: A helper function that regularly sparsifies data to prevent overplotting
+
 def main():
 
     parser = argparse.ArgumentParser(description = __doc__)
@@ -722,6 +830,7 @@ def main():
     # Save each individual animal bokeh plot to its respective animal folder. 
     folders = sorted(glob.glob(join(root, nesting * "*/", "fictrac/")))
 
+    # Generate individual animal plots:
     for i, folder in enumerate(folders):
 
         mkdir(join(folder, "plots/"))
@@ -761,6 +870,10 @@ def main():
                              palette=cm["thermal"],
                              show_plots=False,
                              save_path=save_path)
+
+    # Generate population plots:
+    # TODO: Make dedicated subdirs for histograms and ECDFS, respectively
+
 
     # TODO: In the future I might want to generate population aggregate plots. 
     # My current plots are all for individual animals. I might want an 'agg' 
