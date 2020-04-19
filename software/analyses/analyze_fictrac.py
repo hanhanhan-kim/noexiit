@@ -322,7 +322,7 @@ def plot_fictrac_fft(dfs, val_col, time_col,
             float(cutoff_freq)
             cutoff_line = Span(location=cutoff_freq, 
                                dimension="height", 
-                               line_color="#efe8e2",
+                               line_color="#775a42",
                                line_dash="dashed",
                                line_width=2)
             p1.add_layout(cutoff_line)
@@ -1015,9 +1015,10 @@ def main():
                              show_plots=False)
 
     # Generate population plots:
-    subdirs = ["histograms", "ecdfs"]
+    mkdir(join(root, "popn_plots/"))
+    subdirs = ["histograms/", "ecdfs/"]
     [mkdir(join(root, "popn_plots/", subdir)) for subdir in subdirs]
-    
+
     save_path_histos = join(root, "popn_plots/", "histograms/")
     save_path_ecdfs = join(root, "popn_plots/", "ecdfs/")
 
@@ -1033,8 +1034,11 @@ def main():
                        show_plots=False)
     
     # Example terminal command:
-    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/ 2 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 0.01 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
+    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/real_closed_loop_pson/ 1 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 0.01 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
 
     
 if __name__ == "__main__":
     main()
+
+    # TODO: Enable plotting overwrites
+    # TODO: factor out vars into global tuples
