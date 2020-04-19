@@ -2,10 +2,10 @@
 
 """
 Process and visualize FicTrac data with helper functions. 
-When run as a script, transforms .dat FicTrac files into a single concatenated \
-Pandas dataframe with some additional columns. Then performs various processing \
-and plotting of the FicTrac data. Includes individual animal visualizations of \
-the frequency domain, low-pass Butterworth filtering, XY path with a colour map, ___. \
+When run as a script, transforms .dat FicTrac files into a single concatenated 
+Pandas dataframe with some additional columns. Then performs various processing 
+and plotting of the FicTrac data. Includes individual animal visualizations of 
+the frequency domain, low-pass Butterworth filtering, XY path with a colour map, ___. 
 Includes population visualizations, such as histograms, ECDFs, and __. 
 """
 
@@ -498,7 +498,7 @@ def plot_fictrac_filter(dfs, val_col, time_col,
 
 def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False, 
                          cmap_col="speed_mm_s", cmap_label="speed (mm/s)", 
-                         palette = cc.CET_L16, size=2.5, alpha=0.1, 
+                         palette = cc.CET_L16, size=2.5, alpha=0.3, 
                          show_start=False, 
                          save_path=None, show_plots=True):
     """
@@ -739,7 +739,7 @@ def plot_fictrac_histograms(dfs, cols=None, labels=None,
                            line_dash="dashed",
                            line_width=2)
         
-        p.legend.location = "top_left"
+        p.legend.location = "top_right"
         p.legend.title = "animal ID"
         p.background_fill_color = "#efe8e2"
         p.title.text = f" with aggregate {cutoff_percentile}% mark"
@@ -863,7 +863,7 @@ def plot_fictrac_ecdfs(dfs, cols=None, labels=None,
                            line_dash="dashed",
                            line_width=2)
         
-        p.legend.location = 'top_left'
+        p.legend.location = 'top_right'
         p.legend.title = "animal ID"
         p.background_fill_color = "#efe8e2"
         p.title.text = f" with aggregate {cutoff_percentile}% mark"
@@ -932,6 +932,9 @@ def main():
         help="Specifies the percentile at which to clamp the max depicted \
             colourmap values. Plots a span at this value for the population \
             histograms and ECDFs.")
+    parser.add_argument("alpha_cmap", type=float,
+        help="Specifies the transparency of each datum on the XY colourmap plots. \
+            Must be between 0 and 1, inclusive.")
 
     parser.add_argument("val_label", nargs="?", default=None,
         help="y-axis label of the generated plots. Default is a formatted \
@@ -967,6 +970,7 @@ def main():
     order = args.order
     view_perc = args.view_percent
     percentile_max_clamp = args.percentile_max_clamp
+    alpha_cmap = args.alpha_cmap
 
     nosave = args.nosave
     show_plots = args.show 
@@ -1021,6 +1025,7 @@ def main():
                              cmap_col=cmap_col,
                              cmap_label=cmap_label,
                              palette=cm["thermal"],
+                             alpha=alpha_cmap,
                              save_path=save_path,
                              show_plots=show_plots)
 
@@ -1049,7 +1054,7 @@ def main():
     
     
     # Example terminal command:
-    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/real_closed_loop_pson/ 1 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 95 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
+    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/real_closed_loop_pson/ 1 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 95 0.1 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
 
     
 if __name__ == "__main__":
