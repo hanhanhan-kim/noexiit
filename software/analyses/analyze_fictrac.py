@@ -5,13 +5,15 @@ Process and visualize FicTrac data with helper functions.
 When run as a script, transforms .dat FicTrac files into a single concatenated \
 Pandas dataframe with some additional columns. Then performs various processing \
 and plotting of the FicTrac data. Includes individual animal visualizations of \
-the frequency domain, low-pass Butterworth filtering, XY path with a colour map, ___. 
+the frequency domain, low-pass Butterworth filtering, XY path with a colour map, ___. \
+Includes population visualizations, such as histograms, ECDFs, and __. 
 """
 
 import argparse
 import glob
 from sys import exit, path
-from os.path import join, expanduser
+from shutil import rmtree
+from os.path import join, expanduser, exists
 from os import mkdir
 import re
 
@@ -352,7 +354,7 @@ def plot_fictrac_filter(dfs, val_col, time_col,
                         order, cutoff_freq,  
                         framerate=None,
                         val_label=None, time_label=None,
-                        view_perc=1.0, 
+                        view_perc=100, 
                         save_path=None, show_plots=True):
     """
     Apply a low-pass Butterworth filter on offline FicTrac data for plotting. 
@@ -408,8 +410,8 @@ def plot_fictrac_filter(dfs, val_col, time_col,
     if both show_plots and save are False, will return nothing. 
     """
     
-    assert (0 <= view_perc <= 1), \
-        f"The view percentage, {view_perc}, must be between 0 and 1."
+    assert (0 <= view_perc <= 100), \
+        f"The view percentage, {view_perc}, must be between 0 and 100."
     
     dfs_list = unconcat_df(dfs, col_name="animal")
 
@@ -437,7 +439,7 @@ def plot_fictrac_filter(dfs, val_col, time_col,
         val_filtered = sps.lfilter(b, a, val)
         
         # View the first _% of the data:
-        domain = int(view_perc * len(val))
+        domain = int(view_perc/100 * len(val))
         
         # Plot:
         if val_label is None:
@@ -466,7 +468,7 @@ def plot_fictrac_filter(dfs, val_col, time_col,
             legend_label="filtered"
         )
         
-        p.title.text = f"first {view_perc * 100}% with butterworth filter: cutoff = {cutoff_freq} Hz, order = {order}"
+        p.title.text = f"first {view_perc}% with butterworth filter: cutoff = {cutoff_freq} Hz, order = {order}"
         p.title.text_font_size = "14pt"
         p.yaxis.axis_label_text_font_size = "12pt"
         p.yaxis.axis_label_text_font_size = "12pt"
@@ -580,7 +582,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
         
         if respective is True:
             high = np.percentile(df[cmap_col], high_percentile)
-            # also change colorbar labels from min -> max?
+            # also change colorbar labels so max has =< symbol
         
         mapper = linear_cmap(field_name=cmap_col, 
                              palette=palette, 
@@ -645,7 +647,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
 
 
 def plot_fictrac_histograms(dfs, cols=None, labels=None, 
-                            cutoff_perc=95,
+                            cutoff_percentile=95,
                             save_path=None, show_plots=True):
     """
     Generate histograms for multiple FicTrac kinematic variables. 
@@ -659,7 +661,7 @@ def plot_fictrac_histograms(dfs, cols=None, labels=None,
         Otherwise, will use both input arguments and the default columns. Default is None.
     labels (list): List of strings specifying the labels for the histograms' x-axes.
         Its order must correspond to 'cols'. 
-    cutoff_perc (float): Specifies the percentile of the AGGREGATE population data. 
+    cutoff_percentile (float): Specifies the percentile of the AGGREGATE population data. 
         Plots a line at this value. Default is 95th percentile. 
         
     save_path (str): Absolute path to which to save the plots as .png and .svg files. 
@@ -730,7 +732,7 @@ def plot_fictrac_histograms(dfs, cols=None, labels=None,
                                     width=1000,
                                     height=500)
         
-        cutoff_line = Span(location=np.percentile(dfs[col], cutoff_perc), 
+        cutoff_line = Span(location=np.percentile(dfs[col], cutoff_percentile), 
                            dimension="height", 
                            # line_color="#e41a1c",
                            line_color = "#775a42",
@@ -740,7 +742,7 @@ def plot_fictrac_histograms(dfs, cols=None, labels=None,
         p.legend.location = "top_left"
         p.legend.title = "animal ID"
         p.background_fill_color = "#efe8e2"
-        p.title.text = f" with aggregate {cutoff_perc}% mark"
+        p.title.text = f" with aggregate {cutoff_percentile}% mark"
         p.xaxis.axis_label = labels[i]
         p.xaxis.axis_label_text_font_size = "12pt"
         p.yaxis.axis_label_text_font_size = "12pt"
@@ -770,7 +772,7 @@ def plot_fictrac_histograms(dfs, cols=None, labels=None,
 
 
 def plot_fictrac_ecdfs(dfs, cols=None, labels=None, 
-                       cutoff_perc=95, 
+                       cutoff_percentile=95, 
                        save_path=None, show_plots=True):
     """
     Generate ECDFs for multiple FicTrac kinematic variables. 
@@ -784,7 +786,7 @@ def plot_fictrac_ecdfs(dfs, cols=None, labels=None,
         Otherwise, will use both input arguments and the default columns. Default is None.
     labels (list): List of strings specifying the labels for the ECDFs' x-axes.
         Its order must correspond to 'cols'. 
-    cutoff_perc (float): Specifies the percentile of the AGGREGATE population data. 
+    cutoff_percentile (float): Specifies the percentile of the AGGREGATE population data. 
         Plots a line at this value. Default is 95th percentile. 
     
     save_path (str): Absolute path to which to save the plots as .png and .svg files. 
@@ -855,7 +857,7 @@ def plot_fictrac_ecdfs(dfs, cols=None, labels=None,
                                     width=1000,
                                     height=500)
         
-        cutoff_line = Span(location=np.percentile(dfs[col], cutoff_perc), 
+        cutoff_line = Span(location=np.percentile(dfs[col], cutoff_percentile), 
                            dimension="height", 
                            line_color="#775a42",
                            line_dash="dashed",
@@ -864,7 +866,7 @@ def plot_fictrac_ecdfs(dfs, cols=None, labels=None,
         p.legend.location = 'top_left'
         p.legend.title = "animal ID"
         p.background_fill_color = "#efe8e2"
-        p.title.text = f" with aggregate {cutoff_perc}% mark"
+        p.title.text = f" with aggregate {cutoff_percentile}% mark"
         p.xaxis.axis_label = labels[i]
         p.xaxis.axis_label_text_font_size = "12pt"
         p.yaxis.axis_label_text_font_size = "12pt"
@@ -922,10 +924,14 @@ def main():
     parser.add_argument("order", type=int,
         help="Order of the filter.")
     parser.add_argument("view_percent", type=float,
-        help="Specifies how much of the data to plot as an initial \
+        help="Specifies how much of the filtered data to plot as an initial \
             percentage. Useful for assessing the effectieness of the filter over \
             longer timecourses. Default is set to 1, i.e. plot the data over the \
-            entire timecourse. Must be a value between 0 and 1.")
+            entire timecourse. Must be a value between 0 and 100.")
+    parser.add_argument("percentile_max_clamp", type=float,
+        help="Specifies the percentile at which to clamp the max depicted \
+            colourmap values. Plots a span at this value for the population \
+            histograms and ECDFs.")
 
     parser.add_argument("val_label", nargs="?", default=None,
         help="y-axis label of the generated plots. Default is a formatted \
@@ -960,6 +966,7 @@ def main():
     cutoff_freq = args.cutoff_freq
     order = args.order
     view_perc = args.view_percent
+    percentile_max_clamp = args.percentile_max_clamp
 
     nosave = args.nosave
     show_plots = args.show 
@@ -975,13 +982,15 @@ def main():
 
     # Generate individual animal plots:
     for i, folder in enumerate(folders):
+        
+        save_path = join(folder, "plots/")
+        if exists(save_path):
+            rmtree(save_path)
+        mkdir(save_path)
 
-        mkdir(join(folder, "plots/"))
         df = dfs_list[i]
 
-        if nosave is False:
-            save_path = join(folder, "plots/")
-        elif nosave is True:
+        if nosave is True:
             save_path = None
 
         # Plot FFT frequency domain:
@@ -990,7 +999,7 @@ def main():
                         time_col, 
                         cutoff_freq=cutoff_freq, 
                         save_path=save_path,
-                        show_plots=False)
+                        show_plots=show_plots)
 
         # Plot filter:
         plot_fictrac_filter(df, 
@@ -1003,19 +1012,23 @@ def main():
                             order = order, 
                             view_perc=view_perc,
                             save_path=save_path,
-                            show_plots=False)
+                            show_plots=show_plots)
 
         # Plot XY
         cm = get_all_cmocean_colours()
         plot_fictrac_XY_cmap(df,
+                             high_percentile=percentile_max_clamp,
                              cmap_col=cmap_col,
                              cmap_label=cmap_label,
                              palette=cm["thermal"],
                              save_path=save_path,
-                             show_plots=False)
+                             show_plots=show_plots)
 
     # Generate population plots:
-    mkdir(join(root, "popn_plots/"))
+    save_path_popns = join(root, "popn_plots/")
+    if exists(save_path_popns):
+        rmtree(save_path_popns)
+    mkdir(save_path_popns)
     subdirs = ["histograms/", "ecdfs/"]
     [mkdir(join(root, "popn_plots/", subdir)) for subdir in subdirs]
 
@@ -1023,22 +1036,21 @@ def main():
     save_path_ecdfs = join(root, "popn_plots/", "ecdfs/")
 
     # Plot histograms:
-    # # TODO: match cutoff_perc to high_perc of XY fxn
     plot_fictrac_histograms(concat_df, 
+                            cutoff_percentile=percentile_max_clamp,
                             save_path=save_path_histos, 
                             show_plots=False)
 
     # Plot ECDFs:
     plot_fictrac_ecdfs(concat_df,
+                       cutoff_percentile=percentile_max_clamp,
                        save_path=save_path_ecdfs, 
                        show_plots=False)
     
+    
     # Example terminal command:
-    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/real_closed_loop_pson/ 1 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 0.01 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
+    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/real_closed_loop_pson/ 1 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 95 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
 
     
 if __name__ == "__main__":
     main()
-
-    # TODO: Enable plotting overwrites
-    # TODO: factor out vars into global tuples
