@@ -322,7 +322,7 @@ def plot_fictrac_fft(dfs, val_col, time_col,
             float(cutoff_freq)
             cutoff_line = Span(location=cutoff_freq, 
                                dimension="height", 
-                               line_color="#e41a1c",
+                               line_color="#efe8e2",
                                line_dash="dashed",
                                line_width=2)
             p1.add_layout(cutoff_line)
@@ -644,7 +644,9 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
         return bokeh_ps
 
 
-def plot_fictrac_histograms(dfs, cols=None, labels=None, save_path=None, show_plots=True):
+def plot_fictrac_histograms(dfs, cols=None, labels=None, 
+                            cutoff_perc=95,
+                            save_path=None, show_plots=True):
     """
     Generate histograms for multiple FicTrac kinematic variables. 
 
@@ -657,6 +659,141 @@ def plot_fictrac_histograms(dfs, cols=None, labels=None, save_path=None, show_pl
         Otherwise, will use both input arguments and the default columns. Default is None.
     labels (list): List of strings specifying the labels for the histograms' x-axes.
         Its order must correspond to 'cols'. 
+    cutoff_perc (float): Specifies the percentile of the AGGREGATE population data. 
+        Plots a line at this value. Default is 95th percentile. 
+        
+    save_path (str): Absolute path to which to save the plots as .png and .svg files. 
+        If None, will not save the plots. Default is None. 
+    show_plots (bool): If True, will show plots, but will not 
+        output a list of Bokeh plotting objects. If False, will not show 
+        plots, but will output a list of Bokeh plotting objects. If both 
+        save and show_plots are True, .html plots will be generated, in addition 
+        to the .svg and .png plots. Default is True.
+
+    Returns:
+    --------
+    if show_plots is True: will show plots but will not output bokeh.plotting.figure
+         object.
+
+    if show_plots is False: will output a list of bokeh.plotting.figure objects, 
+        but will not show plots.
+
+    if save is True: will save .svg and .png plots.
+    
+    if both show_plots and save are True, will show plots and save .svg, .png and 
+        .html plots. 
+
+    if both show_plots and save are False, will return nothing. 
+    """
+    assert ("animal" in dfs), \
+            f"The column 'animal' is not in in the input dataframe, {dfs}"
+    
+    all_cols = list(dfs.columns)
+    
+    banned_substrings = ["integrat_x_posn", 
+                         "integrat_y_posn", 
+                         "X_mm", 
+                         "Y_mm", 
+                         "seq_cntr", 
+                         "timestamp", 
+                         "cam", 
+                         "frame", 
+                         "elapse", 
+                         "min",
+                         "animal",
+                         "__"] 
+    banned_cols = []
+    for col in all_cols:
+        for substring in banned_substrings:
+            if substring in col:
+                banned_cols.append(col)
+                break
+
+    ok_cols = [col for col in all_cols if col not in banned_cols]
+    
+    if cols is None:
+        cols = ok_cols
+    else:
+        cols = ok_cols + cols 
+        for col in cols:
+            assert (col in dfs), f"The column, {col}, is not in the input dataframe, {dfs}"
+    
+    if labels is None:
+        labels = [col.replace("_", " ") for col in cols] 
+    
+    bokeh_ps = []
+    for i, col in enumerate(cols):
+        p = bokeh_catplot.histogram(data=dfs,
+                                    cats=['animal'],
+                                    val=col,
+                                    density=True,
+                                    width=1000,
+                                    height=500)
+        
+        cutoff_line = Span(location=np.percentile(dfs[col], cutoff_perc), 
+                           dimension="height", 
+                           # line_color="#e41a1c",
+                           line_color = "#775a42",
+                           line_dash="dashed",
+                           line_width=2)
+        
+        p.legend.location = "top_left"
+        p.legend.title = "animal ID"
+        p.background_fill_color = "#efe8e2"
+        p.title.text = f" with aggregate {cutoff_perc}% mark"
+        p.xaxis.axis_label = labels[i]
+        p.xaxis.axis_label_text_font_size = "12pt"
+        p.yaxis.axis_label_text_font_size = "12pt"
+        p.add_layout(cutoff_line)
+            
+        # Output:
+        if save_path is not None:
+            filename = save_path + f"fictrac_histogram_by_animal_{col}"
+
+            p.output_backend = "svg"
+            
+            export_svgs(p, filename=filename + ".svg")
+            export_png(p, filename=filename + ".png")
+            output_file(filename=filename + ".html", 
+                        title=filename)
+        
+        if show_plots is True:
+            # In case this script is run in Jupyter, change output_backend 
+            # back to "canvas" for faster performance:
+            p.output_backend = "canvas"
+            show(p)
+        else:
+            bokeh_ps.append(p)
+    
+    if show_plots is False:
+        return bokeh_ps
+
+
+def plot_fictrac_ecdfs(dfs, cols=None, labels=None, 
+                       cutoff_perc=95, 
+                       save_path=None, show_plots=True):
+    """
+    Generate ECDFs for multiple FicTrac kinematic variables. 
+
+    Parameters:
+    -----------
+    dfs (DataFrame): Concatenated dataframe of FicTrac data generated from 
+        parse_dats()
+    cols (list): List of strings specifying column names in 'dfs'. If None, 
+        uses default columns that specify real-world and 'lab' kinematic measurements.
+        Otherwise, will use both input arguments and the default columns. Default is None.
+    labels (list): List of strings specifying the labels for the ECDFs' x-axes.
+        Its order must correspond to 'cols'. 
+    cutoff_perc (float): Specifies the percentile of the AGGREGATE population data. 
+        Plots a line at this value. Default is 95th percentile. 
+    
+    save_path (str): Absolute path to which to save the plots as .png and .svg files. 
+        If None, will not save the plots. Default is None. 
+    show_plots (bool): If True, will show plots, but will not 
+        output a list of Bokeh plotting objects. If False, will not show 
+        plots, but will output a list of Bokeh plotting objects. If both 
+        save and show_plots are True, .html plots will be generated, in addition 
+        to the .svg and .png plots. Default is True.
 
     Returns:
     --------
@@ -695,6 +832,7 @@ def plot_fictrac_histograms(dfs, cols=None, labels=None, save_path=None, show_pl
         for substring in banned_substrings:
             if substring in col:
                 banned_cols.append(col)
+                break
 
     ok_cols = [col for col in all_cols if col not in banned_cols]
     
@@ -710,19 +848,27 @@ def plot_fictrac_histograms(dfs, cols=None, labels=None, save_path=None, show_pl
     
     bokeh_ps = []
     for i, col in enumerate(cols):
-        p = bokeh_catplot.histogram(data=dfs,
-                                    cats=['animal'],
+        p = bokeh_catplot.ecdf(data=dfs,
+                                    cats=["animal"],
                                     val=col,
-                                    density=True,
+                                    kind="colored",
                                     width=1000,
                                     height=500)
-
+        
+        cutoff_line = Span(location=np.percentile(dfs[col], cutoff_perc), 
+                           dimension="height", 
+                           line_color="#775a42",
+                           line_dash="dashed",
+                           line_width=2)
+        
         p.legend.location = 'top_left'
         p.legend.title = "animal ID"
         p.background_fill_color = "#efe8e2"
+        p.title.text = f" with aggregate {cutoff_perc}% mark"
         p.xaxis.axis_label = labels[i]
         p.xaxis.axis_label_text_font_size = "12pt"
         p.yaxis.axis_label_text_font_size = "12pt"
+        p.add_layout(cutoff_line)
         
         # Output:
         if save_path is not None:
@@ -744,9 +890,6 @@ def plot_fictrac_histograms(dfs, cols=None, labels=None, save_path=None, show_pl
     
     if show_plots is False:
         return bokeh_ps
-    
-    # TODO: Provide a Span argument
-    # TODO: Generate no_cats plots with Span
     
     
 # TODO: A helper function that regularly sparsifies data to prevent overplotting
@@ -846,8 +989,8 @@ def main():
                         val_col, 
                         time_col, 
                         cutoff_freq=cutoff_freq, 
-                        show_plots=show_plots, 
-                        save_path=save_path)
+                        save_path=save_path,
+                        show_plots=False)
 
         # Plot filter:
         plot_fictrac_filter(df, 
@@ -859,8 +1002,8 @@ def main():
                             cutoff_freq = cutoff_freq, 
                             order = order, 
                             view_perc=view_perc,
-                            show_plots=False, 
-                            save_path=save_path)
+                            save_path=save_path,
+                            show_plots=False)
 
         # Plot XY
         cm = get_all_cmocean_colours()
@@ -868,19 +1011,27 @@ def main():
                              cmap_col=cmap_col,
                              cmap_label=cmap_label,
                              palette=cm["thermal"],
-                             show_plots=False,
-                             save_path=save_path)
+                             save_path=save_path,
+                             show_plots=False)
 
     # Generate population plots:
-    # TODO: Make dedicated subdirs for histograms and ECDFS, respectively
+    subdirs = ["histograms", "ecdfs"]
+    [mkdir(join(root, "popn_plots/", subdir)) for subdir in subdirs]
+    
+    save_path_histos = join(root, "popn_plots/", "histograms/")
+    save_path_ecdfs = join(root, "popn_plots/", "ecdfs/")
 
+    # Plot histograms:
+    # # TODO: match cutoff_perc to high_perc of XY fxn
+    plot_fictrac_histograms(concat_df, 
+                            save_path=save_path_histos, 
+                            show_plots=False)
 
-    # TODO: In the future I might want to generate population aggregate plots. 
-    # My current plots are all for individual animals. I might want an 'agg' 
-    # switch in my argparser in the future, so I can choose to output just 
-    # individual animal plots, or also population aggregate plots.
-    # TODO: Add histogram and ECDF population plots for speed, ang_vel, etc. 
-
+    # Plot ECDFs:
+    plot_fictrac_ecdfs(concat_df,
+                       save_path=save_path_ecdfs, 
+                       show_plots=False)
+    
     # Example terminal command:
     # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/ 2 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 0.01 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
 
