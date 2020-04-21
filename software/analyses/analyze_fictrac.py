@@ -874,7 +874,7 @@ def plot_fictrac_ecdfs(dfs, cols=None, labels=None,
         
         # Output:
         if save_path is not None:
-            filename = save_path + f"fictrac_histogram_{col}"
+            filename = save_path + f"fictrac_ecdfs_{col}"
             
             p.output_backend = "svg"
             export_svgs(p, filename=filename + ".svg")
