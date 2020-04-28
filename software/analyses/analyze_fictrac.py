@@ -1054,8 +1054,8 @@ def main():
     
     
     # Example terminal commands:
-    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/pson_closed_loop_yaw_gain_unity/ 1 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 97 0.1 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
-    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/pson_open_loop/ 1 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 97 0.1 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
+    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/pson_closed_loop_yaw_gain_unity/ 1 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 97 0.2 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
+    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/pson_open_loop/ 1 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 97 0.2 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
     
 if __name__ == "__main__":
     main()
