@@ -61,8 +61,12 @@ def get_framerate_from_logs(log):
         for line in log_lines:
             if "frame rate" in line:
                 # Pull out substring between [in/out] and [:
-                result = re.search("\[in/out]: (.*) \[", line)
-                hz_lines.append(float(result.group(1)))
+                # result = re.search("\[in/out]: (.*) \[", line)
+                # hz_lines.append(float(result.group(1)))
+                # Pull out in framerate only:
+                line = ''.join([char for char in line if char not in ('[',']')])
+                parts = line.split()
+                hz_lines.append(float(parts[8]))
 
     return np.mean(hz_lines)
 
