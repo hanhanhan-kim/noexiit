@@ -59,7 +59,7 @@ def parse_2dof_stimulus (root, nesting, servo_min, servo_max, servo_touch):
     --------
     """
     csvs = sorted(glob.glob(join(root, nesting * "*/", "stimulus/*.csv")))
-
+    
     for csv in csvs:
         head = split(csv)[0]
         assert isdir(head), \
@@ -200,10 +200,10 @@ def make_stimulus_trajectory(dfs_merged):
     for _, df_merged in dfs_merged:
         df_merged["stim_X_mm"] = df_merged["stim_X_mm"] + \
                                  (df_merged["dist_from_stim_mm"] * \
-                                 np.cos(np.deg2rad(df_merged["Stepper output (degs)"]))) 
+                                 np.cos(-1 * np.deg2rad(df_merged["Stepper output (degs)"] - np.pi/2))) 
         df_merged["stim_Y_mm"] = df_merged["stim_Y_mm"] + \
                                  (df_merged["dist_from_stim_mm"] * \
-                                 np.sin(np.deg2rad(df_merged["Stepper output (degs)"]))) 
+                                 np.sin(-1 * np.deg2rad(df_merged["Stepper output (degs)"] - np.pi/2))) 
         
         dfs_merged.append(df_merged)
         dfs_merged = pd.concat(dfs_merged)
