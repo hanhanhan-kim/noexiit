@@ -141,8 +141,9 @@ def merge_stimulus_with_data (stim_dfs, dfs_1, dfs_2=None,
     dfs_merged = []
     for i, stim_df in enumerate(stim_dfs): 
         
+        smaller_last_val = get_smaller_last_val(stim_df, dfs_1[i], common_col)
+
         if fill_method is "ffill":
-            smaller_last_val = get_smaller_last_val(stim_df, dfs_1[i], common_col)
             df_merged = pd.merge_ordered(stim_df, dfs_1[i], 
                                          on=common_col, fill_method=fill_method)
             df_merged = df_merged[df_merged[common_col] < smaller_last_val]    
