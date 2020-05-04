@@ -84,7 +84,7 @@ def parse_2dof_stimulus (root, nesting, servo_min, servo_max, servo_touch):
         df['animal'] = i
 
         # My older stimulus csvs have this col instead of "secs_elapsed":
-        if "Elapsed time" in csv:
+        if "Elapsed time" in df:
             df = df.rename(columns={"Elapsed time": "secs_elapsed"})
 
         dfs.append(df)
@@ -207,6 +207,6 @@ def make_stimulus_trajectory(dfs_merged):
                                  np.sin(-1 * np.deg2rad(df_merged["Stepper output (degs)"] - np.pi/2))) 
         
         dfs_merged.append(df_merged)
-        
+
     dfs_merged = pd.concat(dfs_merged)
     return dfs_merged
