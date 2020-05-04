@@ -114,7 +114,7 @@ def merge_stimulus_with_data (stim_dfs, dfs_1, dfs_2=None,
         Either 'ffill' for forward fill, or 'linear' for linear interpolation. 
         Forward fill fills the NaNs with the last valid observation, until the
         next valid observation. Linear interpolation fits a line based on two 
-        flanking valid observations. 
+        flanking valid observations; works only on columns with numeric values.
 
     Returns:
     --------
