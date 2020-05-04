@@ -88,8 +88,8 @@ def parse_2dof_stimulus (root, nesting, servo_min, servo_max, servo_touch):
             df = df.rename(columns={"Elapsed time": "secs_elapsed"})
 
         dfs.append(df)
-        dfs = pd.concat(dfs)
-
+    
+    dfs = pd.concat(dfs)
     return dfs
 
 
@@ -170,8 +170,9 @@ def merge_stimulus_with_data (stim_dfs, dfs_1, dfs_2=None,
                 df_merged = df_merged.interpolate(method=fill_method)
                 
         dfs_merged.append(df_merged)
-        dfs_merged = pd.concat(dfs_merged)
-        return dfs_merged
+
+    dfs_merged = pd.concat(dfs_merged)
+    return dfs_merged
 
 
 def make_stimulus_trajectory(dfs_merged):
@@ -206,5 +207,6 @@ def make_stimulus_trajectory(dfs_merged):
                                  np.sin(-1 * np.deg2rad(df_merged["Stepper output (degs)"] - np.pi/2))) 
         
         dfs_merged.append(df_merged)
-        dfs_merged = pd.concat(dfs_merged)
-        return dfs_merged
+        
+    dfs_merged = pd.concat(dfs_merged)
+    return dfs_merged
