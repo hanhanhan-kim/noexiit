@@ -153,6 +153,7 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
             framerates.append(hz)
 
     else: 
+        # TODO: assert type(framerate) is float
         assert(float(framerate)), \
             "'framerate' must be a float, if inputting manually."
     
@@ -190,7 +191,7 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
         df['min_int'] = df['min_int'].apply(str)
 
         # Assign animal number:
-        df['animal'] = i 
+        df['animal'] = str(i) 
 
         dfs.append(df)
 
@@ -896,8 +897,8 @@ def plot_fictrac_ecdfs(dfs, cols=None, labels=None,
     
     if show_plots is False:
         return bokeh_ps
-    
-    
+
+
 # TODO: A helper function that regularly sparsifies data to prevent overplotting
 
 def main():

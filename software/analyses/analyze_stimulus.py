@@ -81,7 +81,7 @@ def parse_2dof_stimulus (root, nesting, servo_min, servo_max, servo_touch):
         df["dist_from_stim_mm"] = servo_touch - df["Servo output (mm)"]
         
         # Assign animal number:
-        df['animal'] = i
+        df['animal'] = str(i)
 
         # My older stimulus csvs have this col instead of "secs_elapsed":
         if "Elapsed time" in df:
