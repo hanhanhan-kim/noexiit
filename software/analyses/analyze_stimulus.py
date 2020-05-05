@@ -123,6 +123,8 @@ def merge_stimulus_with_data (stim_dfs, dfs_1, dfs_2=None,
         input dataframes. 
     """
     
+    # TODO: assert "animal" in all dataframes and refactor dfs_2 is not None
+
     assert common_col in stim_dfs and common_col in dfs_1, \
         f"{stim_dfs} and {dfs_1} do not share {common_col}"
     if dfs_2 is not None:
@@ -146,7 +148,7 @@ def merge_stimulus_with_data (stim_dfs, dfs_1, dfs_2=None,
 
         if fill_method is "ffill":
             df_merged = pd.merge_ordered(stim_df, dfs_1[i], 
-                                         on=common_col, fill_method=fill_method)
+                                         on=[common_col, "animal"], fill_method=fill_method)
             df_merged = df_merged[df_merged[common_col] < smaller_last_val]    
             
             if dfs_2 is not None: 
@@ -159,7 +161,8 @@ def merge_stimulus_with_data (stim_dfs, dfs_1, dfs_2=None,
         
         elif fill_method is "linear":
             df_merged = pd.merge_ordered(stim_df, dfs_1[i], 
-                                         on=common_col, fill_method=None)
+                                         on=[common_col, "animal"], 
+                                         fill_method=None)
             df_merged = df_merged[df_merged[common_col] < smaller_last_val] 
             df_merged = df_merged.interpolate(method=fill_method)
 
@@ -205,13 +208,13 @@ def make_stimulus_trajectory(dfs_merged):
         f"The 'X_mm', 'Y_mm', and 'dist_from_stim_mm' columns are not in {dfs_merged}"
 
     dfs_merged = unconcat_df(dfs_merged)
-    for _, df_merged in dfs_merged:
-        df_merged["stim_X_mm"] = df_merged["stim_X_mm"] + \
+    for _, df_merged in enumerate(dfs_merged):
+        df_merged["stim_X_mm"] = df_merged["X_mm"] + \
                                  (df_merged["dist_from_stim_mm"] * \
-                                 np.cos(-1 * np.deg2rad(df_merged["Stepper output (degs)"] - np.pi/2))) 
-        df_merged["stim_Y_mm"] = df_merged["stim_Y_mm"] + \
+                                 np.cos(-1 * np.deg2rad(df_merged["Stepper output (degs)"]) - np.pi/2)) 
+        df_merged["stim_Y_mm"] = df_merged["Y_mm"] + \
                                  (df_merged["dist_from_stim_mm"] * \
-                                 np.sin(-1 * np.deg2rad(df_merged["Stepper output (degs)"] - np.pi/2))) 
+                                 np.sin(-1 * np.deg2rad(df_merged["Stepper output (degs)"]) - np.pi/2)) 
         
         dfs_merged.append(df_merged)
 
