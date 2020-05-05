@@ -28,7 +28,7 @@ from bokeh.transform import linear_cmap
 from bokeh.plotting import figure
 from bokeh.models import ColorBar, ColumnDataSource, Span
 from bokeh.layouts import gridplot
-from bokeh.palettes import brewer
+import bokeh.palettes
 import colorcet as cc
 
 import bokeh_catplot
@@ -463,13 +463,13 @@ def plot_fictrac_filter(dfs, val_col, time_col,
         p.line(
             x=time[:domain],
             y=val[:domain],
-            color=brewer["Paired"][3][0],
+            color=bokeh.palettes.brewer["Paired"][3][0],
             legend_label="raw"
         )
         p.line(
             x=time[:domain],
             y=val_filtered[:domain],
-            color=brewer["Paired"][3][1],
+            color=bokeh.palettes.brewer["Paired"][3][1],
             legend_label="filtered"
         )
         
