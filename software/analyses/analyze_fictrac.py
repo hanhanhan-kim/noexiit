@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# TODO: GUT FRAMERATE FROM EVERYTHING!
+# TODO: USE TIMESTAMP INSTEAD OF FRAMERATE!
+# TODO: Sym link my local into noexiit src? How to rid of path.insert?
+
 """
 Process and visualize FicTrac data with helper functions. 
 When run as a script, transforms .dat FicTrac files into a single concatenated 
@@ -16,6 +20,7 @@ from shutil import rmtree
 from os.path import join, expanduser, exists
 from os import mkdir
 import re
+import datetime
 
 import numpy as np
 import pandas as pd
@@ -35,7 +40,6 @@ import bokeh_catplot
 
 from fourier_transform import fft, bokeh_freq_domain
 
-# TODO: Sym link my local into noexiit src? 
 path.insert(1, expanduser('~/src/cmocean-bokeh'))
 from cmocean_cmaps import get_all_cmocean_colours
 
@@ -60,7 +64,7 @@ def get_framerate_from_logs(log):
         hz_lines = []
         for line in log_lines:
             if "frame rate" in line:
-                # Pull out substring between [in/out] and [:
+                # # Pull out substring between [in/out] and [:
                 # result = re.search("\[in/out]: (.*) \[", line)
                 # hz_lines.append(float(result.group(1)))
                 # Pull out in framerate only:
@@ -71,7 +75,28 @@ def get_framerate_from_logs(log):
     return np.mean(hz_lines)
 
 
-def parse_dats(root, nesting, ball_radius, framerate=None):
+def get_datetime_from_logs(log, acq_mode="online"):
+    """
+    Compute the 
+    """
+    assert (acq_mode is "online"), \
+        "This function applies only to FicTrac data acquired in real-time"
+    with open (log, "r") as f:
+
+        log_lines = f.readlines()
+
+        t_sys_list = []
+        for line in log_lines:
+            if "Frame captured " in line:
+                # Pull out substring between t_sys and ms:
+                result = re.search("t_sys: (.*?) ms", line)
+                t_sys_list.append(float(result.group(1))) 
+
+    # Will be one short of 'frame_cntr' output, b/c last frame in log is error:
+    return t_sys_list
+
+
+def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
     """
     Batch processes subdirectories, where each subdirectory is labelled 'fictrac'
     and has a single FicTrac .dat file and a corresponding .log file. Returns a 
@@ -99,15 +124,17 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
     ball_radius (float): The radius of the ball (mm) the insect was on. 
         Used to compute the real-world values in mm.  
 
-    framerate (float): The mean framerate used for acquisition with FicTrac. 
-        If None, will compute the average framerate for each .dat, from its 
-        corresponding .log. Can be overridden with a provided manual value. 
-        Default is None. 
+    acq_mode (str): The mode with which FicTrac data (.dats and .logs) were 
+        acquired. Accepts either 'online', i.e. real-time during acquisition, or 
+        'offline', i.e. FicTrac was run after video acquisition.
 
     Returns:
     --------
     A single Pandas dataframe that concatenates all the input .dat files.
     """
+
+    assert acq_mode is "offline" or "online", \
+        "Please provide a valid acquisition mode: either 'offline' or 'online'."
 
     confirm = input(f"The ball_radius argument must be in mm. Confirm by inputting 'y'. Otherwise, hit any other key to quit.")
     while True:
@@ -169,12 +196,17 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
         # Convert the values in the frame and sequence counters columns to ints:
         df['frame_cntr'] = df['frame_cntr'].astype(int)
         df['seq_cntr'] = df['seq_cntr'].astype(int)
+        
+        # Compute framerates from .log files:
+        if acq_mode is "online":
+            df["datetime"] = get_datetime_from_logs(logs[i])
+            
+            df['secs_elapsed'] = df['frame_cntr'] / f_rate
 
-        # Compute average framerate:
+        # # Compute average framerate:
         if framerate is None:
             # Add framerates from .logs:
             f_rate = framerates[i] 
-
         df['avg_framerate'] = f_rate
 
         # Compute real-world values:
@@ -183,7 +215,10 @@ def parse_dats(root, nesting, ball_radius, framerate=None):
         df['speed_mm_s'] = df['animal_mvmt_spd'] * f_rate * ball_radius
 
         # Compute elapsed time:
-        df['secs_elapsed'] = df['frame_cntr'] / f_rate
+        if acq_mode is "offline":
+            # Timestamp from offline acq seems to just be elapsed ms:
+            df["secs_elapsed"] = df["timestamp"] / 1000
+
         df['mins_elapsed'] = df['secs_elapsed'] / 60
         
         # Discretize minute intervals as strings:
