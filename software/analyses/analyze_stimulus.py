@@ -16,6 +16,14 @@ from pandas.api.types import is_numeric_dtype
 import numpy as np
 import scipy.interpolate as spi
 
+from bokeh.io import output_file, export_png, export_svgs, show
+from bokeh.transform import linear_cmap
+from bokeh.plotting import figure
+from bokeh.models import ColorBar, ColumnDataSource, Span
+from bokeh.layouts import gridplot
+import bokeh.palettes 
+import colorcet as cc
+
 from analyze_fictrac import unconcat_df
 
 
@@ -223,3 +231,179 @@ def make_stimulus_trajectory(dfs_merged):
 
     dfs_trigged = pd.concat(dfs_trigged)
     return dfs_trigged
+
+
+def plot_fictrac_XY_with_stim(dfs, low=0, high_percentile=95, respective=False, 
+                              cmap_col="secs_elapsed", cmap_label="time (s)", 
+                              palette_beetle=bokeh.palettes.Blues256[150:70:-1], 
+                              palette_stim=bokeh.palettes.Greys256[150:70:-1], 
+                              size=2.0, alpha=0.3, 
+                              show_start=False, 
+                              save_path=None, show_plots=True):
+    """
+    Plot XY FicTrac coordinates of both the tethered animal and the 2-DOF stimulus. 
+    Adds a linear colourmap for a FicTrac variable of choice. 
+    
+    Parameters:
+    -----------
+    dfs (DataFrame): Concatenated dataframe of FicTrac data generated from 
+        parse_dats()
+    low (float): The minimum value of the colour map range. Any value below the set 
+        'low' value will be 'clamped', i.e. will appear as the same colour as 
+        the 'low' value. The 'low' value must be 0 or greater. Default value 
+        is 0.
+    high_percentile (float): The max of the colour map range, as a percentile of the 
+        'cmap_col' variable's distribution. Any value above the 'high_percentile'
+        will be clamped, i.e. will appear as the same colour as the 
+        'high_percentile' value. E.g. if set to 95, all values below the 95th 
+        percentile will be mapped to the colour map, and all values above the
+        95th percentile will be clamped. 
+    respective (bool): If True, will re-scale colourmap for each individual animal to 
+        their respective 'high_percentile' cut-off value. If False, will use
+        the 'high_percentile' value computed from the population, i.e. the
+        concatenated 'dfs' dataframe. Default is False. 
+    cmap_col (str): Column name of the dfs dataframe to be colour-mapped. 
+    cmap_label (str): Label for both colour maps. 
+    palette_beetle (list): A list of hexadecimal colours to be used for the beetle's 
+        colour map.
+    palette_stim (list): A list of hexadecimal coloours to be used for the stimulus' 
+        colour map.
+    size (float): The size of each datapoint specifying XY location. 
+    alpha(float): The transparency of each datapoint specifying XY location.
+        Must be between 0 and 1.
+    show_start (bool): If True, will plot a marking to explicitly denote the start 
+        site. Default is False. 
+    
+    save_path (str): Absolute path to which to save the plots as .png and .svg files. 
+        If None, will not save the plots. Default is None. 
+
+    show_plots (bool): If True, will show plots, but will not 
+        output a list of Bokeh plotting objects. If False, will not show 
+        plots, but will output a list of Bokeh plotting objects. If both 
+        save and show_plots are True, .html plots will be generated, in addition 
+        to the .svg and .png plots. Default is True.
+
+    Returns:
+    --------
+    if show_plots is True: will show plots but will not output bokeh.plotting.figure
+         object.
+
+    if show_plots is False: will output a list of bokeh.plotting.figure objects, 
+        but will not show plots.
+
+    if save is True: will save .svg and .png plots.
+    
+    if both show_plots and save are True, will show plots and save .svg, .png and 
+        .html plots. 
+
+    if both show_plots and save are False, will return nothing. 
+    """
+    assert (low >= 0), \
+        f"The low end of the colour map range must be non-negative"
+    assert ("X_mm" in dfs), \
+        f"The column, 'X_mm', is not in the input dataframe, {dfs}"
+    assert ("Y_mm" in dfs), \
+        f"The column, 'Y_mm', is not in the input dataframe, {dfs}"
+    assert (cmap_col in dfs), \
+        f"The column, {cmap_col}, is not in the input dataframe, {dfs}"
+    assert ("animal" in dfs), \
+            f"The column 'animal' is not in in the input dataframe, {dfs}"
+    
+    dfs_list = unconcat_df(dfs, col_name="animal")
+    
+    if respective is False:
+        high = np.percentile(dfs[cmap_col], high_percentile)
+
+    bokeh_ps = []
+    for _, df in enumerate(dfs_list):
+        
+        assert len(df["X_mm"] == len(df["Y_mm"])), \
+            "X_mm and Y_mm are different lengths! They must be the same."
+        
+        source = ColumnDataSource(df)
+        
+        if respective is True:
+            high = np.percentile(df[cmap_col], high_percentile)
+            # also change colorbar labels so max has =< symbol
+        
+        mapper_beetle = linear_cmap(field_name=cmap_col, 
+                             palette=palette_beetle, 
+                             low=low, 
+                             high=high)
+        
+        mapper_stim = linear_cmap(field_name=cmap_col, 
+                             palette=palette_stim, 
+                             low=low, 
+                             high=high)
+        
+        p = figure(background_fill_color="#efe8e2", 
+                   width=800,
+                   height=800,
+                   x_axis_label="X (mm)",
+                   y_axis_label="Y (mm)")
+        
+        # beetle:
+        p.circle(source=source,
+                 x="X_mm",
+                 y="Y_mm",
+                 color=mapper_beetle,
+                 size=size,
+                 alpha=alpha)
+        
+        # stimulus:
+        p.circle(source=source,
+                 x="stim_X_mm", 
+                 y="stim_Y_mm", 
+                 color=mapper_stim, 
+                 size=size, 
+                 alpha=alpha)
+
+        color_bar_beetle = ColorBar(color_mapper=mapper_beetle['transform'], 
+                                    title="beetle " + cmap_label,
+                                    title_text_font_size="7pt",
+                                    width=10,
+                                    location=(0,0))
+        
+        color_bar_stim = ColorBar(color_mapper=mapper_stim['transform'], 
+                                  title="stimulus " + cmap_label,
+                                  title_text_font_size="7pt",
+                                  width=10,
+                                  location=(0,0))
+        
+        if show_start is True:
+            # Other options include .cross, .circle_x, and .hex:
+            p.circle(x=df["X_mm"][0], 
+                     y=df["Y_mm"][0], 
+                     size=12,
+                     color="darkgray",
+                     fill_alpha=0.5)
+
+        p.add_layout(color_bar_beetle, "right")
+        p.add_layout(color_bar_stim, "right")
+
+        p.title.text_font_size = "14pt"
+        p.xaxis.axis_label_text_font_size = '10pt'
+        p.yaxis.axis_label_text_font_size = '10pt'
+
+        bokeh_ps.append(p)
+
+        # Output:
+        if save_path is not None:
+            filename = save_path + f"fictrac_XY"
+            
+            p.output_backend = "svg"
+            export_svgs(p, filename=filename + ".svg")
+            export_png(p, filename=filename + ".png")
+            output_file(filename=filename + ".html", 
+                        title=filename)
+            
+        if show_plots is True:
+            # In case this script is run in Jupyter, change output_backend 
+            # back to "canvas" for faster performance:
+            p.output_backend = "canvas"
+            show(p)
+        else:
+            bokeh_ps.append(p)
+        
+    if show_plots is False:
+        return bokeh_ps
