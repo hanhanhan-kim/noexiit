@@ -208,15 +208,18 @@ def make_stimulus_trajectory(dfs_merged):
         f"The 'X_mm', 'Y_mm', and 'dist_from_stim_mm' columns are not in {dfs_merged}"
 
     dfs_merged = unconcat_df(dfs_merged)
-    for _, df_merged in enumerate(dfs_merged):
-        df_merged["stim_X_mm"] = df_merged["X_mm"] + \
-                                 (df_merged["dist_from_stim_mm"] * \
-                                 np.cos(-1 * np.deg2rad(df_merged["Stepper output (degs)"]) - np.pi/2)) 
-        df_merged["stim_Y_mm"] = df_merged["Y_mm"] + \
-                                 (df_merged["dist_from_stim_mm"] * \
-                                 np.sin(-1 * np.deg2rad(df_merged["Stepper output (degs)"]) - np.pi/2)) 
-        
-        dfs_merged.append(df_merged)
 
-    dfs_merged = pd.concat(dfs_merged)
-    return dfs_merged
+    dfs_trigged = []
+    for _, df_merged in enumerate(dfs_merged):
+
+        df_merged['stim_X_mm'] = df_merged.apply(lambda row: (row["X_mm"] + \
+            (row["dist_from_stim_mm"] * np.cos(np.deg2rad(row["Stepper output (degs)"])))), 
+            axis=1)
+        df_merged['stim_Y_mm'] = df_merged.apply(lambda row: (row["Y_mm"] + \
+            (row["dist_from_stim_mm"] * np.sin(np.deg2rad(row["Stepper output (degs)"])))), 
+            axis=1)
+        
+        dfs_trigged.append(df_merged)
+
+    dfs_trigged = pd.concat(dfs_trigged)
+    return dfs_trigged
