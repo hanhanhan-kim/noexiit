@@ -85,17 +85,20 @@ def get_datetime_from_logs(log, acq_mode="online"):
 
         log_lines = f.readlines()
 
-        t_sys_list = []
+        datetime_list = []
         for line in log_lines:
             if "Frame captured " in line:
                 # Pull out substring between t_sys and ms:
                 result = re.search("t_sys: (.*?) ms", line)
-                t_sys_list.append(float(result.group(1))) 
+                # Convert from ms to s: 
+                t_sys = float(result.group(1)) / 1000
+                datetime_obj = datetime.datetime.fromtimestamp(t_sys)
+                datetime_list.append(datetime_obj)
         
         # FicTrac logs a t_sys before frame 0. Get rid of it:
-        del t_sys_list[0]
+        del datetime_list[0]
 
-    return t_sys_list
+    return datetime_list
 
 
 def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
@@ -186,9 +189,7 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
             "'framerate' must be a float, if inputting manually."
 
     if acq_mode is "online":
-        t_sys_bank = []
-        for log in logs:
-            t_sys_bank.append(get_datetime_from_logs(log))
+        datetimes_from_logs = [get_datetime_from_logs(log) for log in logs]
     
     dfs = []
     for i, dat in enumerate(dats):
@@ -205,7 +206,7 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
         
         # Compute datetime from .log files:
         if acq_mode is "online":
-            df["t_sys"] = t_sys_bank[i]
+            df["datetime"] = datetimes_from_logs[i]
 
         # Compute average framerate:
         if framerate is None:
