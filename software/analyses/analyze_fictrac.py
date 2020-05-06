@@ -172,7 +172,7 @@ def parse_dats(root, nesting, ball_radius, acq_mode):
 
         # Discretize minute intervals:
         df['min_int'] = df["mins_elapsed"].apply(np.floor) + 1
-        df['min_int'] = df['min_int'].astype(int) # TODO: make str?
+        df['min_int'] = df['min_int'].astype(str).str.strip(".0")
 
         # Compute real-world values:
         df['X_mm'] = df['integrat_x_posn'] * ball_radius
@@ -977,9 +977,7 @@ def main():
 
     nosave = args.nosave
     show_plots = args.show 
-
-    acq_mode = "online"
-    import ipdb; ipdb.set_trace()
+    # TODO: acq_mode bug; won't accept as argparse arg
 
     # Parse FicTrac inputs:
     concat_df = parse_dats(root, nesting, ball_radius, acq_mode).dropna()
