@@ -77,7 +77,7 @@ def get_framerate_from_logs(log):
 
 def get_datetime_from_logs(log, acq_mode="online"):
     """
-    Compute the 
+    Extract 't_sys' (ms) from the FicTrac .log files. 
     """
     assert (acq_mode is "online"), \
         "This function applies only to FicTrac data acquired in real-time"
@@ -91,8 +91,10 @@ def get_datetime_from_logs(log, acq_mode="online"):
                 # Pull out substring between t_sys and ms:
                 result = re.search("t_sys: (.*?) ms", line)
                 t_sys_list.append(float(result.group(1))) 
+        
+        # FicTrac logs a t_sys before frame 0. Get rid of it:
+        del t_sys_list[0]
 
-    # Will be one short of 'frame_cntr' output, b/c last frame in log is error:
     return t_sys_list
 
 
@@ -178,11 +180,15 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
         for log in logs:
             hz = get_framerate_from_logs(log)
             framerates.append(hz)
-
     else: 
         # TODO: assert type(framerate) is float
         assert(float(framerate)), \
             "'framerate' must be a float, if inputting manually."
+
+    if acq_mode is "online":
+        t_sys_bank = []
+        for log in logs:
+            t_sys_bank.append(get_datetime_from_logs(log))
     
     dfs = []
     for i, dat in enumerate(dats):
@@ -197,16 +203,16 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
         df['frame_cntr'] = df['frame_cntr'].astype(int)
         df['seq_cntr'] = df['seq_cntr'].astype(int)
         
-        # Compute framerates from .log files:
+        # Compute datetime from .log files:
         if acq_mode is "online":
-            df["datetime"] = get_datetime_from_logs(logs[i])
-            
-            df['secs_elapsed'] = df['frame_cntr'] / f_rate
+            df["t_sys"] = t_sys_bank[i]
 
-        # # Compute average framerate:
+        # Compute average framerate:
         if framerate is None:
             # Add framerates from .logs:
             f_rate = framerates[i] 
+        
+        df['secs_elapsed'] = df['frame_cntr'] / f_rate
         df['avg_framerate'] = f_rate
 
         # Compute real-world values:
@@ -222,8 +228,8 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
         df['mins_elapsed'] = df['secs_elapsed'] / 60
         
         # Discretize minute intervals as strings:
-        df['min_int'] = df['mins_elapsed'].astype('int') + 1
-        df['min_int'] = df['min_int'].apply(str)
+        # df['min_int'] = df['mins_elapsed'].astype('int') + 1
+        # df['min_int'] = df['min_int'].apply(str)
 
         # Assign animal number:
         df['animal'] = str(i) 
