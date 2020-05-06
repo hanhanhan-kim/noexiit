@@ -209,13 +209,11 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
             df["datetime"] = datetimes_from_logs[i]
             df["elapsed"] = df["datetime"][1:] - df["datetime"][0]
             df["secs_elapsed"] = df.elapsed.dt.total_seconds()
-            df["mins_elapsed"] = df["secs_elapsed"] / 60
 
         # Compute average framerate:
         if framerate is None:
             # Add framerates from .logs:
             f_rate = framerates[i] 
-        
         df['avg_framerate'] = f_rate
 
         # Compute real-world values:
