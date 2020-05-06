@@ -204,33 +204,32 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
         df['frame_cntr'] = df['frame_cntr'].astype(int)
         df['seq_cntr'] = df['seq_cntr'].astype(int)
         
-        # Compute times from .log files:
+        # Compute elapsed times:        
         if acq_mode is "online":
             df["datetime"] = datetimes_from_logs[i]
             df["elapsed"] = df["datetime"][1:] - df["datetime"][0]
             df["secs_elapsed"] = df.elapsed.dt.total_seconds()
 
-        # Compute average framerate:
-        if framerate is None:
-            # Add framerates from .logs:
-            f_rate = framerates[i] 
-        df['avg_framerate'] = f_rate
-
-        # Compute real-world values:
-        df['X_mm'] = df['integrat_x_posn'] * ball_radius
-        df['Y_mm'] = df['integrat_y_posn'] * ball_radius
-        df['speed_mm_s'] = df['animal_mvmt_spd'] * f_rate * ball_radius
-
-        # Compute elapsed time:
         if acq_mode is "offline":
             # Timestamp from offline acq seems to just be elapsed ms:
             df["secs_elapsed"] = df["timestamp"] / 1000
 
         df['mins_elapsed'] = df['secs_elapsed'] / 60
-        
-        # Discretize minute intervals as strings:
-        # df['min_int'] = df['mins_elapsed'].astype('int') + 1
-        # df['min_int'] = df['min_int'].apply(str)
+
+        # Discretize minute intervals:
+        df['min_int'] = df["mins_elapsed"].apply(np.floor) + 1
+        df['min_int'] = df['min_int'].astype("Int64")
+
+        # Compute average framerate:
+        if framerate is None:
+            # Add framerates from .logs:
+            f_rate = framerates[i] 
+            df['avg_framerate'] = f_rate
+
+        # Compute real-world values:
+        df['X_mm'] = df['integrat_x_posn'] * ball_radius
+        df['Y_mm'] = df['integrat_y_posn'] * ball_radius
+        df['speed_mm_s'] = df['animal_mvmt_spd'] * f_rate * ball_radius
 
         # Assign animal number:
         df['animal'] = str(i) 
