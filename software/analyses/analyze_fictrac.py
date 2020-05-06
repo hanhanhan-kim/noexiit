@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-# TODO: GUT FRAMERATE FROM EVERYTHING!
-# TODO: USE TIMESTAMP INSTEAD OF FRAMERATE!
 # TODO: Sym link my local into noexiit src? How to rid of path.insert?
 
 """
@@ -41,37 +39,6 @@ import bokeh_catplot
 from fourier_transform import fft, bokeh_freq_domain
 path.insert(1, expanduser('~/src/cmocean-bokeh'))
 from cmocean_cmaps import get_all_cmocean_colours
-
-
-def get_framerate_from_logs(log):
-    """
-    Compute the average framerate in Hz from a FicTrac .log file. 
-    
-    Parameters:
-    -----------
-    log (str): Path to the FicTrac .log file. 
-
-    Returns:
-    --------
-    Mean framerate in Hz (float). 
-    """
-
-    with open (log, "r") as f:
-
-        log_lines = f.readlines()
-
-        hz_lines = []
-        for line in log_lines:
-            if "frame rate" in line:
-                # # Pull out substring between [in/out] and [:
-                # result = re.search("\[in/out]: (.*) \[", line)
-                # hz_lines.append(float(result.group(1)))
-                # Pull out in framerate only:
-                line = ''.join([char for char in line if char not in ('[',']')])
-                parts = line.split()
-                hz_lines.append(float(parts[8]))
-
-    return np.mean(hz_lines)
 
 
 def get_datetime_from_logs(log, acq_mode="online"):
@@ -455,7 +422,7 @@ def plot_fictrac_filter(dfs, val_col, time_col,
             f"The column 'animal' is not in in the input dataframe, {dfs}"
         
         if framerate is None:
-            framerate = df["avg_framerate"][0]
+            framerate = np.mean(df["framerate_hz"])
 
         time = list(df[str(time_col)])
         val = val = list(df[str(val_col)])
