@@ -39,7 +39,6 @@ import colorcet as cc
 import bokeh_catplot
 
 from fourier_transform import fft, bokeh_freq_domain
-
 path.insert(1, expanduser('~/src/cmocean-bokeh'))
 from cmocean_cmaps import get_all_cmocean_colours
 
@@ -101,7 +100,7 @@ def get_datetime_from_logs(log, acq_mode="online"):
     return datetime_list
 
 
-def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
+def parse_dats(root, nesting, ball_radius, acq_mode):
     """
     Batch processes subdirectories, where each subdirectory is labelled 'fictrac'
     and has a single FicTrac .dat file and a corresponding .log file. Returns a 
@@ -109,9 +108,6 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
     
     The output dataframe is given proper headings, as informed by 
     the documentation on rjdmoore's FicTrac GitHub page. 
-
-    The framerate is computed for each .dat, by taking the average frame rate
-    specified in the corresponding .log. 
 
     Elapsed time is converted into seconds and minutes, and the integrated 
     X and Y positions are converted to real-world values, by multiplying them 
@@ -180,17 +176,6 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
     if acq_mode is "online":
         datetimes_from_logs = [get_datetime_from_logs(log) for log in logs]
 
-    if framerate is None: 
-        # Compute framerates from .log files:
-        framerates = []
-        for log in logs:
-            hz = get_framerate_from_logs(log)
-            framerates.append(hz)
-    else: 
-        # TODO: assert type(framerate) is float
-        assert(float(framerate)), \
-            "'framerate' must be a float, if inputting manually."
-    
     dfs = []
     for i, dat in enumerate(dats):
         with open(dat, 'r') as f:
@@ -204,15 +189,17 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
         df['frame_cntr'] = df['frame_cntr'].astype(int)
         df['seq_cntr'] = df['seq_cntr'].astype(int)
         
-        # Compute elapsed times:        
+        # Compute times and framerate:         
         if acq_mode is "online":
             df["datetime"] = datetimes_from_logs[i]
             df["elapsed"] = df["datetime"][1:] - df["datetime"][0]
             df["secs_elapsed"] = df.elapsed.dt.total_seconds()
+            df["framerate_hz"] = 1 / df["datetime"].diff().dt.total_seconds() 
 
         if acq_mode is "offline":
             # Timestamp from offline acq seems to just be elapsed ms:
             df["secs_elapsed"] = df["timestamp"] / 1000
+            df["framerate_hz"] = 1 / df["secs_elapsed"].diff()
 
         df['mins_elapsed'] = df['secs_elapsed'] / 60
 
@@ -220,16 +207,10 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
         df['min_int'] = df["mins_elapsed"].apply(np.floor) + 1
         df['min_int'] = df['min_int'].astype("Int64")
 
-        # Compute average framerate:
-        if framerate is None:
-            # Add framerates from .logs:
-            f_rate = framerates[i] 
-            df['avg_framerate'] = f_rate
-
         # Compute real-world values:
         df['X_mm'] = df['integrat_x_posn'] * ball_radius
         df['Y_mm'] = df['integrat_y_posn'] * ball_radius
-        df['speed_mm_s'] = df['animal_mvmt_spd'] * f_rate * ball_radius
+        df['speed_mm_s'] = df['animal_mvmt_spd'] * df["framerate_hz"] * ball_radius
 
         # Assign animal number:
         df['animal'] = str(i) 
