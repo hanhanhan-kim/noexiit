@@ -293,7 +293,7 @@ def plot_fictrac_fft(dfs, val_col, time_col,
         f = spi.interp1d(time, val)
 
         if even is False:
-            time_interp = np.linspace(time[0], time[-1], len(time))
+            time_interp = np.linspace(time[1], time[-1], len(time))
             val_interp = f(time_interp)
         else:
             time_interp = time
@@ -905,6 +905,10 @@ def main():
     parser.add_argument("ball_radius", type=float,
         help="The radius of the ball used with the insect-on-a-ball tracking rig. \
             Must be in mm.")
+    parser.add_argument("acq_mode",
+        help="The mode with which FicTrac data (.dats and .logs) were acquired. \
+            Accepts either 'online', i.e. real-time during acquisition, or \
+            'offline', i.e. FicTrac was run after video acquisition.")
     parser.add_argument("val_col", 
         help="Column name of the Pandas dataframe to be used as the dependent \
             variable for analyses.")
@@ -951,7 +955,7 @@ def main():
 
     root = args.root
     nesting = args.nesting 
-    framerate = args.framerate 
+    acq_mode = args.acq_mode
     ball_radius = args.ball_radius # mm
 
     val_col = args.val_col
@@ -961,6 +965,7 @@ def main():
     cmap_col = args.cmap_col
     cmap_label = args.cmap_label 
     cutoff_freq = args.cutoff_freq
+    framerate = args.framerate 
     order = args.order
     view_perc = args.view_percent
     percentile_max_clamp = args.percentile_max_clamp
@@ -970,7 +975,7 @@ def main():
     show_plots = args.show 
 
     # Parse FicTrac inputs:
-    concat_df = parse_dats(root, nesting, ball_radius, framerate)
+    concat_df = parse_dats(root, nesting, ball_radius, acq_mode="online")
 
     # Unconcatenate the concatenated df:
     dfs_list = unconcat_df(concat_df, col_name="animal")
@@ -997,17 +1002,17 @@ def main():
                         time_col, 
                         cutoff_freq=cutoff_freq, 
                         save_path=save_path,
-                        show_plots=show_plots)
+                        show_plots=show_plots) 
 
         # Plot filter:
         plot_fictrac_filter(df, 
                             val_col, 
                             time_col, 
-                            framerate = framerate,
+                            framerate=framerate,
                             val_label=val_label, 
                             time_label=time_label,
-                            cutoff_freq = cutoff_freq, 
-                            order = order, 
+                            cutoff_freq=cutoff_freq, 
+                            order=order, 
                             view_perc=view_perc,
                             save_path=save_path,
                             show_plots=show_plots)
@@ -1048,8 +1053,8 @@ def main():
     
     
     # Example terminal commands:
-    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/pson_closed_loop_yaw_gain_unity/ 1 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 97 0.2 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
-    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/pson_open_loop/ 1 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 97 0.2 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
+    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/pson_closed_loop_yaw_gain_unity/ 1 5 online delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 97 0.2 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
+    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/pson_open_loop/ 1 5 offline delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 97 0.2 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
     
 if __name__ == "__main__":
     main()
