@@ -695,6 +695,8 @@ def plot_fictrac_histograms(dfs, cols=None, labels=None,
                          "cam", 
                          "frame", 
                          "elapse", 
+                         "datetime",
+                         "framerate",
                          "min",
                          "animal",
                          "__"] 
@@ -819,7 +821,9 @@ def plot_fictrac_ecdfs(dfs, cols=None, labels=None,
                          "timestamp", 
                          "cam", 
                          "frame", 
-                         "elapse", 
+                         "elapse",
+                         "datetime",
+                         "framerate", 
                          "min",
                          "animal",
                          "__"] 
@@ -975,7 +979,7 @@ def main():
     show_plots = args.show 
 
     # Parse FicTrac inputs:
-    concat_df = parse_dats(root, nesting, ball_radius, acq_mode="online")
+    concat_df = parse_dats(root, nesting, ball_radius, acq_mode="online").dropna()
 
     # Unconcatenate the concatenated df:
     dfs_list = unconcat_df(concat_df, col_name="animal")
