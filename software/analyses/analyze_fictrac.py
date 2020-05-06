@@ -177,6 +177,9 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
                 "delta_timestamp",
                 "alt_timestamp" ]
 
+    if acq_mode is "online":
+        datetimes_from_logs = [get_datetime_from_logs(log) for log in logs]
+
     if framerate is None: 
         # Compute framerates from .log files:
         framerates = []
@@ -187,9 +190,6 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
         # TODO: assert type(framerate) is float
         assert(float(framerate)), \
             "'framerate' must be a float, if inputting manually."
-
-    if acq_mode is "online":
-        datetimes_from_logs = [get_datetime_from_logs(log) for log in logs]
     
     dfs = []
     for i, dat in enumerate(dats):
@@ -204,16 +204,18 @@ def parse_dats(root, nesting, ball_radius, acq_mode, framerate=None):
         df['frame_cntr'] = df['frame_cntr'].astype(int)
         df['seq_cntr'] = df['seq_cntr'].astype(int)
         
-        # Compute datetime from .log files:
+        # Compute times from .log files:
         if acq_mode is "online":
             df["datetime"] = datetimes_from_logs[i]
+            df["elapsed"] = df["datetime"][1:] - df["datetime"][0]
+            df["secs_elapsed"] = df.elapsed.dt.total_seconds()
+            df["mins_elapsed"] = df["secs_elapsed"] / 60
 
         # Compute average framerate:
         if framerate is None:
             # Add framerates from .logs:
             f_rate = framerates[i] 
         
-        df['secs_elapsed'] = df['frame_cntr'] / f_rate
         df['avg_framerate'] = f_rate
 
         # Compute real-world values:
