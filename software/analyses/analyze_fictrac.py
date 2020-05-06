@@ -167,12 +167,12 @@ def parse_dats(root, nesting, ball_radius, acq_mode):
             # Timestamp from offline acq seems to just be elapsed ms:
             df["secs_elapsed"] = df["timestamp"] / 1000
             df["framerate_hz"] = 1 / df["secs_elapsed"].diff()
-
+        
         df['mins_elapsed'] = df['secs_elapsed'] / 60
 
         # Discretize minute intervals:
         df['min_int'] = df["mins_elapsed"].apply(np.floor) + 1
-        df['min_int'] = df['min_int'].astype("Int64")
+        df['min_int'] = df['min_int'].astype(int) # TODO: make str?
 
         # Compute real-world values:
         df['X_mm'] = df['integrat_x_posn'] * ball_radius
@@ -897,6 +897,10 @@ def plot_fictrac_ecdfs(dfs, cols=None, labels=None,
 def main():
 
     parser = argparse.ArgumentParser(description = __doc__)
+    parser.add_argument("acq_mode", 
+        help="The mode with which FicTrac data (.dats and .logs) were acquired. \
+            Accepts either 'online', i.e. real-time during acquisition, or \
+            'offline', i.e. FicTrac was run after video acquisition.")
     parser.add_argument("root",
         help="Absolute path to the root directory. I.e. the outermost \
             folder that houses the FicTrac files.\
@@ -909,10 +913,6 @@ def main():
     parser.add_argument("ball_radius", type=float,
         help="The radius of the ball used with the insect-on-a-ball tracking rig. \
             Must be in mm.")
-    parser.add_argument("acq_mode",
-        help="The mode with which FicTrac data (.dats and .logs) were acquired. \
-            Accepts either 'online', i.e. real-time during acquisition, or \
-            'offline', i.e. FicTrac was run after video acquisition.")
     parser.add_argument("val_col", 
         help="Column name of the Pandas dataframe to be used as the dependent \
             variable for analyses.")
@@ -978,8 +978,11 @@ def main():
     nosave = args.nosave
     show_plots = args.show 
 
+    acq_mode = "online"
+    import ipdb; ipdb.set_trace()
+
     # Parse FicTrac inputs:
-    concat_df = parse_dats(root, nesting, ball_radius, acq_mode="online").dropna()
+    concat_df = parse_dats(root, nesting, ball_radius, acq_mode).dropna()
 
     # Unconcatenate the concatenated df:
     dfs_list = unconcat_df(concat_df, col_name="animal")
@@ -1057,8 +1060,8 @@ def main():
     
     
     # Example terminal commands:
-    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/pson_closed_loop_yaw_gain_unity/ 1 5 online delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 97 0.2 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
-    # ./analyze_fictrac.py /mnt/2TB/data_in/HK_20200317/pson_open_loop/ 1 5 offline delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 97 0.2 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
+    # ./analyze_fictrac.py online /mnt/2TB/data_in/HK_20200317/pson_closed_loop_yaw_gain_unity/ 1 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 97 0.2 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
+    # ./analyze_fictrac.py offline /mnt/2TB/data_in/HK_20200317/pson_open_loop/ 1 5 delta_rotn_vector_lab_z secs_elapsed speed_mm_s 10 2 1 97 0.2 delta\ yaw\ \(rads/frame\) time\ \(secs\) speed\ \(mm\/s\)
     
 if __name__ == "__main__":
     main()
