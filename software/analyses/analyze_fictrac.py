@@ -67,7 +67,7 @@ def get_datetime_from_logs(log, acq_mode="online"):
     return datetime_list
 
 
-def parse_dats(root, nesting, ball_radius, acq_mode):
+def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
     """
     Batch processes subdirectories, where each subdirectory is labelled 'fictrac'
     and has a single FicTrac .dat file and a corresponding .log file. Returns a 
@@ -96,6 +96,9 @@ def parse_dats(root, nesting, ball_radius, acq_mode):
         acquired. Accepts either 'online', i.e. real-time during acquisition, or 
         'offline', i.e. FicTrac was run after video acquisition.
 
+    do_confirm (bool): If True, prompts the user to confirm the unit of the ball
+        radius. If False, skips ths prompt. Default is True. 
+
     Returns:
     --------
     A single Pandas dataframe that concatenates all the input .dat files.
@@ -104,12 +107,15 @@ def parse_dats(root, nesting, ball_radius, acq_mode):
     assert acq_mode is "offline" or "online", \
         "Please provide a valid acquisition mode: either 'offline' or 'online'."
 
-    confirm = input(f"The ball_radius argument must be in mm. Confirm by inputting 'y'. Otherwise, hit any other key to quit.")
-    while True:
-        if confirm.lower() == "y":
-            break
-        else:
-            exit("Re-run this function with a ball_radius that's in mm.")
+    if do_confirm is True:
+        confirm = input(f"The ball_radius argument must be in mm. Confirm by inputting 'y'. Otherwise, hit any other key to quit.")
+        while True:
+            if confirm.lower() == "y":
+                break
+            else:
+                exit("Re-run this function with a ball_radius that's in mm.")
+    else:
+        pass
 
     logs = sorted(glob.glob(join(root, nesting * "*/", "fictrac/*.log"))) 
     dats = sorted(glob.glob(join(root, nesting * "*/", "fictrac/*.dat")))
