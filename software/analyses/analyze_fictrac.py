@@ -614,6 +614,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
                              title=cmap_label,
                              title_text_font_size="7pt",
                              width=10,
+                             background_fill_color="#efe8e2",
                              location=(0,0))
 
         p.add_layout(color_bar, "right")
