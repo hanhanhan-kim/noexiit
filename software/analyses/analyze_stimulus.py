@@ -336,7 +336,7 @@ def plot_fictrac_XY_with_stim(dfs, low=0, high_percentile=95, respective=False,
                              low=low, 
                              high=high)
         
-        p = figure(background_fill_color="#efe8e2", 
+        p = figure(background_fill_color="#f8f5f2", 
                    width=800,
                    height=800,
                    x_axis_label="X (mm)",
@@ -361,12 +361,14 @@ def plot_fictrac_XY_with_stim(dfs, low=0, high_percentile=95, respective=False,
         color_bar_beetle = ColorBar(color_mapper=mapper_beetle['transform'], 
                                     title="beetle " + cmap_label,
                                     title_text_font_size="7pt",
+                                    background_fill_color="#f8f5f2",
                                     width=10,
                                     location=(0,0))
         
         color_bar_stim = ColorBar(color_mapper=mapper_stim['transform'], 
                                   title="stimulus " + cmap_label,
                                   title_text_font_size="7pt",
+                                  background_fill_color="#f8f5f2",
                                   width=10,
                                   location=(0,0))
         
@@ -384,6 +386,10 @@ def plot_fictrac_XY_with_stim(dfs, low=0, high_percentile=95, respective=False,
         p.title.text_font_size = "14pt"
         p.xaxis.axis_label_text_font_size = '10pt'
         p.yaxis.axis_label_text_font_size = '10pt'
+
+        p.border_fill_color = "#f8f5f2"
+        p.xgrid.grid_line_color = "#efe8e2"
+        p.ygrid.grid_line_color = "#efe8e2"
 
         bokeh_ps.append(p)
 
