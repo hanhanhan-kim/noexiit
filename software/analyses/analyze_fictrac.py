@@ -582,7 +582,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
         
         if respective is True:
             high = np.percentile(df[cmap_col], high_percentile)
-            # also change colorbar labels so max has =< symbol
+            # TODO: also change colorbar labels so max has =< symbol
         
         mapper = linear_cmap(field_name=cmap_col, 
                              palette=palette, 
