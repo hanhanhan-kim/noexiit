@@ -448,7 +448,7 @@ def plot_fictrac_filter(dfs, val_col, time_col,
             time_label = time_col.replace("_", " ")
         
         p = figure(
-        background_fill_color="#efe8e2",
+        background_fill_color="#f8f5f2",
         width=1600,
         height=500,
         x_axis_label=time_label,
@@ -589,7 +589,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
                              low=low, 
                              high=high)
         
-        p = figure(background_fill_color="#efe8e2", 
+        p = figure(background_fill_color="#f8f5f2", 
                    width=800,
                    height=800,
                    x_axis_label="X (mm)",
@@ -743,7 +743,7 @@ def plot_fictrac_histograms(dfs, cols=None, labels=None,
         
         p.legend.location = "top_right"
         p.legend.title = "animal ID"
-        p.background_fill_color = "#efe8e2"
+        p.background_fill_color = "#f8f5f2"
         p.title.text = f" with aggregate {cutoff_percentile}% mark"
         p.xaxis.axis_label = labels[i]
         p.xaxis.axis_label_text_font_size = "12pt"
@@ -869,7 +869,7 @@ def plot_fictrac_ecdfs(dfs, cols=None, labels=None,
         
         p.legend.location = 'top_right'
         p.legend.title = "animal ID"
-        p.background_fill_color = "#efe8e2"
+        p.background_fill_color = "#f8f5f2"
         p.title.text = f" with aggregate {cutoff_percentile}% mark"
         p.xaxis.axis_label = labels[i]
         p.xaxis.axis_label_text_font_size = "12pt"
