@@ -614,7 +614,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
                              title=cmap_label,
                              title_text_font_size="7pt",
                              width=10,
-                             background_fill_color="#efe8e2",
+                             background_fill_color="#f8f5f2",
                              location=(0,0))
 
         p.add_layout(color_bar, "right")
@@ -622,6 +622,9 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
         p.title.text_font_size = "14pt"
         p.xaxis.axis_label_text_font_size = '10pt'
         p.yaxis.axis_label_text_font_size = '10pt'
+        p.border_fill_color = "#f8f5f2"
+        p.xgrid.grid_line_color = "#efe8e2"
+        p.ygrid.grid_line_color = "#efe8e2"
 
         bokeh_ps.append(p)
 
