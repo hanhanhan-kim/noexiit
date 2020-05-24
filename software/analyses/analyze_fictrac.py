@@ -902,8 +902,6 @@ def plot_fictrac_ecdfs(dfs, cols=None, labels=None,
         return bokeh_ps
 
 
-# TODO: A helper function that regularly sparsifies data to prevent overplotting
-
 def main():
 
     parser = argparse.ArgumentParser(description = __doc__)
