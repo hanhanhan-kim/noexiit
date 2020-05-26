@@ -317,8 +317,17 @@ def plot_fictrac_fft(dfs, val_col, time_col,
         p1.title.text = f"frequency domain"
         p1.title.text_font_size = "16pt"
         p1.yaxis.axis_label_text_font_size = "12pt"
+        p1.border_fill_color = "#f8f5f2"
+        p1.xgrid.grid_line_color = "#efe8e2"
+        p1.ygrid.grid_line_color = "#efe8e2"
+        p1.background_fill_color = "#f8f5f2"
+
         p2.yaxis.axis_label_text_font_size = "12pt"
         p2.xaxis.axis_label_text_font_size = "12pt"
+        p2.border_fill_color = "#f8f5f2"
+        p2.xgrid.grid_line_color = "#efe8e2"
+        p2.ygrid.grid_line_color = "#efe8e2"
+        p2.background_fill_color = "#f8f5f2"
 
         if cutoff_freq is not None:
             float(cutoff_freq)
@@ -448,11 +457,10 @@ def plot_fictrac_filter(dfs, val_col, time_col,
             time_label = time_col.replace("_", " ")
         
         p = figure(
-        background_fill_color="#f8f5f2",
-        width=1600,
-        height=500,
-        x_axis_label=time_label,
-        y_axis_label=val_label 
+            width=1600,
+            height=500,
+            x_axis_label=time_label,
+            y_axis_label=val_label 
         )
 
         p.line(
@@ -473,6 +481,11 @@ def plot_fictrac_filter(dfs, val_col, time_col,
         p.yaxis.axis_label_text_font_size = "12pt"
         p.yaxis.axis_label_text_font_size = "12pt"
         p.xaxis.axis_label_text_font_size = "12pt"
+        p.legend.background_fill_color = "#f8f5f2"
+        p.border_fill_color = "#f8f5f2"
+        p.xgrid.grid_line_color = "#efe8e2"
+        p.ygrid.grid_line_color = "#efe8e2"
+        p.background_fill_color = "#f8f5f2"
         
         # Output:
         if save_path is not None:
@@ -589,8 +602,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
                              low=low, 
                              high=high)
         
-        p = figure(background_fill_color="#f8f5f2", 
-                   width=800,
+        p = figure(width=800,
                    height=800,
                    x_axis_label="X (mm)",
                    y_axis_label="Y (mm)")
@@ -625,6 +637,7 @@ def plot_fictrac_XY_cmap(dfs, low=0, high_percentile=95, respective=False,
         p.border_fill_color = "#f8f5f2"
         p.xgrid.grid_line_color = "#efe8e2"
         p.ygrid.grid_line_color = "#efe8e2"
+        p.background_fill_color = "#f8f5f2"
 
         bokeh_ps.append(p)
 
@@ -747,6 +760,10 @@ def plot_fictrac_histograms(dfs, cols=None, labels=None,
         
         p.legend.location = "top_right"
         p.legend.title = "animal ID"
+        p.legend.background_fill_color = "#f8f5f2"
+        p.border_fill_color = "#f8f5f2"
+        p.xgrid.grid_line_color = "#efe8e2"
+        p.ygrid.grid_line_color = "#efe8e2"
         p.background_fill_color = "#f8f5f2"
         p.title.text = f" with aggregate {cutoff_percentile}% mark"
         p.xaxis.axis_label = labels[i]
@@ -873,6 +890,10 @@ def plot_fictrac_ecdfs(dfs, cols=None, labels=None,
         
         p.legend.location = 'top_right'
         p.legend.title = "animal ID"
+        p.legend.background_fill_color = "#f8f5f2"
+        p.border_fill_color = "#f8f5f2"
+        p.xgrid.grid_line_color = "#efe8e2"
+        p.ygrid.grid_line_color = "#efe8e2"
         p.background_fill_color = "#f8f5f2"
         p.title.text = f" with aggregate {cutoff_percentile}% mark"
         p.xaxis.axis_label = labels[i]
