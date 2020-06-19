@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 import u3
 
+
 def main():
 
     duration_secs = 10 
@@ -24,14 +25,16 @@ def main():
         
         device = u3.U3()
         PID_volt = device.getAIN(0)
+        device.close()
 
         print(f"time: {now}, PID: {PID_volt}")
+        
+        # Save:
         times.append(now)
         PID_volts.append(PID_volt)
 
-        device.close()
 
-    # Save data to file and plot:
+    # Save to file and plot:
     df = pd.DataFrame({"time": times, 
                        "PID_volts": PID_volt})
 
@@ -40,6 +43,7 @@ def main():
     
     plt.plot(times, PID_volts)
     plt.show()
+
 
 if __name__ == "__main__":
     main()
