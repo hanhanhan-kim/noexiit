@@ -359,12 +359,69 @@ def plot_fictrac_fft(dfs, val_col, time_col,
         return bokeh_ps
 
 
-def plot_fictrac_filter(dfs, val_col, time_col, 
-                        order, cutoff_freq,  
-                        framerate=None,
-                        val_label=None, time_label=None,
-                        view_perc=100, 
-                        save_path=None, show_plots=True):
+def get_filtered_fictrac(dfs, val_cols, order, cutoff_freq, framerate=None):
+    """
+    Get low-pass Butterworth filtered data on offline FicTrac data. 
+
+    Parameters:
+    -----------
+    dfs (DataFrame): Concatenated dataframe of FicTrac data generated from 
+        parse_dats()
+
+    val_cols (list): List of column names from the dfs dataframe to be Fourier-transformed.  
+
+    order (int): Order of the filter.
+
+    cutoff_freq (float): The cutoff frequency for the filter in Hz.
+
+    framerate (float): The mean framerate used for acquisition with FicTrac. 
+        If None, will use the average frame rate as computed in the input 'dfs'. 
+        Can be overridden with a provided manual value. Default is None.
+
+    Returns:
+    --------
+    A dataframe with the filtered values. 
+    """
+
+    dfs_list = unconcat_df(dfs, col_name="animal")
+
+    filtered_dfs = []
+    for df in dfs_list:
+        
+        if framerate is None:
+            framerate = np.mean(df["framerate_hz"])
+
+        all_filtered_vals = []
+        filtered_cols = []
+
+        for val_col in val_cols:
+
+            vals = list(df[str(val_col)])
+
+            # Design low-pass filter:
+            b, a = sps.butter(int(order), float(cutoff_freq), fs=framerate)
+            # Apply filter and save:
+            filtered_vals = sps.lfilter(b, a, vals)
+            all_filtered_vals.append(filtered_vals)
+
+            filtered_col = f"filtered_{val_col}"
+            filtered_cols.append(filtered_col)
+        
+        # Convert filtered values into df:
+        filtered_cols_vals = dict(zip(filtered_cols, all_filtered_vals))
+        filtered_df = pd.DataFrame.from_dict(filtered_cols_vals)
+        df_with_filtered = pd.concat([df, filtered_df], axis=1)
+        filtered_dfs.append(df_with_filtered)
+    
+    return pd.concat(filtered_dfs, axis=0)
+
+
+def plot_filtered_fictrac(dfs, val_col, time_col, 
+                          order, cutoff_freq,  
+                          framerate=None,
+                          val_label=None, time_label=None,
+                          view_perc=100, 
+                          save_path=None, show_plots=True):
     """
     Apply a low-pass Butterworth filter on offline FicTrac data for plotting. 
 
@@ -440,15 +497,15 @@ def plot_fictrac_filter(dfs, val_col, time_col,
             framerate = np.mean(df["framerate_hz"])
 
         time = list(df[str(time_col)])
-        val = val = list(df[str(val_col)])
+        vals = list(df[str(val_col)])
 
         # Design low-pass filter:
         b, a = sps.butter(int(order), float(cutoff_freq), fs=framerate)
         # Apply filter:
-        val_filtered = sps.lfilter(b, a, val)
+        filtered_vals = sps.lfilter(b, a, vals)
         
         # View the first _% of the data:
-        domain = int(view_perc/100 * len(val))
+        domain = int(view_perc/100 * len(vals))
         
         # Plot:
         if val_label is None:
@@ -465,13 +522,13 @@ def plot_fictrac_filter(dfs, val_col, time_col,
 
         p.line(
             x=time[:domain],
-            y=val[:domain],
+            y=vals[:domain],
             color=bokeh.palettes.brewer["Paired"][3][0],
             legend_label="raw"
         )
         p.line(
             x=time[:domain],
-            y=val_filtered[:domain],
+            y=filtered_vals[:domain],
             color=bokeh.palettes.brewer["Paired"][3][1],
             legend_label="filtered"
         )
