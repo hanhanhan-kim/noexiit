@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 
-import sys
-import traceback
 import datetime
 import time
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
 
 import u3
 
@@ -40,6 +37,9 @@ def main():
 
     df.to_csv(f"PID_volts_{t_start}.csv", 
               index=False)
+    
+    plt.plot(times, PID_volts)
+    plt.show()
 
 if __name__ == "__main__":
     main()
