@@ -11,19 +11,35 @@ import numpy as np
 import u3
 
 def main():
-    
-    duration = 60 # secs:
-    t_end = time.time() + duration
+
+    duration_secs = 10 
+    t_end = time.time() + duration_secs
+
+    times = []
+    PID_volts = []
+
+    # For naming output file:
+    t_start = datetime.datetime.now().strftime("%m%d%Y_%H%M%S")
 
     while time.time() <= t_end:
 
         now = datetime.datetime.fromtimestamp(time.time())
         
         device = u3.U3()
-        PID_reading = device.getAIN(0)
+        PID_volt = device.getAIN(0)
 
-        print(f"time: {now}, PID: {PID_reading}")
+        print(f"time: {now}, PID: {PID_volt}")
+        times.append(now)
+        PID_volts.append(PID_volt)
+
         device.close()
+
+    # Save data to file and plot:
+    df = pd.DataFrame({"time": times, 
+                       "PID_volts": PID_volt})
+
+    df.to_csv(f"PID_volts_{t_start}.csv", 
+              index=False)
 
 if __name__ == "__main__":
     main()
