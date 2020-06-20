@@ -361,6 +361,7 @@ def plot_fictrac_fft(concat_df, val_col, time_col,
 def get_filtered_fictrac(concat_df, val_cols, order, cutoff_freq, framerate=None):
     """
     Get low-pass Butterworth filtered data on offline FicTrac data. 
+    Does not drop NA values.
 
     Parameters:
     -----------
@@ -554,7 +555,7 @@ def plot_filtered_fictrac(concat_df, val_cols, time_col,
 
 
 def plot_fictrac_XY_cmap(concat_df, low=0, high_percentile=95, respective=False, 
-                         cmap_col="speed_mm_s", cmap_label="speed (mm/s)", 
+                         cmap_col="filtered_speed_mm_s", cmap_label="speed (mm/s)", 
                          palette = cc.CET_L16, size=2.5, alpha=0.3, 
                          show_start=False, 
                          save_path=None, show_plots=True):
