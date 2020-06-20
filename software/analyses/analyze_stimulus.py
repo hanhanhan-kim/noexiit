@@ -33,14 +33,15 @@ def get_smaller_last_val(df_1, df_2, common_col):
     Return the smaller value of these values as a float.  
     """
     assert common_col in df_1 and common_col in df_2, \
-        f"{df_1} and {df_2} do not share {common_col}"
+        f"df_1 and df_2 do not share {common_col}"
     assert is_numeric_dtype(df_1[common_col]), \
-        f"The values of {common_col} in {df_1} is not numeric, e.g. float64, etc."
+        f"The values of {common_col} in df_1 is not numeric, e.g. float64, etc."
     assert is_numeric_dtype(df_2[common_col]), \
-        f"The values of {common_col} in {df_1} is not numeric, e.g. float64, etc."
+        f"The values of {common_col} in df_1 is not numeric, e.g. float64, etc."
 
-    compare = float(df_1[common_col].tail(1)) > float(df_2[common_col].tail(1))
-    if compare is True:
+    df_1_is_bigger = float(df_1[common_col].tail(1)) > float(df_2[common_col].tail(1))
+
+    if df_1_is_bigger is True:
         return float(df_2[common_col].tail(1))
     else:
         return float(df_1[common_col].tail(1))
@@ -97,11 +98,11 @@ def parse_2dof_stimulus (root, nesting, servo_min, servo_max, servo_touch):
 
         dfs.append(df)
     
-    dfs = pd.concat(dfs)
-    return dfs
+    concat_df = pd.concat(dfs)
+    return concat_df
 
 
-def merge_stimulus_with_data (stim_dfs, dfs_1, dfs_2=None, 
+def merge_stimulus_with_data (concat_stim, concat_df1, concat_df2=None, 
                               common_col="secs_elapsed", fill_method="ffill"):
     """
     Merge, according to a common column, the ordered stimulus dataframe with 
@@ -113,9 +114,12 @@ def merge_stimulus_with_data (stim_dfs, dfs_1, dfs_2=None,
 
     Parameters:
     -----------
-    stim_dfs: A time-series dataframe of the stimulus presentation. 
-    dfs_1: A time-series dataframe to be merged with 'stim_dfs'.
-    dfs_2: An additional time-series dataframe to be also merged with 'stim_dfs'.
+    concat_stim: A concatenated time-series dataframe of the stimulus presentation,
+        e.g. output from parse_2dof_stimulus().
+    concat_df1: A time-series dataframe to be merged with 'concat_stim'. 
+        e.g. from FicTrac.
+    concat_df2: An additional time-series dataframe to be also merged with 
+        'concat_stim'. e.g. from DeepLabCut. 
     common_col (str): A common column against which to merge the dataframes. 
         Will be some ordered unit such as time. 
     fill_method (str): Specifies how to treat NaN values upon merge. 
@@ -131,69 +135,71 @@ def merge_stimulus_with_data (stim_dfs, dfs_1, dfs_2=None,
         input dataframes. 
     """
     
-    # TODO: assert "animal" in all dataframes and refactor dfs_2 is not None
+    # TODO: assert "animal" in all dataframes and refactor concat_df2 is not None
 
-    assert common_col in stim_dfs and common_col in dfs_1, \
-        f"{stim_dfs} and {dfs_1} do not share {common_col}"
-    if dfs_2 is not None:
-        assert common_col in stim_dfs and common_col in dfs_2, \
-            f"{stim_dfs} and {dfs_2} do not share {common_col}"
+    stims_by_animal = unconcat_df(concat_stim)
+    df1s_by_animal = unconcat_df(concat_df1)
 
-    stim_dfs = unconcat_df(stim_dfs)
-    dfs_1 = unconcat_df(dfs_1)
+    assert common_col in concat_stim and common_col in concat_df1, \
+        f"concat_stim and concat_df1 do not share {common_col}"
+    assert len(stims_by_animal) == len(df1s_by_animal), \
+        f"concat_stim and concat_df1 possess a different number of experiments."
+
+    if concat_df2 is not None:
+
+        df2s_by_animal = unconcat_df(concat_df2)
+
+        assert common_col in concat_stim and common_col in concat_df2, \
+            f"concat_stim and concat_df2 do not share {common_col}"
+        assert len(stims_by_animal) == len(df2s_by_animal), \
+            f"concat_stim and concat_df2 possess a different number of experiments."
     
-    assert len(stim_dfs) == len(dfs_1), \
-        f"{stim_dfs} and {dfs_1} possess a different number of experiments."
-    if dfs_2 is not None:
-        dfs_2 = unconcat_df(dfs_2)
-        assert len(stim_dfs) == len(dfs_2), \
-            f"{stim_dfs} and {dfs_2} possess a different number of experiments."
-    
-    dfs_merged = []
-    for i, stim_df in enumerate(stim_dfs): 
+    # TODO: Fix clunky code with zip(), which iterates over the smallest iterable anyway
+    merged_dfs = []
+    for i, stim_df in enumerate(stims_by_animal): 
         
-        smaller_last_val = get_smaller_last_val(stim_df, dfs_1[i], common_col)
+        smaller_last_val = get_smaller_last_val(stim_df, df1s_by_animal[i], common_col)
 
         if fill_method is "ffill":
-            df_merged = pd.merge_ordered(stim_df, dfs_1[i], 
+            merged_df = pd.merge_ordered(stim_df, df1s_by_animal[i], 
                                          on=[common_col, "animal"], fill_method=fill_method)
-            df_merged = df_merged[df_merged[common_col] < smaller_last_val]    
+            merged_df = merged_df[merged_df[common_col] < smaller_last_val]    
             
-            if dfs_2 is not None: 
-                if smaller_last_val > get_smaller_last_val(stim_df, dfs_2[i], 
+            if concat_df2 is not None: 
+                if smaller_last_val > get_smaller_last_val(stim_df, df2s_by_animal[i], 
                                                            common_col):
-                    smaller_last_val = get_smaller_last_val(stim_df, dfs_2[i], 
+                    smaller_last_val = get_smaller_last_val(stim_df, df2s_by_animal[i], 
                                                             common_col)
-                df_merged = pd.merge_ordered(df_merged, dfs_2[i], on=common_col,
+                merged_df = pd.merge_ordered(merged_df, df2s_by_animal[i], on=common_col,
                                                 fill_method=fill_method)
         
         elif fill_method is "linear":
-            df_merged = pd.merge_ordered(stim_df, dfs_1[i], 
+            merged_df = pd.merge_ordered(stim_df, df1s_by_animal[i], 
                                          on=[common_col, "animal"], 
                                          fill_method=None)
-            df_merged = df_merged[df_merged[common_col] < smaller_last_val] 
-            df_merged = df_merged.interpolate(method=fill_method)
+            merged_df = merged_df[merged_df[common_col] < smaller_last_val] 
+            merged_df = merged_df.interpolate(method=fill_method)
 
-            if dfs_2 is not None:
-                if smaller_last_val > get_smaller_last_val(stim_df, dfs_2[i], common_col):
-                    smaller_last_val = get_smaller_last_val(stim_df, dfs_2[i],
+            if concat_df2 is not None:
+                if smaller_last_val > get_smaller_last_val(stim_df, df2s_by_animal[i], common_col):
+                    smaller_last_val = get_smaller_last_val(stim_df, df2s_by_animal[i],
                                                             common_col) 
-                df_merged = pd.merge_ordered(df_merged, dfs_2[i], on=common_col, fill_method=None)
-                df_merged = df_merged[df_merged[common_col] < smaller_last_val] 
-                df_merged = df_merged.interpolate(method=fill_method)
+                merged_df = pd.merge_ordered(merged_df, df2s_by_animal[i], on=common_col, fill_method=None)
+                merged_df = merged_df[merged_df[common_col] < smaller_last_val] 
+                merged_df = merged_df.interpolate(method=fill_method)
                 
-        dfs_merged.append(df_merged)
+        merged_dfs.append(merged_df)
 
-    dfs_merged = pd.concat(dfs_merged)
+    concat_n_merged_df = pd.concat(merged_dfs)
 
     if fill_method is "linear":
         # Ffill any remaining non-numeric values:
-        dfs_merged = dfs_merged.ffill(axis=0)
+        concat_n_merged_df = concat_n_merged_df.ffill(axis=0)
 
-    return dfs_merged
+    return concat_n_merged_df
 
 
-def make_stimulus_trajectory(dfs_merged):
+def make_stimulus_trajectory(merged_df):
     """
     Generate stimulus trajectories from the 2DOF stimulus relative to the same 
     frame of reference as the tethered insect's trajectory, as computed by 
@@ -203,7 +209,7 @@ def make_stimulus_trajectory(dfs_merged):
 
     Parameters:
     -----------
-    dfs_merged: A single dataframe consisting of pre-processed stimulus data 
+    merged_df: A single dataframe consisting of pre-processed stimulus data 
         merged with at least a FicTrac dataframe. 
     
     Return:
@@ -211,26 +217,26 @@ def make_stimulus_trajectory(dfs_merged):
     A single dataframe with columns for the X and Y Cartesian coordinates of the stimulus. 
 
     """
-    assert "X_mm" in dfs_merged and "Y_mm" in dfs_merged \
-        and "dist_from_stim_mm" in dfs_merged, \
-        f"The 'X_mm', 'Y_mm', and 'dist_from_stim_mm' columns are not in {dfs_merged}"
+    assert "X_mm" in merged_df and "Y_mm" in merged_df \
+        and "dist_from_stim_mm" in merged_df, \
+        f"The 'X_mm', 'Y_mm', and 'dist_from_stim_mm' columns are not in merged_df"
 
-    dfs_merged = unconcat_df(dfs_merged)
+    dfs_by_animal = unconcat_df(merged_df)
 
-    dfs_trigged = []
-    for _, df_merged in enumerate(dfs_merged):
+    trigged_dfs = []
+    for df in dfs_by_animal:
 
-        df_merged['stim_X_mm'] = df_merged.apply(lambda row: (row["X_mm"] + \
+        df['stim_X_mm'] = df.apply(lambda row: (row["X_mm"] + \
             (row["dist_from_stim_mm"] * np.cos(np.deg2rad(row["Stepper output (degs)"])))), 
             axis=1)
-        df_merged['stim_Y_mm'] = df_merged.apply(lambda row: (row["Y_mm"] + \
+        df['stim_Y_mm'] = df.apply(lambda row: (row["Y_mm"] + \
             (row["dist_from_stim_mm"] * np.sin(np.deg2rad(row["Stepper output (degs)"])))), 
             axis=1)
         
-        dfs_trigged.append(df_merged)
+        trigged_dfs.append(df)
 
-    dfs_trigged = pd.concat(dfs_trigged)
-    return dfs_trigged
+    trigged_df = pd.concat(trigged_dfs)
+    return trigged_df
 
 
 def plot_fictrac_XY_with_stim(dfs, low=0, high_percentile=95, respective=False, 
@@ -309,13 +315,13 @@ def plot_fictrac_XY_with_stim(dfs, low=0, high_percentile=95, respective=False,
     assert ("animal" in dfs), \
             f"The column 'animal' is not in in the input dataframe, {dfs}"
     
-    dfs_list = unconcat_df(dfs, col_name="animal")
+    dfs_by_animal = unconcat_df(dfs, col_name="animal")
     
     if respective is False:
         high = np.percentile(dfs[cmap_col], high_percentile)
 
     bokeh_ps = []
-    for _, df in enumerate(dfs_list):
+    for df in dfs_by_animal:
         
         assert len(df["X_mm"] == len(df["Y_mm"])), \
             "X_mm and Y_mm are different lengths! They must be the same."
