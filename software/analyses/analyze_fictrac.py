@@ -24,7 +24,6 @@ import numpy as np
 import pandas as pd
 import scipy.interpolate as spi
 import scipy.signal as sps
-import scipy.signal as sps
 
 from bokeh.io import output_file, export_png, export_svgs, show
 from bokeh.transform import linear_cmap
@@ -416,10 +415,10 @@ def get_filtered_fictrac(dfs, val_cols, order, cutoff_freq, framerate=None):
     return pd.concat(filtered_dfs, axis=0)
 
 
-def plot_filtered_fictrac(dfs, val_col, time_col, 
-                          order, cutoff_freq,  
-                          framerate=None,
-                          val_label=None, time_label=None,
+# NOT TODO: this fxn is fine for now re: variable naming and enumerate loops:
+def plot_filtered_fictrac(dfs, val_cols, time_col, 
+                          order, cutoff_freq,
+                          val_labels=None, time_label=None,
                           view_perc=100, 
                           save_path=None, show_plots=True):
     """
@@ -427,10 +426,10 @@ def plot_filtered_fictrac(dfs, val_col, time_col,
 
     Parameters:
     -----------
-    dfs (DataFrame): Concatenated dataframe of FicTrac data generated from 
-        parse_dats()
+    dfs (DataFrame): Concatenated and filtered dataframe of FicTrac data generated 
+        from parse_dats(). 
 
-    val_col (str): Column name of the dfs dataframe to be Fourier-transformed.  
+    val_cols (list): List of column names from the dfs dataframe to be Fourier-transformed.  
 
     time_col (str): Column name of the dfs dataframe that specifies time. 
 
@@ -438,11 +437,7 @@ def plot_filtered_fictrac(dfs, val_col, time_col,
 
     cutoff_freq (float): The cutoff frequency for the filter in Hz.
 
-    framerate (float): The mean framerate used for acquisition with FicTrac. 
-        If None, will use the average frame rate as computed in the input 'dfs'. 
-        Can be overridden with a provided manual value. Default is None.
-
-    val_label (str): Label for the plot's y-axis. 
+    val_labels (list): List of labels for the plot's y-axis. 
 
     time_label (str): Label for the plot's time-axis. 
 
@@ -479,88 +474,81 @@ def plot_filtered_fictrac(dfs, val_col, time_col,
     assert (0 <= view_perc <= 100), \
         f"The view percentage, {view_perc}, must be between 0 and 100."
     
-    dfs_list = unconcat_df(dfs, col_name="animal")
+    filtered_concat_df = get_filtered_fictrac(dfs, val_cols, order, cutoff_freq).dropna()
+    dfs_by_animal = unconcat_df(filtered_concat_df, col_name="animal")
 
     bokeh_ps = []
-    for _, df in enumerate(dfs_list):
+    for df in dfs_by_animal:
         
-        assert (len(df[time_col] == len(df[val_col]))), \
-            "time and val are different lengths! They must be the same."
-        assert (time_col in dfs), \
-            f"The column, {time_col}, is not in the input dataframe, {dfs}"
-        assert (val_col in dfs), \
-            f"The column, {val_col}, is not in the input dataframe, {dfs}"
-        assert ("animal" in dfs), \
-            f"The column 'animal' is not in in the input dataframe, {dfs}"
-        
-        if framerate is None:
-            framerate = np.mean(df["framerate_hz"])
-
-        time = list(df[str(time_col)])
-        vals = list(df[str(val_col)])
-
-        # Design low-pass filter:
-        b, a = sps.butter(int(order), float(cutoff_freq), fs=framerate)
-        # Apply filter:
-        filtered_vals = sps.lfilter(b, a, vals)
-        
-        # View the first _% of the data:
-        domain = int(view_perc/100 * len(vals))
-        
-        # Plot:
-        if val_label is None:
-            val_label = val_col.replace("_", " ")
+        # Format axes labels:
         if time_label is None:
             time_label = time_col.replace("_", " ")
+        if val_labels is None:
+            val_labels = [val_col.replace("_", " ") for val_col in val_cols]
         
-        p = figure(
-            width=1600,
-            height=500,
-            x_axis_label=time_label,
-            y_axis_label=val_label 
-        )
+        # View the first _% of the data:
+        domain = int(view_perc/100 * len(df[time_col]))
 
-        p.line(
-            x=time[:domain],
-            y=vals[:domain],
-            color=bokeh.palettes.brewer["Paired"][3][0],
-            legend_label="raw"
-        )
-        p.line(
-            x=time[:domain],
-            y=filtered_vals[:domain],
-            color=bokeh.palettes.brewer["Paired"][3][1],
-            legend_label="filtered"
-        )
-        
-        p.title.text = f"first {view_perc}% with butterworth filter: cutoff = {cutoff_freq} Hz, order = {order}"
-        p.title.text_font_size = "14pt"
-        p.yaxis.axis_label_text_font_size = "12pt"
-        p.yaxis.axis_label_text_font_size = "12pt"
-        p.xaxis.axis_label_text_font_size = "12pt"
-        p.legend.background_fill_color = "#f8f5f2"
-        p.border_fill_color = "#f8f5f2"
-        p.xgrid.grid_line_color = "#efe8e2"
-        p.ygrid.grid_line_color = "#efe8e2"
-        p.background_fill_color = "#f8f5f2"
-        
-        # Output:
-        if save_path is not None:
-            filename = save_path + f"fictrac_filter"
+        for i, val_col in enumerate(val_cols):
+            assert (len(df[time_col] == len(df[val_col]))), \
+                "time and vals are different lengths! They must be the same."
+            assert (time_col in dfs), \
+                f"The column, {time_col}, is not in the input dataframe."
+            assert (val_col in dfs), \
+                f"The column, {val_col}, is not in the input dataframe."
+            assert ("animal" in dfs), \
+                f"The column 'animal' is not in in the input dataframe."
+            assert (f"filtered_{val_col}" in filtered_concat_df), \
+                f"The column, filtered_{val_col} is not in the filtered dataframe."
             
-            p.output_backend = "svg"
-            export_svgs(p, filename=filename + ".svg")
-            export_png(p, filename=filename + ".png")
-            output_file(filename=filename + ".html", 
-                        title=filename)
+            # Plot:
+            p = figure(
+                width=1600,
+                height=500,
+                x_axis_label=time_label,
+                y_axis_label=val_labels[i] 
+            )
+
+            p.line(
+                x=df[time_col][:domain],
+                y=df[val_col][:domain],
+                color=bokeh.palettes.brewer["Paired"][3][0],
+                legend_label="raw"
+            )
+            p.line(
+                x=df[time_col][:domain],
+                y=df[f"filtered_{val_col}"][:domain],
+                color=bokeh.palettes.brewer["Paired"][3][1],
+                legend_label="filtered"
+            )
+            p.title.text = f"first {view_perc}% with butterworth filter: cutoff = {cutoff_freq} Hz, order = {order}"
+            p.title.text_font_size = "14pt"
+            p.yaxis.axis_label_text_font_size = "12pt"
+            p.yaxis.axis_label_text_font_size = "12pt"
+            p.xaxis.axis_label_text_font_size = "12pt"
+            p.legend.background_fill_color = "#f8f5f2"
+            p.border_fill_color = "#f8f5f2"
+            p.xgrid.grid_line_color = "#efe8e2"
+            p.ygrid.grid_line_color = "#efe8e2"
+            p.background_fill_color = "#f8f5f2"
             
-        if show_plots is True:
-            # In case this script is run in Jupyter, change output_backend 
-            # back to "canvas" for faster performance:
-            p.output_backend = "canvas"
-            show(p)
-        else:
-            bokeh_ps.append(p)
+            # Output:
+            if save_path is not None:
+                filename = join(save_path, f"filtered_{val_col}")
+                
+                p.output_backend = "svg"
+                export_svgs(p, filename=filename + ".svg")
+                export_png(p, filename=filename + ".png")
+                output_file(filename=filename + ".html", 
+                            title=filename)
+                
+            if show_plots is True:
+                # In case this script is run in Jupyter, change output_backend 
+                # back to "canvas" for faster performance:
+                p.output_backend = "canvas"
+                show(p)
+            else:
+                bokeh_ps.append(p)
         
     if show_plots is False:
         return bokeh_ps
@@ -1087,26 +1075,26 @@ def main():
         if nosave is True:
             save_path = None
 
+         # TODO: UPDATE WITH VAL_COLS INSTEAD OF VAL_COL:
         # Plot FFT frequency domain:
-        plot_fictrac_fft(df, 
-                        val_col, 
-                        time_col, 
-                        cutoff_freq=cutoff_freq, 
-                        save_path=save_path,
-                        show_plots=show_plots) 
+        # plot_fictrac_fft(df, 
+        #                 val_col, 
+        #                 time_col, 
+        #                 cutoff_freq=cutoff_freq, 
+        #                 save_path=save_path,
+        #                 show_plots=show_plots) 
 
         # Plot filter:
-        plot_fictrac_filter(df, 
-                            val_col, 
-                            time_col, 
-                            framerate=framerate,
-                            val_label=val_label, 
-                            time_label=time_label,
-                            cutoff_freq=cutoff_freq, 
-                            order=order, 
-                            view_perc=view_perc,
-                            save_path=save_path,
-                            show_plots=show_plots)
+        # plot_filtered_fictrac(df, 
+        #                       val_col, 
+        #                       time_col, 
+        #                       val_label=val_label, 
+        #                       time_label=time_label,
+        #                       cutoff_freq=cutoff_freq, 
+        #                       order=order, 
+        #                       view_perc=view_perc,
+        #                       save_path=save_path,
+        #                       show_plots=show_plots)
 
         # Plot XY
         cm = get_all_cmocean_colours()
