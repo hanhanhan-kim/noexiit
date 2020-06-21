@@ -180,10 +180,10 @@ def main():
             yaw_vel_filts.append(yaw_vel_filt) # deg/s
             headings.append(heading) # rad
             # servo_angles.append(extend_to)
-
             stepper_posns.append(stepper_pos) # deg
             stepper_posn_deltas = list(np.diff(stepper_posns)) # deg
-            stepper_posn_deltas.insert(0, None) # Add None object to beginning of list, so its length matches with times
+            # Add None object to beginning of list, so its length matches with times:
+            stepper_posn_deltas.insert(0, None) 
 
     # Stop stepper:
     dev.run(0.0)
