@@ -3,6 +3,7 @@
 from __future__ import print_function
 from autostep import Autostep
 import time
+import datetime
 import threading
 import numpy as np
 import pandas as pd
@@ -79,20 +80,31 @@ def main():
         stepper_th.start()
         
         # Save data for plotting and csv:
-        elapsed_time = []
-        stepper_pos = []
-        servo_pos = []
-        t_start = time.time()
+        elapsed_times = []
+        cal_times = []
+        stepper_posns = []
+        servo_posns = []
+        t_start = datetime.datetime.now()
+        # t_start = datetime.datetime.now().strftime("%m%d%Y_%H%M%S")
 
         # Print motor parameters while move function thread is alive:
-        while stepper_th.is_alive()is True:
-            print("Elapsed time: %f" %(time.time()-t_start), 
-                "     Stepper output (degs): %f" %stepper.get_position(), 
-                "     Servo output (degs): %f" %stepper.get_servo_angle())
+        while stepper_th.is_alive() is True:
             
-            elapsed_time.append(time.time()-t_start)
-            stepper_pos.append(stepper.get_position())
-            servo_pos.append(stepper.get_servo_angle())
+            now = datetime.datetime.now()
+            # Subtracting two datetimes gives a timedelta:
+            time_delta = now - t_start
+            
+            # Save to list:
+            elapsed_times.append(time_delta.total_seconds())
+            cal_times.append(now)
+            stepper_posns.append(stepper.get_position())
+            servo_posns.append(stepper.get_servo_angle())
+
+            # Convert timedelta to elapsed seconds:
+            print(f"Elapsed time: {time_delta.total_seconds()}     ", 
+                  f"Calendar time: {now}     ", 
+                  f"Stepper output (degs): {stepper.get_position()}     ", 
+                  f"Servo output (degs): {stepper.get_servo_angle()}")
 
 
         # Join the stepper thread back to the main:
@@ -103,14 +115,10 @@ def main():
 
         # SAVE DATA:
         #----------------------------------------------------------------------------------------
-
-        # Format to calendar time:
-        cal_time = [datetime.datetime.fromtimestamp(t + t_start).strftime('"%Y_%m_%d, %H:%M:%S"') for t in elapsed_time]
-        cal_time_filename = [datetime.datetime.fromtimestamp(t + t_start).strftime('"%Y_%m_%d_%H_%M_%S"') for t in elapsed_time]
-
         stepper.print_params()
         # Save the stepper settings and servo extension angle: 
-        with open((cal_time_filename[0]).replace('"','') + "_motor_settings.txt", "a") as f:
+        with open(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_settings.txt", "a") as f:
+
             print("autostep parameters", file=f)
             print("--------------------------", file=f)
             print('fullstep/rev:  {0}\n'.format(stepper.get_fullstep_per_rev()) +
@@ -131,16 +139,16 @@ def main():
             print("max extension angle: %f" %ext_angle, file =f)
 
         # Save outputs to a csv:
-        df = pd.DataFrame({'Elapsed time': elapsed_time, 
-                        'Calendar time': cal_time,
-                        'Stepper output (degs)': stepper_pos,
-                        'Servo output (degs)': servo_pos})
-        df.to_csv((cal_time_filename[0]).replace('"','') + '_motor_commands.csv', index=False)
+        df = pd.DataFrame({'Elapsed time': elapsed_times,
+                           'Calendar time': cal_times,
+                           'Stepper output (degs)': stepper_posns,
+                           'Servo output (degs)': servo_posns})
+        df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.csv', index=False)
 
         # Plot and save outputs:
-        plt.plot(elapsed_time, stepper_pos, 
-                elapsed_time, servo_pos)
-        plt.savefig((cal_time_filename[0]).replace('"','') + '_motor_commands.png')
+        plt.plot(elapsed_times, stepper_posns,
+                 elapsed_times, servo_posns)
+        plt.savefig(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.png')
         plt.show()
 
 
