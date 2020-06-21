@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import socket
 import time
+import datetime
 import atexit
 import warnings
 import datetime
@@ -18,9 +19,9 @@ from butter_filter import ButterFilter
 
 
 def main():
-
+    # SET UP PARAMS:
+    #---------------------------------------------------------------------------------------------------------
     port = '/dev/ttyACM0'
-    
     dev = Autostep(port)
     dev.set_step_mode('STEP_FS_64') 
     dev.set_fullstep_per_rev(200)
@@ -38,7 +39,7 @@ def main():
 
     # Set duration of closed loop mode:
     t_end = 60.0 # secs
-    t_start = time.time()
+    t_start = datetime.datetime.now()
 
     # Specify trackball size:
     ball_radius = 5 # mm
@@ -48,23 +49,23 @@ def main():
         dev.run(0.0)
     atexit.register(stop_stepper)
     
+    # EXECUTE:
+    #---------------------------------------------------------------------------------------------------------
     # Open the connection (FicTrac must be waiting for socket connection)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((HOST, PORT))
         
         # Initialize:
         data = ""
-        time_list = []
-
-        yaw_delta_list = []
-        yaw_vel_list = []
-        yaw_delta_filt_list = []
-        yaw_vel_filt_list = []
-
-        heading_list = []
-        servo_angle_list = []
-
-        stepper_pos_list = []
+        elapsed_times = []
+        cal_times = []
+        yaw_deltas = []
+        yaw_vels = []
+        yaw_delta_filts = []
+        yaw_vel_filts = []
+        headings = []
+        servo_angles = []
+        stepper_posns = []
 
         # Define filter;
         freq_cutoff = 5 # in Hz
@@ -150,7 +151,14 @@ def main():
             # Move!
             gain = 1 
             stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt)
+            
+            # Get times:
+            now = datetime.datetime.now()
+            time_delta = now - t_start
+            elapsed_time = time_delta.total_seconds()
 
+            print(f"Elapsed time (s): {elapsed_time}")
+            print(f"Calendar time: {now}")
             print(f"time delta bw frames (s): {delta_ts}")
             print(f"yaw delta (deg): {yaw_delta}")
             print(f"filtered yaw delta (deg): {yaw_delta_filt}")
@@ -160,34 +168,32 @@ def main():
             print("\n")
     
             # Check if we are done:
-            t = time.time() - t_start
-            if t >= t_end:
+            if elapsed_time >= t_end:
                 done = True
             
-            # Save data for plotting
-            time_list.append(t) # s
+            # Save to list:
+            elapsed_times.append(elapsed_time) # s
+            cal_times.append(now)
+            yaw_deltas.append(yaw_delta) # deg
+            yaw_delta_filts.append(yaw_delta_filt) # deg
+            yaw_vels.append(yaw_vel) # deg/s
+            yaw_vel_filts.append(yaw_vel_filt) # deg/s
+            headings.append(heading) # rad
+            # servo_angles.append(extend_to)
 
-            yaw_delta_list.append(yaw_delta) # deg
-            yaw_delta_filt_list.append(yaw_delta_filt) # deg
-            yaw_vel_list.append(yaw_vel) # deg/s
-            yaw_vel_filt_list.append(yaw_vel_filt) # deg/s
-
-            heading_list.append(heading) # rad
-            # servo_angle_list.append(extend_to)
-
-            stepper_pos_list.append(stepper_pos) # deg
-            stepper_pos_delta_list = list(np.diff(stepper_pos_list)) # deg
-            stepper_pos_delta_list.insert(0, None) # Add None object to beginning of list, so its length matches with time_list
+            stepper_posns.append(stepper_pos) # deg
+            stepper_posn_deltas = list(np.diff(stepper_posns)) # deg
+            stepper_posn_deltas.insert(0, None) # Add None object to beginning of list, so its length matches with times
 
     # Stop stepper:
     dev.run(0.0)
     
-    # Plot results:
-    
+    # PLOT RESULTS:
+    #---------------------------------------------------------------------------------------------------------
     # Raw:
     plt.subplot(3, 1, 1)
-    plt.plot(time_list, yaw_delta_list, '.b', label="raw")
-    plt.plot(time_list, yaw_delta_filt_list, label="filtered")
+    plt.plot(elapsed_times, yaw_deltas, '.b', label="raw")
+    plt.plot(elapsed_times, yaw_delta_filts, label="filtered")
     # plt.xlabel("time (s)")
     plt.ylabel("yaw delta (deg)")
     plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
@@ -195,8 +201,8 @@ def main():
 
     # Filtered:
     plt.subplot(3, 1, 2)
-    plt.plot(time_list, yaw_vel_list, '.b', label="raw")
-    plt.plot(time_list, yaw_vel_filt_list, label="filtered")
+    plt.plot(elapsed_times, yaw_vels, '.b', label="raw")
+    plt.plot(elapsed_times, yaw_vel_filts, label="filtered")
     # plt.xlabel("time (s)")
     plt.ylabel("yaw vel (deg/s)")
     plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
@@ -204,8 +210,8 @@ def main():
     
     # Stepper:
     plt.subplot(3, 1, 3)
-    plt.plot(time_list, yaw_delta_filt_list, '.b', label="filtered yaw delta (deg)")
-    plt.plot(time_list, stepper_pos_delta_list, 'r', label="stepper position delta (deg)")
+    plt.plot(elapsed_times, yaw_delta_filts, '.b', label="filtered yaw delta (deg)")
+    plt.plot(elapsed_times, stepper_posn_deltas, 'r', label="stepper position delta (deg)")
     plt.xlabel("time (s)")
     plt.ylabel("yaw delta (deg)")
     plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
@@ -214,22 +220,18 @@ def main():
 
     plt.show()
 
-    # Save data to csv:
-    cal_time = [datetime.datetime.fromtimestamp(t + t_start).strftime('"%Y_%m_%d, %H:%M:%S"') for t in time_list]
-    cal_time_filename = [datetime.datetime.fromtimestamp(t + t_start).strftime('"%Y_%m_%d_%H_%M_%S"') for t in time_list]
-
-    df = pd.DataFrame({"Elapsed time": time_list,
-                       "Calendar time": cal_time,
-
-                       "Yaw delta (deg)": yaw_delta_list,
-                       "Yaw filtered delta (deg)": yaw_delta_filt_list,
-                       "Yaw velocity (deg)": yaw_vel_list,
-                       "Yaw filtered velocity (deg)": yaw_vel_filt_list,
-
-                       "Stepper position (deg)": stepper_pos_list,
-                       "Stepper delta (deg)": stepper_pos_delta_list})
+    # SAVE DATA:
+    #---------------------------------------------------------------------------------------------------------
+    df = pd.DataFrame({"Elapsed time": elapsed_times,
+                       "Calendar time": cal_times,
+                       "Yaw delta (deg)": yaw_deltas,
+                       "Yaw filtered delta (deg)": yaw_delta_filts,
+                       "Yaw velocity (deg)": yaw_vels,
+                       "Yaw filtered velocity (deg)": yaw_vel_filts,
+                       "Stepper position (deg)": stepper_posns,
+                       "Stepper delta (deg)": stepper_posn_deltas})
     
-    df.to_csv("HK_" + (cal_time_filename[0]).replace('"', '') + ".csv", index=False)
+    df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_loop.csv", index=False)
     
 
 if __name__ == '__main__':
