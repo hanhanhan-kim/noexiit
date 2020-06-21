@@ -135,7 +135,7 @@ def merge_stimulus_with_data (concat_stim, concat_df1, concat_df2=None,
         input dataframes. 
     """
     
-    # TODO: assert "animal" in all dataframes and refactor concat_df2 is not None
+    # TODO: assert "animal" in all dataframes
 
     stims_by_animal = unconcat_df(concat_stim)
     df1s_by_animal = unconcat_df(concat_df1)
