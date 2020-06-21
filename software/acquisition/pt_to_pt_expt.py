@@ -18,7 +18,6 @@ def main():
 
     # SET UP PARAMS:
     #----------------------------------------------------------------------------------------
-
     # Set up autostep motors:
     motor_port = '/dev/ttyACM0' # change as necessary
     stepper = Autostep(motor_port)
@@ -47,7 +46,6 @@ def main():
 
     # EXECUTE:
     #----------------------------------------------------------------------------------------
-
     # Initialize BIAS, if desired:
     while True:
         proceed = input("Initialize BIAS? That is, connect cams, load jsons, and start capture? Input y or n: \n")
@@ -85,7 +83,6 @@ def main():
         stepper_posns = []
         servo_posns = []
         t_start = datetime.datetime.now()
-        # t_start = datetime.datetime.now().strftime("%m%d%Y_%H%M%S")
 
         # Print motor parameters while move function thread is alive:
         while stepper_th.is_alive() is True:
