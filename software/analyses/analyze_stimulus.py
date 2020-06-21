@@ -103,11 +103,11 @@ def parse_2dof_stimulus (root, nesting, servo_min, servo_max, servo_touch):
 
 
 def merge_stimulus_with_data (concat_stim, concat_df1, concat_df2=None, 
-                              common_col="secs_elapsed", fill_method="ffill"):
+                              common_time="secs_elapsed", fill_method="ffill"):
     """
     Merge, according to a common column, the ordered stimulus dataframe with 
     one or two other ordered dataframes--namely, the FicTrac data and/or 
-    DeepLabCut data. Dataframes will usually be timeseries, so will be ordered by 
+    DeepLabCut data. Dataframes MUST be timeseries, so will be ordered by 
     time. Fills NaN values with either a forward fill or linear interpolation, 
     then truncates the merged dataframe by the earliest last valid observation 
     seen across the input dataframes. 
@@ -120,8 +120,8 @@ def merge_stimulus_with_data (concat_stim, concat_df1, concat_df2=None,
         e.g. from FicTrac.
     concat_df2: An additional time-series dataframe to be also merged with 
         'concat_stim'. e.g. from DeepLabCut. 
-    common_col (str): A common column against which to merge the dataframes. 
-        Will be some ordered unit such as time. 
+    common_time (str): A common column against which to merge the dataframes. 
+        Must be some ordered unit such as time. 
     fill_method (str): Specifies how to treat NaN values upon merge. 
         Either 'ffill' for forward fill, or 'linear' for linear interpolation. 
         Forward fill fills the NaNs with the last valid observation, until the
@@ -140,8 +140,8 @@ def merge_stimulus_with_data (concat_stim, concat_df1, concat_df2=None,
     stims_by_animal = unconcat_df(concat_stim)
     df1s_by_animal = unconcat_df(concat_df1)
 
-    assert common_col in concat_stim and common_col in concat_df1, \
-        f"concat_stim and concat_df1 do not share {common_col}"
+    assert common_time in concat_stim and common_time in concat_df1, \
+        f"concat_stim and concat_df1 do not share {common_time}"
     assert len(stims_by_animal) == len(df1s_by_animal), \
         f"concat_stim and concat_df1 possess a different number of experiments."
 
@@ -149,43 +149,57 @@ def merge_stimulus_with_data (concat_stim, concat_df1, concat_df2=None,
 
         df2s_by_animal = unconcat_df(concat_df2)
 
-        assert common_col in concat_stim and common_col in concat_df2, \
-            f"concat_stim and concat_df2 do not share {common_col}"
+        assert common_time in concat_stim and common_time in concat_df2, \
+            f"concat_stim and concat_df2 do not share {common_time}"
         assert len(stims_by_animal) == len(df2s_by_animal), \
             f"concat_stim and concat_df2 possess a different number of experiments."
-    
-    # TODO: Fix clunky code with zip(), which iterates over the smallest iterable anyway
+
     merged_dfs = []
     for i, stim_df in enumerate(stims_by_animal): 
         
-        smaller_last_val = get_smaller_last_val(stim_df, df1s_by_animal[i], common_col)
+        # Compare stim_df vs df_1:
+        smaller_last_val = get_smaller_last_val(stim_df, df1s_by_animal[i], common_time)
 
         if fill_method is "ffill":
+            # Merge stim_df with df1:
             merged_df = pd.merge_ordered(stim_df, df1s_by_animal[i], 
-                                         on=[common_col, "animal"], fill_method=fill_method)
-            merged_df = merged_df[merged_df[common_col] < smaller_last_val]    
+                                         on=[common_time, "animal"], 
+                                         fill_method=fill_method)
+            # Truncate merged with smaller of the mergees:
+            merged_df = merged_df[merged_df[common_time] < smaller_last_val]    
             
             if concat_df2 is not None: 
-                if smaller_last_val > get_smaller_last_val(stim_df, df2s_by_animal[i], 
-                                                           common_col):
-                    smaller_last_val = get_smaller_last_val(stim_df, df2s_by_animal[i], 
-                                                            common_col)
-                merged_df = pd.merge_ordered(merged_df, df2s_by_animal[i], on=common_col,
-                                                fill_method=fill_method)
+                # Compare lower of previous with df_2 and update:
+                maybe_even_smaller = get_smaller_last_val(stim_df, df2s_by_animal[i], common_time)
+                if smaller_last_val > maybe_even_smaller:
+                    smaller_last_val = maybe_even_smaller
+                # Merge stim_df+df1 with df2:
+                merged_df = pd.merge_ordered(merged_df, df2s_by_animal[i], 
+                                             on=common_time,
+                                             fill_method=fill_method)
         
         elif fill_method is "linear":
+            # Merge stim_df with df1:
             merged_df = pd.merge_ordered(stim_df, df1s_by_animal[i], 
-                                         on=[common_col, "animal"], 
+                                         on=[common_time, "animal"], 
                                          fill_method=None)
-            merged_df = merged_df[merged_df[common_col] < smaller_last_val] 
+            # Truncate merged with smaller of the mergees:
+            merged_df = merged_df[merged_df[common_time] < smaller_last_val] 
+            # Finally interpolate:
             merged_df = merged_df.interpolate(method=fill_method)
 
             if concat_df2 is not None:
-                if smaller_last_val > get_smaller_last_val(stim_df, df2s_by_animal[i], common_col):
-                    smaller_last_val = get_smaller_last_val(stim_df, df2s_by_animal[i],
-                                                            common_col) 
-                merged_df = pd.merge_ordered(merged_df, df2s_by_animal[i], on=common_col, fill_method=None)
-                merged_df = merged_df[merged_df[common_col] < smaller_last_val] 
+                # Compare lower of previous with df_2 and update:
+                maybe_even_smaller = get_smaller_last_val(stim_df, df2s_by_animal[i], common_time)
+                if smaller_last_val > maybe_even_smaller:
+                    smaller_last_val = maybe_even_smaller 
+                # Merge stim_df+df1 with df2:
+                merged_df = pd.merge_ordered(merged_df, df2s_by_animal[i], 
+                                             on=common_time, 
+                                             fill_method=None)
+                # Truncate merged with smaller of the mergees:
+                merged_df = merged_df[merged_df[common_time] < smaller_last_val] 
+                # Finally interpolate:
                 merged_df = merged_df.interpolate(method=fill_method)
                 
         merged_dfs.append(merged_df)
