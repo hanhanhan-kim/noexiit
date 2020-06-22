@@ -11,36 +11,36 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def pt_to_pt_and_poke(stepper, pos_list, ext_angle, wait_time):
+def pt_to_pt_and_poke(stepper, posns, ext_angle, wait_time):
     
     '''
     Specifies stepper motor and servo motor behaviours according to a list of target positions. \n
     Arguments:
         stepper (Autostep obj): The Autostep object, defined with respect to the correct port.
                                 Do NOT make this object more than once.
-        pos_list (list): List of target absolute positions to move to.
+        posns (list): List of target absolute positions to move to.
         ext_angle (float): The linear servo's extension 'angle' for full extension.
-        wait_time (float): Duration of time (s) for which to wait at each position in pos_list.
+        wait_time (float): Duration of time (s) for which to wait at each position in posns.
     Returns nothing. 
     '''
 
-    angle_list_fwd = list(np.linspace(0, ext_angle, int(ext_angle)))
-    angle_list_rev = list(angle_list_fwd[::-1])
+    fwd_angles = list(np.linspace(0, ext_angle, int(ext_angle)))
+    rev_angles = list(fwd_angles[::-1])
     dt = 0.01
 
-    for _, pos in enumerate(pos_list):
+    for _, pos in enumerate(posns):
         # Move stepper to pos:
         stepper.move_to(pos)
         stepper.busy_wait()
         # Extend linear servo:
-        for _, angle in enumerate(angle_list_fwd):
+        for _, angle in enumerate(fwd_angles):
             stepper.set_servo_angle(angle)
             while stepper.get_servo_angle() <= ext_angle is True:
                 time.sleep(dt)
         # Wait at extension:
         time.sleep(wait_time)
         # Retract linear servo:
-        for _, angle in enumerate(angle_list_rev):
+        for _, angle in enumerate(rev_angles):
             stepper.set_servo_angle(angle)
             while stepper.get_servo_angle() >= 0 is True:
                 time.sleep(dt)
@@ -86,7 +86,7 @@ def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
 def main(stepper):
 
     # Arguments for above function:
-    pos_list = [0.0, 180.0, 360.0, 2*360, 540.0]
+    posns = [0.0, 180.0, 360.0, 2*360, 540.0]
     wait_time = 2.0
     with open ("calib_servo.noexiit", "r") as f:
         max_ext = f.read().rstrip('\n')
@@ -100,41 +100,48 @@ def main(stepper):
         
         # Run move function in a separate thread:
         stepper_th = threading.Thread(target=pt_to_pt_and_poke, 
-                                      args=(stepper, pos_list, ext_angle, wait_time))
+                                      args=(stepper, posns, ext_angle, wait_time))
         stepper_th.start()
         
         # Save data for plotting and csv:
-        elapsed_time = []
-        stepper_pos = []
-        servo_pos = []
-        t_start = time.time()
+        elapsed_times = []
+        cal_times = []
+        stepper_posns = []
+        servo_posns = []
+        t_start = datetime.datetime.now()
 
-        # Print motor parameters while move function thread is alive:
+        # Print and save motor parameters while move function thread is alive:
         while stepper_th.is_alive()is True:
-            print("Elapsed time: %f" %(time.time()-t_start), 
-                "     Stepper output (degs): %f" %stepper.get_position(), 
-                "     Servo output (degs): %f" %stepper.get_servo_angle())
+
+            now = datetime.datetime.now()
+            # Subtracting two datetimes gives a timedelta:
+            time_delta = now - t_start
             
-            elapsed_time.append(time.time()-t_start)
-            stepper_pos.append(stepper.get_position())
-            servo_pos.append(stepper.get_servo_angle())
+            # Save to list:
+            elapsed_times.append(time_delta.total_seconds())
+            cal_times.append(now)
+            stepper_posns.append(stepper.get_position())
+            servo_posns.append(stepper.get_servo_angle())
+
+            # Convert timedelta to elapsed seconds:
+            print(f"Elapsed time: {time_delta.total_seconds()}     ", 
+                  f"Calendar time: {now}     ", 
+                  f"Stepper output (degs): {stepper.get_position()}     ", 
+                  f"Servo output (degs): {stepper.get_servo_angle()}")
 
         # Join the stepper thread back to the main:
         stepper_th.join()
 
-        # Save results to a csv:
-        cal_time = [datetime.datetime.fromtimestamp(t + t_start).strftime('"%Y_%m_%d, %H:%M:%S"') for t in elapsed_time]
-        cal_time_filename = [datetime.datetime.fromtimestamp(t) + t_start.strftime('"%Y_%m_%d_%H_%M_%S"') for t in elapsed_time]
-        
-        df = pd.DataFrame({'Elapsed time': elapsed_time, 
-                        'Calendar time': cal_time,
-                        'Stepper output (degs)': stepper_pos,
-                        'Servo output (degs)': servo_pos})
-        df.to_csv((cal_time_filename[0]).replace('"', '') + '_motor_commands.csv', index=False)
+        # Save outputs to a csv:
+        df = pd.DataFrame({'Elapsed time': elapsed_times,
+                           'Calendar time': cal_times,
+                           'Stepper output (degs)': stepper_posns,
+                           'Servo output (degs)': servo_posns})
+        df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.csv', index=False)
 
         stepper.print_params()
         # Save the stepper settings and servo extension angle: 
-        with open((cal_time_filename[0]).replace('"', '') + "_motor_settings.txt", "a") as f:
+        with open(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_settings.txt", "a") as f:
             print("autostep parameters", file=f)
             print("--------------------------", file=f)
             print('fullstep/rev:  {0}\n'.format(stepper.get_fullstep_per_rev()) +
@@ -155,9 +162,9 @@ def main(stepper):
             print("max extension angle: %f" %ext_angle, file =f)
 
         # Plot and save results:
-        plt.plot(elapsed_time, stepper_pos, 
-                elapsed_time, servo_pos)
-        plt.savefig((cal_time_filename[0]).replace('"', '') + '_motor_commands.png')
+        plt.plot(elapsed_times, stepper_posns, 
+                elapsed_times, servo_posns)
+        plt.savefig(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.png')
         plt.show()
 
 
