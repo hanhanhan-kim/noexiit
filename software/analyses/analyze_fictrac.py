@@ -222,9 +222,10 @@ def unconcat_df(concat_df, col_name="animal"):
     return(dfs_by_animal)
 
 
-def plot_fictrac_fft(concat_df, val_col, time_col, 
+def plot_fictrac_fft(concat_df, val_cols, time_col, 
                     even=False, window=np.hanning, pad=1, 
                     cutoff_freq=None, 
+                    val_labels=None, time_label=None,
                     save_path=None, show_plots=True):  
     """
     Perform a Fourier transform on FicTrac data for each animal. Generate 
@@ -236,7 +237,7 @@ def plot_fictrac_fft(concat_df, val_col, time_col,
     concat_df (DataFrame): Concatenated dataframe of FicTrac data generated from 
         parse_dats()
 
-    val_col (str): Column name in `concat_df` to be Fourier-transformed.  
+    val_cols (list): List of column names from `concat_df` to be Fourier-transformed.  
 
     time_col (str): Column name in `concat_df` that specifies time in SECONDS. 
 
@@ -244,6 +245,10 @@ def plot_fictrac_fft(concat_df, val_col, time_col,
 
     cutoff_freq (float): x-intercept value for plotting a vertical line. 
         To be used to visualize a candidate cut-off frequency. Default is None.
+    
+    val_labels (list): List of labels for the plot's y-axis. 
+
+    time_label (str): Label for the plot's time-axis.
 
     save_path (str): Absolute path to which to save the plots as .png files. 
         If None, will not save the plots. Default is None. 
@@ -282,78 +287,89 @@ def plot_fictrac_fft(concat_df, val_col, time_col,
     bokeh_ps = []
     for df in dfs_by_animal: 
 
-        assert (len(df[time_col] == len(df[val_col]))), \
-            "time and val are different lengths! They must be the same."
-        assert (val_col in concat_df), \
-            f"The column, {val_col}, is not in the input dataframe."
         assert (time_col in concat_df), \
             f"The column, {time_col}, is not in the input dataframe."
         assert ("animal" in concat_df), \
             f"The column 'animal' is not in in the input dataframe."
-
-        time = list(df[str(time_col)])
-        val = list(df[str(val_col)])
-
-        # Fourier-transform:
-        f = spi.interp1d(time, val)
-
-        if even is False:
-            time_interp = np.linspace(time[1], time[-1], len(time))
-            val_interp = f(time_interp)
-        else:
-            time_interp = time
-            val_interp = val
-
-        amp, _, freq = fft( val_interp, 
-                            time_interp, 
-                            pad=1, 
-                            window=window, 
-                            post=True)
-
-        # Plot:
-        p1, p2 = bokeh_freq_domain(freq, amp)
-
-        p1.title.text = f"frequency domain"
-        p1.title.text_font_size = "16pt"
-        p1.yaxis.axis_label_text_font_size = "12pt"
-        p1.border_fill_color = "#f8f5f2"
-        p1.xgrid.grid_line_color = "#efe8e2"
-        p1.ygrid.grid_line_color = "#efe8e2"
-        p1.background_fill_color = "#f8f5f2"
-
-        p2.yaxis.axis_label_text_font_size = "12pt"
-        p2.xaxis.axis_label_text_font_size = "12pt"
-        p2.border_fill_color = "#f8f5f2"
-        p2.xgrid.grid_line_color = "#efe8e2"
-        p2.ygrid.grid_line_color = "#efe8e2"
-        p2.background_fill_color = "#f8f5f2"
-
-        if cutoff_freq is not None:
-            float(cutoff_freq)
-            cutoff_line = Span(location=cutoff_freq, 
-                               dimension="height", 
-                               line_color="#775a42",
-                               line_dash="dashed",
-                               line_width=2)
-            p1.add_layout(cutoff_line)
-            p2.add_layout(cutoff_line)
-
-        p = gridplot([p1, p2], ncols=1)
-
-        # Output:
-        if save_path is not None:
-            filename = save_path + f"fictrac_freqs"
-
-            # Bokeh does not atm support gridplot svg exports
-            export_png(p, filename = filename + ".png")
-            output_file(filename = filename + ".html", 
-                        title=f"fictrac_freqs")
-
-        if show_plots is True:
-            show(p)
-        else:
-            bokeh_ps.append(p)
         
+        time = list(df[str(time_col)])
+
+        # Format axes labels:
+        if time_label is None:
+            time_label = time_col.replace("_", " ")
+        if val_labels is None:
+            val_labels = [val_col.replace("_", " ") for val_col in val_cols]
+
+        for i, val_col, in enumerate(val_cols):
+
+            assert (len(df[time_col] == len(df[val_col]))), \
+                "time and val are different lengths! They must be the same."
+            assert (val_col in concat_df), \
+                f"The column, {val_col}, is not in the input dataframe."
+            
+            val = list(df[str(val_col)])
+
+            # Fourier-transform:
+            f = spi.interp1d(time, val)
+
+            if even is False:
+                time_interp = np.linspace(time[1], time[-1], len(time))
+                val_interp = f(time_interp)
+            else:
+                time_interp = time
+                val_interp = val
+
+            amp, _, freq = fft( val_interp, 
+                                time_interp, 
+                                pad=1, 
+                                window=window, 
+                                post=True)
+
+
+            # Plot:
+            p1, p2 = bokeh_freq_domain(freq, amp)
+
+            p1.title.text = f"frequency domain of {val_labels[i]}"
+            p1.title.text_font_size = "16pt"
+            p1.yaxis.axis_label_text_font_size = "12pt"
+            p1.border_fill_color = "#f8f5f2"
+            p1.xgrid.grid_line_color = "#efe8e2"
+            p1.ygrid.grid_line_color = "#efe8e2"
+            p1.background_fill_color = "#f8f5f2"
+
+            p2.yaxis.axis_label_text_font_size = "12pt"
+            p2.xaxis.axis_label_text_font_size = "12pt"
+            p2.border_fill_color = "#f8f5f2"
+            p2.xgrid.grid_line_color = "#efe8e2"
+            p2.ygrid.grid_line_color = "#efe8e2"
+            p2.background_fill_color = "#f8f5f2"
+
+            if cutoff_freq is not None:
+                float(cutoff_freq)
+                cutoff_line = Span(location=cutoff_freq, 
+                                dimension="height", 
+                                line_color="#775a42",
+                                line_dash="dashed",
+                                line_width=2)
+                p1.add_layout(cutoff_line)
+                p2.add_layout(cutoff_line)
+
+            p = gridplot([p1, p2], ncols=1)
+
+            # Output:
+            if save_path is not None:
+                filename = save_path + f"fictrac_freqs"
+
+                # Bokeh does not atm support gridplot svg exports
+                export_png(p, filename = filename + ".png")
+                output_file(filename = filename + ".html", 
+                            title=f"fictrac_freqs")
+
+            if show_plots is True:
+                show(p)
+            else:
+                bokeh_ps.append(p)
+            
     if show_plots is False:
         return bokeh_ps
 
@@ -368,7 +384,7 @@ def get_filtered_fictrac(concat_df, val_cols, order, cutoff_freq, framerate=None
     concat_df (DataFrame): Concatenated dataframe of FicTrac data generated from 
         parse_dats()
 
-    val_cols (list): List of column names from `concat_df` to be Fourier-transformed.  
+    val_cols (list): List of column names from `concat_df` to be filtered.  
 
     order (int): Order of the filter.
 
@@ -1063,14 +1079,12 @@ def main():
     folders = sorted(glob.glob(join(root, nesting * "*/", "fictrac/")))
 
     # Generate individual animal plots:
-    for i, folder in enumerate(folders):
+    for df, folder in zip(dfs_by_animal, folders):
         
         save_path = join(folder, "plots/")
         if exists(save_path):
             rmtree(save_path)
         mkdir(save_path)
-
-        df = dfs_by_animal[i]
 
         if nosave is True:
             save_path = None
