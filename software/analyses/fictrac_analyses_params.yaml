@@ -1,0 +1,34 @@
+root: /mnt/2TB/data_in/HK_20200317/pson_closed_loop_yaw_gain_unity/
+nesting: 1
+ctrl_option: online
+ball_radius: 5 # mm
+
+# Dependent variables:
+val_cols: 
+  - delta_rotn_vector_lab_z
+  - speed_mm_s
+
+val_labels: # can set as null:
+  - yaw delta
+  - speed (mm/s)
+
+time_col: secs_elapsed
+time_label: time (s)
+
+# Low-pass Butterworth filter settings:
+cutoff_freq: 4
+order: 2
+framerate: null
+
+# View the first couple %s of filtered vs raw timeseries:
+view_perc: 3
+
+# For colour mapped trajectory plots:
+cmap_col: speed_mm_s
+cmap_label: speed (mm/s)
+alpha_cmap: 0.1
+percentile_max_clamp: 97
+
+# Plotting outputs
+nosave: False
+show_plots: False
