@@ -41,11 +41,11 @@ path.insert(1, expanduser('~/src/cmocean-bokeh'))
 from cmocean_cmaps import get_all_cmocean_colours
 
 
-def get_datetime_from_logs(log, ctrl_option="online"):
+def get_datetime_from_logs(log, acq_mode="online"):
     """
     Extract 't_sys' (ms) from the FicTrac .log files. 
     """
-    assert (ctrl_option is "online"), \
+    assert (acq_mode is "online"), \
         "This function applies only to FicTrac data acquired in real-time"
     with open (log, "r") as f:
 
@@ -67,7 +67,7 @@ def get_datetime_from_logs(log, ctrl_option="online"):
     return datetime_list
 
 
-def parse_dats(root, nesting, ball_radius, ctrl_option, do_confirm=True):
+def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
     """
     Batch processes subdirectories, where each subdirectory is labelled 'fictrac'
     and has a single FicTrac .dat file and a corresponding .log file. Returns a 
@@ -92,7 +92,7 @@ def parse_dats(root, nesting, ball_radius, ctrl_option, do_confirm=True):
     ball_radius (float): The radius of the ball (mm) the insect was on. 
         Used to compute the real-world values in mm.  
 
-    ctrl_option (str): The mode with which FicTrac data (.dats and .logs) were 
+    acq_mode (str): The mode with which FicTrac data (.dats and .logs) were 
         acquired. Accepts either 'online', i.e. real-time during acquisition, or 
         'offline', i.e. FicTrac was run after video acquisition.
 
@@ -104,7 +104,7 @@ def parse_dats(root, nesting, ball_radius, ctrl_option, do_confirm=True):
     A single Pandas dataframe that concatenates all the input .dat files.
     """
 
-    assert ctrl_option is "offline" or "online", \
+    assert acq_mode is "offline" or "online", \
         "Please provide a valid acquisition mode: either 'offline' or 'online'."
 
     if do_confirm is True:
@@ -146,7 +146,7 @@ def parse_dats(root, nesting, ball_radius, ctrl_option, do_confirm=True):
                 "delta_timestamp",
                 "alt_timestamp" ]
 
-    if ctrl_option is "online":
+    if acq_mode is "online":
         datetimes_from_logs = [get_datetime_from_logs(log) for log in logs]
 
     dfs = []
@@ -163,13 +163,13 @@ def parse_dats(root, nesting, ball_radius, ctrl_option, do_confirm=True):
         df['seq_cntr'] = df['seq_cntr'].astype(int)
         
         # Compute times and framerate:         
-        if ctrl_option is "online":
+        if acq_mode is "online":
             df["datetime"] = datetimes_from_logs[i]
             df["elapsed"] = df["datetime"][1:] - df["datetime"][0]
             df["secs_elapsed"] = df.elapsed.dt.total_seconds()
             df["framerate_hz"] = 1 / df["datetime"].diff().dt.total_seconds() 
 
-        if ctrl_option is "offline":
+        if acq_mode is "offline":
             # Timestamp from offline acq seems to just be elapsed ms:
             df["secs_elapsed"] = df["timestamp"] / 1000
             df["framerate_hz"] = 1 / df["secs_elapsed"].diff()
@@ -442,6 +442,7 @@ def plot_filtered_fictrac(concat_df, val_cols, time_col,
                           save_path=None, show_plots=True):
     """
     Apply a low-pass Butterworth filter on offline FicTrac data for plotting. 
+    Purpose is to assess filter parameters on data. 
 
     Parameters:
     -----------
@@ -579,6 +580,7 @@ def plot_fictrac_XY_cmap(concat_df, cmap_cols, low=0, high_percentile=95, respec
                          palette = cc.CET_L16, size=2.5, alpha=0.3, 
                          show_start=False, 
                          save_path=None, show_plots=True):
+    # TODO: Is it wise to not give option to use non-filtered data?
     """
     Plot XY FicTrac coordinates of the animal with a linear colourmap for 
     a FicTrac variable of choice. 
@@ -1028,7 +1030,7 @@ def main():
     
     # TODO: Move this documentation to a README.md in software/
     # parser = argparse.ArgumentParser(description = __doc__)
-    # parser.add_argument("ctrl_option", 
+    # parser.add_argument("acq_mode", 
     #     help="The mode with which FicTrac data (.dats and .logs) were acquired. \
     #         Accepts either 'online', i.e. real-time during acquisition, or \
     #         'offline', i.e. FicTrac was run after video acquisition.")
@@ -1090,9 +1092,9 @@ def main():
 
     # root = args.root
     # nesting = args.nesting 
-    # ctrl_option = args.ctrl_option
-    # # TODO: ctrl_option bug; won't accept as argparse arg
-    # ctrl_option = "online"
+    # acq_mode = args.acq_mode
+    # # TODO: acq_mode bug; won't accept as argparse arg
+    # acq_mode = "online"
     # ball_radius = args.ball_radius # mm
 
     # val_cols = args.val_cols
@@ -1119,9 +1121,9 @@ def main():
 
     root = params["root"]
     nesting = params["nesting"]
-    ctrl_option = params["ctrl_option"]
+    acq_mode = params["acq_mode"]
     # TODO: FIX!
-    ctrl_option = "online"
+    acq_mode = "online"
     ball_radius = params["ball_radius"]
 
     val_cols = params["val_cols"]
@@ -1146,7 +1148,7 @@ def main():
     show_plots = params["show_plots"]
 
     # Parse FicTrac inputs:
-    concat_df = parse_dats(root, nesting, ball_radius, ctrl_option, do_confirm=False).dropna()
+    concat_df = parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=False).dropna()
     
     # Unconcatenate the concatenated df:
     dfs_by_animal = unconcat_df(concat_df, col_name="animal")
