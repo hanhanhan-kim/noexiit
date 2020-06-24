@@ -247,7 +247,8 @@ def plot_fictrac_fft(concat_df, val_cols, time_col,
     cutoff_freq (float): x-intercept value for plotting a vertical line. 
         To be used to visualize a candidate cut-off frequency. Default is None.
     
-    val_labels (list): List of labels for the plot's y-axis. 
+    val_labels (list): List of labels for the plot's y-axis. If None, will 
+        be a formatted version of val_cols. Default is None.
 
     time_label (str): Label for the plot's time-axis.
 
@@ -385,7 +386,7 @@ def get_filtered_fictrac(concat_df, val_cols, order, cutoff_freq, framerate=None
     concat_df (DataFrame): Concatenated dataframe of FicTrac data generated from 
         parse_dats()
 
-    val_cols (list): List of column names from `concat_df` to be filtered.  
+    val_cols (list): List of column names from `concat_df` to be filtered. 
 
     order (int): Order of the filter.
 
@@ -447,7 +448,7 @@ def plot_filtered_fictrac(concat_df, val_cols, time_col,
     concat_df (DataFrame): Concatenated and filtered dataframe of FicTrac data generated 
         from parse_dats(). 
 
-    val_cols (list): List of column names from `concat_df` to be Fourier-transformed.  
+    val_cols (list): List of column names from `concat_df` to be Fourier-transformed. 
 
     time_col (str): Column name from `concat_df` that specifies time. 
 
@@ -455,7 +456,8 @@ def plot_filtered_fictrac(concat_df, val_cols, time_col,
 
     cutoff_freq (float): The cutoff frequency for the filter in Hz.
 
-    val_labels (list): List of labels for the plot's y-axis. 
+    val_labels (list): List of labels for the plot's y-axis. If None, will 
+        be a formatted version of cmap_cols. Default is None.
 
     time_label (str): Label for the plot's time-axis. 
 
@@ -572,7 +574,8 @@ def plot_filtered_fictrac(concat_df, val_cols, time_col,
 
 
 def plot_fictrac_XY_cmap(concat_df, low=0, high_percentile=95, respective=False, 
-                         cmap_col="filtered_speed_mm_s", cmap_label="speed (mm/s)", 
+                         cmap_cols=["filtered_speed_mm_s"], cmap_labels=["speed (mm/s)"],
+                         order=2, cutoff_freq=4, 
                          palette = cc.CET_L16, size=2.5, alpha=0.3, 
                          show_start=False, 
                          save_path=None, show_plots=True):
@@ -584,26 +587,40 @@ def plot_fictrac_XY_cmap(concat_df, low=0, high_percentile=95, respective=False,
     -----------
     concat_df (DataFrame): Concatenated dataframe of FicTrac data generated from 
         parse_dats()
+
     low (float): The minimum value of the colour map range. Any value below the set 
         'low' value will be 'clamped', i.e. will appear as the same colour as 
         the 'low' value. The 'low' value must be 0 or greater. Default value 
         is 0.
+
     high_percentile (float): The max of the colour map range, as a percentile of the 
         'cmap_col' variable's distribution. Any value above the 'high_percentile'
         will be clamped, i.e. will appear as the same colour as the 
         'high_percentile' value. E.g. if set to 95, all values below the 95th 
         percentile will be mapped to the colour map, and all values above the
         95th percentile will be clamped. 
+
     respective (bool): If True, will re-scale colourmap for each individual animal to 
         their respective 'high_percentile' cut-off value. If False, will use
         the 'high_percentile' value computed from the population, i.e. from `concat_df`. 
         Default is False. 
-    cmap_col (str): Column name from `concat_df` to be colour-mapped. 
-    cmap_label (str): Label for the colour map. 
+
+    cmap_cols (list): List of column names from `concat_df` to be colour-mapped. 
+
+    cmap_labels (list): List of labels for the plots' colourbars. If None, will 
+        be a formatted version of cmap_cols. Default is None.
+
+    order (int): Order of the filter.
+
+    cutoff_freq (float): The cutoff frequency for the filter in Hz.
+
     palette (list): A list of hexadecimal colours to be used for the colour map.
+
     size (float): The size of each datapoint specifying XY location. 
+
     alpha(float): The transparency of each datapoint specifying XY location.
         Must be between 0 and 1.
+
     show_start (bool): If True, will plot a marking to explicitly denote the start 
         site. Default is False. 
     
@@ -637,89 +654,103 @@ def plot_fictrac_XY_cmap(concat_df, low=0, high_percentile=95, respective=False,
         f"The column, 'X_mm', is not in the input dataframe."
     assert ("Y_mm" in concat_df), \
         f"The column, 'Y_mm', is not in the input dataframe."
-    assert (cmap_col in concat_df), \
-        f"The column, {cmap_col}, is not in the input dataframe."
     assert ("animal" in concat_df), \
             f"The column 'animal' is not in in the input dataframe."
     
-    dfs_by_animal = unconcat_df(concat_df, col_name="animal")
-    
-    if respective is False:
-        high = np.percentile(concat_df[cmap_col], high_percentile)
+    filtered_concat_df = get_filtered_fictrac(concat_df, cmap_cols, 
+                                              order=order, cutoff_freq=cutoff_freq).dropna()
+    dfs_by_animal = unconcat_df(filtered_concat_df, col_name="animal")
 
     bokeh_ps = []
     for df in dfs_by_animal:
         
-        assert (len(df["X_mm"] == len(df["Y_mm"]))), \
-            "X_mm and Y_mm are different lengths! They must be the same."
-        
-        source = ColumnDataSource(df)
-        
-        if respective is True:
-            high = np.percentile(df[cmap_col], high_percentile)
+        # Format axes labels:
+        if cmap_labels is None:
+            cmap_labels = [cmap_cols.replace("_", " ") for cmap_col in cmap_cols]
+
+        for i, cmap_col in enumerate(cmap_cols):
+            
+            assert (cmap_col in concat_df), \
+                f"The column, {cmap_col}, is not in the input dataframe."
+            assert (f"filtered_{cmap_col}" in filtered_concat_df), \
+                f"The column, filtered_{cmap_col} is not in the filtered dataframe."
+            assert (len(df["X_mm"] == len(df["Y_mm"]))), \
+                "X_mm and Y_mm are different lengths! They must be the same."
+
+            # Use only the FILTERED cmap_col:
+            cmap_col = f"filtered_{cmap_col}"
+
+            if respective is False:
+                # Normalize colourmap range to animal population:
+                high = np.percentile(filtered_concat_df[cmap_col], high_percentile)
+            elif respective is True:
+                # Individual animal sets its own colourmap range:
+                high = np.percentile(df[cmap_col], high_percentile)
+            
+            source = ColumnDataSource(df)
+
+            mapper = linear_cmap(field_name=cmap_col, 
+                                palette=palette, 
+                                low=low, 
+                                high=high)
+            
+            p = figure(width=800,
+                       height=800,
+                       x_axis_label="X (mm)",
+                       y_axis_label="Y (mm)")
+            
+            p.circle(source=source,
+                       x="X_mm",
+                       y="Y_mm",
+                       color=mapper,
+                       size=size,
+                       alpha=alpha)
+            
+            if show_start is True:
+                # Other options include .cross, .circle_x, and .hex:
+                p.circle(x=df["X_mm"][0], 
+                         y=df["Y_mm"][0], 
+                         size=12,
+                         color="darkgray",
+                         fill_alpha=0.5)
+
             # TODO: also change colorbar labels so max has =< symbol
-        
-        mapper = linear_cmap(field_name=cmap_col, 
-                             palette=palette, 
-                             low=low, 
-                             high=high)
-        
-        p = figure(width=800,
-                   height=800,
-                   x_axis_label="X (mm)",
-                   y_axis_label="Y (mm)")
-        
-        p.circle(source=source,
-                 x="X_mm",
-                 y="Y_mm",
-                 color=mapper,
-                 size=size,
-                 alpha=alpha)
-        
-        if show_start is True:
-            # Other options include .cross, .circle_x, and .hex:
-            p.circle(x=df["X_mm"][0], 
-                     y=df["Y_mm"][0], 
-                     size=12,
-                     color="darkgray",
-                     fill_alpha=0.5)
+            color_bar = ColorBar(color_mapper=mapper['transform'], 
+                                 title=cmap_labels[i],
+                                 title_text_font_size="7pt",
+                                 width=10,
+                                 background_fill_color="#f8f5f2",
+                                 location=(0,0))
 
-        color_bar = ColorBar(color_mapper=mapper['transform'], 
-                             title=cmap_label,
-                             title_text_font_size="7pt",
-                             width=10,
-                             background_fill_color="#f8f5f2",
-                             location=(0,0))
+            p.add_layout(color_bar, "right")
 
-        p.add_layout(color_bar, "right")
+            p.title.text_font_size = "14pt"
+            p.xaxis.axis_label_text_font_size = '10pt'
+            p.yaxis.axis_label_text_font_size = '10pt'
+            p.border_fill_color = "#f8f5f2"
+            p.xgrid.grid_line_color = "#efe8e2"
+            p.ygrid.grid_line_color = "#efe8e2"
+            p.background_fill_color = "#f8f5f2"
 
-        p.title.text_font_size = "14pt"
-        p.xaxis.axis_label_text_font_size = '10pt'
-        p.yaxis.axis_label_text_font_size = '10pt'
-        p.border_fill_color = "#f8f5f2"
-        p.xgrid.grid_line_color = "#efe8e2"
-        p.ygrid.grid_line_color = "#efe8e2"
-        p.background_fill_color = "#f8f5f2"
-
-        bokeh_ps.append(p)
-
-        # Output:
-        if save_path is not None:
-            filename = save_path + f"fictrac_XY_speed"
-            
-            p.output_backend = "svg"
-            export_svgs(p, filename=filename + ".svg")
-            export_png(p, filename=filename + ".png")
-            output_file(filename=filename + ".html", 
-                        title=filename)
-            
-        if show_plots is True:
-            # In case this script is run in Jupyter, change output_backend 
-            # back to "canvas" for faster performance:
-            p.output_backend = "canvas"
-            show(p)
-        else:
             bokeh_ps.append(p)
+
+            # Output:
+            if save_path is not None:
+                filename = save_path + f"fictrac_XY_{cmap_col}"
+                
+                p.output_backend = "svg"
+                export_svgs(p, filename=filename + ".svg")
+                export_png(p, filename=filename + ".png")
+                output_file(filename=filename + ".html", 
+                            title=filename)
+                
+            if show_plots is True:
+                # In case this script is run in Jupyter, change output_backend 
+                # back to "canvas" for faster performance:
+                p.output_backend = "canvas"
+                show(p)
+            else:
+                bokeh_ps.append(p)
         
     if show_plots is False:
         return bokeh_ps
@@ -735,16 +766,20 @@ def plot_fictrac_histograms(concat_df, cols=None, labels=None,
     -----------
     concat_df (DataFrame): Concatenated dataframe of FicTrac data generated from 
         parse_dats()
+
     cols (list): List of strings specifying column names in 'concat_df'. If None, 
         uses default columns that specify real-world and 'lab' kinematic measurements.
         Otherwise, will use both input arguments and the default columns. Default is None.
+
     labels (list): List of strings specifying the labels for the histograms' x-axes.
         Its order must correspond to 'cols'. 
+
     cutoff_percentile (float): Specifies the percentile of the AGGREGATE population data. 
         Plots a line at this value. Default is 95th percentile. 
         
     save_path (str): Absolute path to which to save the plots as .png and .svg files. 
         If None, will not save the plots. Default is None. 
+
     show_plots (bool): If True, will show plots, but will not 
         output a list of Bokeh plotting objects. If False, will not show 
         plots, but will output a list of Bokeh plotting objects. If both 
@@ -866,16 +901,20 @@ def plot_fictrac_ecdfs(concat_df, cols=None, labels=None,
     -----------
     concat_df (DataFrame): Concatenated dataframe of FicTrac data generated from 
         parse_dats()
+
     cols (list): List of strings specifying column names in 'concat_df'. If None, 
         uses default columns that specify real-world and 'lab' kinematic measurements.
         Otherwise, will use both input arguments and the default columns. Default is None.
+
     labels (list): List of strings specifying the labels for the ECDFs' x-axes.
         Its order must correspond to 'cols'. 
+
     cutoff_percentile (float): Specifies the percentile of the AGGREGATE population data. 
         Plots a line at this value. Default is 95th percentile. 
     
     save_path (str): Absolute path to which to save the plots as .png and .svg files. 
         If None, will not save the plots. Default is None. 
+
     show_plots (bool): If True, will show plots, but will not 
         output a list of Bokeh plotting objects. If False, will not show 
         plots, but will output a list of Bokeh plotting objects. If both 
@@ -1042,7 +1081,7 @@ def main():
     #         If None, will compute the average framerate. Can be overridden with a \
     #         provided manual value. Default is None.") 
     
-    # parser.add_argument("-ns", "--nosave", action="store_true", default=False,
+    # parser.add_argument("-ns", "--no_save", action="store_true", default=False,
     #     help="If enabled, does not save the plots. By default, saves plots.")
     # parser.add_argument("-sh", "--show", action="store_true", default=False,
     #     help="If enabled, shows the plots. By default, does not show the plots.")
@@ -1071,7 +1110,7 @@ def main():
     # percentile_max_clamp = args.percentile_max_clamp
     # alpha_cmap = args.alpha_cmap
 
-    # nosave = args.nosave
+    # no_save = args.no_save
     # show_plots = args.show 
 
 
@@ -1080,8 +1119,6 @@ def main():
         params = yaml.load(f, Loader=yaml.FullLoader)
         # print(params)
 
-    # TODO: Put everything in context manager or not?
-    # print(params)
     root = params["root"]
     nesting = params["nesting"]
     ctrl_option = params["ctrl_option"]
@@ -1101,12 +1138,12 @@ def main():
 
     view_perc = params["view_perc"]
 
-    cmap_col = params["cmap_col"]
-    cmap_label = params["cmap_label"]
+    cmap_cols = params["cmap_cols"]
+    cmap_labels = params["cmap_labels"]
     alpha_cmap = params["alpha_cmap"]
     percentile_max_clamp = params["percentile_max_clamp"]
 
-    nosave = params["nosave"]
+    no_save = params["no_save"]
     show_plots = params["show_plots"]
 
     # Parse FicTrac inputs:
@@ -1130,10 +1167,10 @@ def main():
             rmtree(save_path)
         mkdir(save_path)
 
-        if nosave is True:
+        if no_save is True:
             save_path = None
         
-        print(f"Generating plots for {folder}")
+        print(f"Generating individual plots for {folder} ...")
 
         # Plot FFT frequency domain:
         plot_fictrac_fft(df, 
@@ -1159,11 +1196,10 @@ def main():
 
         # Plot XY
         cm = get_all_cmocean_colours()
-        # TODO: Fix so it uses FILTERED data!
         plot_fictrac_XY_cmap(df,
                              high_percentile=percentile_max_clamp,
-                             cmap_col=cmap_col,
-                             cmap_label=cmap_label,
+                             cmap_cols=cmap_cols,
+                             cmap_labels=cmap_labels,
                              palette=cm["thermal"],
                              alpha=alpha_cmap,
                              save_path=save_path,
@@ -1172,7 +1208,6 @@ def main():
     # Generate population plots:
     # TODO: tqdm this shit
     print("Generating population plots ...")
-
     save_path_popns = join(root, "popn_plots/")
     if exists(save_path_popns):
         rmtree(save_path_popns)
@@ -1184,12 +1219,14 @@ def main():
     save_path_ecdfs = join(root, "popn_plots/", "ecdfs/")
 
     # Plot histograms:
+    print("Generating histograms ...")
     plot_fictrac_histograms(concat_df, 
                             cutoff_percentile=percentile_max_clamp,
                             save_path=save_path_histos, 
                             show_plots=False)
 
     # Plot ECDFs:
+    print("Generating ECDFs ...")
     plot_fictrac_ecdfs(concat_df,
                        cutoff_percentile=percentile_max_clamp,
                        save_path=save_path_ecdfs, 
