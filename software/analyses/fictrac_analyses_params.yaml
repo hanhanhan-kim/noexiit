@@ -1,6 +1,9 @@
+# Pre-processing:
+# ----------------------------------------------
 root: /mnt/2TB/data_in/HK_20200317/pson_closed_loop_yaw_gain_unity/
 nesting: 1
-ctrl_option: online
+# I have to hardcode ctrl_option in main() ...
+ctrl_option: online 
 ball_radius: 5 # mm
 
 # Dependent variables:
@@ -9,12 +12,14 @@ val_cols:
   - speed_mm_s
 
 val_labels: # can set as null:
-  - yaw delta
+  - yaw delta (rads)
   - speed (mm/s)
 
 time_col: secs_elapsed
 time_label: time (s)
 
+# For filtering:
+# ----------------------------------------------
 # Low-pass Butterworth filter settings:
 cutoff_freq: 4
 order: 2
@@ -24,11 +29,20 @@ framerate: null
 view_perc: 3
 
 # For colour mapped trajectory plots:
-cmap_col: speed_mm_s
-cmap_label: speed (mm/s)
+# ----------------------------------------------
+# Plots the filtered versions of cmap_cols:
+cmap_cols: 
+  - delta_rotn_vector_lab_z
+  - speed_mm_s
+# In the respective order to cmap_cols:
+cmap_labels: 
+  - yaw delta (rads)
+  - speed (mm/s)
 alpha_cmap: 0.1
 percentile_max_clamp: 97
+repsective: False
 
 # Plotting outputs
-nosave: False
+# ----------------------------------------------
+no_save: False
 show_plots: False
