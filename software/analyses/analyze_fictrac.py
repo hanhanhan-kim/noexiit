@@ -1095,10 +1095,7 @@ def main():
     # ctrl_option = "online"
     # ball_radius = args.ball_radius # mm
 
-    # # val_cols = args.val_cols
-    # # TODO: hard code for now for testing:
-    # val_cols = ["delta_rotn_vector_lab_y", "speed_mm_s"]
-
+    # val_cols = args.val_cols
     # val_labels = args.val_labels
     # time_col = args.time_col
     # time_label = args.time_label
@@ -1114,7 +1111,7 @@ def main():
     # no_save = args.no_save
     # show_plots = args.show 
 
-
+    # TODO: Specify default .yaml values, for key-value pairs that are unspecified:
     with open("fictrac_analyses_params.yaml") as f:
 
         params = yaml.load(f, Loader=yaml.FullLoader)
@@ -1143,6 +1140,7 @@ def main():
     cmap_labels = params["cmap_labels"]
     alpha_cmap = params["alpha_cmap"]
     percentile_max_clamp = params["percentile_max_clamp"]
+    respective = params["respective"]
 
     no_save = params["no_save"]
     show_plots = params["show_plots"]
@@ -1199,6 +1197,7 @@ def main():
         plot_fictrac_XY_cmap(df,
                              cmap_cols=cmap_cols,
                              high_percentile=percentile_max_clamp,
+                             respective=respective,
                              cmap_labels=cmap_labels,
                              palette=cm["thermal"],
                              alpha=alpha_cmap,
