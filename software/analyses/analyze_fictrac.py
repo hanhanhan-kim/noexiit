@@ -25,7 +25,6 @@ import numpy as np
 import pandas as pd
 import scipy.interpolate as spi
 import scipy.signal as sps
-from tqdm import tqdm
 
 from bokeh.io import output_file, export_png, export_svgs, show
 from bokeh.transform import linear_cmap
@@ -225,10 +224,10 @@ def unconcat_df(concat_df, col_name="animal"):
 
 
 def plot_fictrac_fft(concat_df, val_cols, time_col, 
-                    even=False, window=np.hanning, pad=1, 
-                    cutoff_freq=None, 
-                    val_labels=None, time_label=None,
-                    save_path=None, show_plots=True):  
+                     even=False, window=np.hanning, pad=1, 
+                     cutoff_freq=None, 
+                     val_labels=None, time_label=None,
+                     save_path=None, show_plots=True):  
     """
     Perform a Fourier transform on FicTrac data for each animal. Generate 
     frequency domain plots for each animal. 
@@ -1158,9 +1157,8 @@ def main():
     folders = sorted(glob.glob(join(root, nesting * "*/", "fictrac/")))
 
     # Generate individual animal plots:
-    # tqdm some shit:
     save_paths = []
-    for df, folder in tqdm(zip(dfs_by_animal, folders)):
+    for df, folder in zip(dfs_by_animal, folders):
         
         save_path = join(folder, "plots/")
         save_paths.append(save_path)
@@ -1208,7 +1206,6 @@ def main():
                              show_plots=show_plots)
 
     # Generate population plots:
-    # TODO: tqdm this shit
     print("Generating population plots ...")
     save_path_popns = join(root, "popn_plots/")
     if exists(save_path_popns):
