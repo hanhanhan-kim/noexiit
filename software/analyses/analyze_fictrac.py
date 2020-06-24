@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 import scipy.interpolate as spi
 import scipy.signal as sps
+from tqdm import tqdm
 
 from bokeh.io import output_file, export_png, export_svgs, show
 from bokeh.transform import linear_cmap
@@ -573,8 +574,8 @@ def plot_filtered_fictrac(concat_df, val_cols, time_col,
         return bokeh_ps
 
 
-def plot_fictrac_XY_cmap(concat_df, low=0, high_percentile=95, respective=False, 
-                         cmap_cols=["filtered_speed_mm_s"], cmap_labels=["speed (mm/s)"],
+def plot_fictrac_XY_cmap(concat_df, cmap_cols, low=0, high_percentile=95, respective=False, 
+                         cmap_labels=None,
                          order=2, cutoff_freq=4, 
                          palette = cc.CET_L16, size=2.5, alpha=0.3, 
                          show_start=False, 
@@ -666,7 +667,7 @@ def plot_fictrac_XY_cmap(concat_df, low=0, high_percentile=95, respective=False,
         
         # Format axes labels:
         if cmap_labels is None:
-            cmap_labels = [cmap_cols.replace("_", " ") for cmap_col in cmap_cols]
+            cmap_labels = [cmap_col.replace("_", " ") for cmap_col in cmap_cols]
 
         for i, cmap_col in enumerate(cmap_cols):
             
@@ -977,11 +978,11 @@ def plot_fictrac_ecdfs(concat_df, cols=None, labels=None,
     bokeh_ps = []
     for i, col in enumerate(cols):
         p = bokeh_catplot.ecdf(data=concat_df,
-                                    cats=["animal"],
-                                    val=col,
-                                    kind="colored",
-                                    width=1000,
-                                    height=500)
+                               cats=["animal"],
+                               val=col,
+                               kind="colored",
+                               width=1000,
+                               height=500)
         
         cutoff_line = Span(location=np.percentile(concat_df[col], cutoff_percentile), 
                            dimension="height", 
@@ -1026,6 +1027,7 @@ def plot_fictrac_ecdfs(concat_df, cols=None, labels=None,
 
 def main():
     
+    # TODO: Move this documentation to a README.md in software/
     # parser = argparse.ArgumentParser(description = __doc__)
     # parser.add_argument("ctrl_option", 
     #     help="The mode with which FicTrac data (.dats and .logs) were acquired. \
@@ -1158,7 +1160,7 @@ def main():
     # Generate individual animal plots:
     # tqdm some shit:
     save_paths = []
-    for df, folder in zip(dfs_by_animal, folders):
+    for df, folder in tqdm(zip(dfs_by_animal, folders)):
         
         save_path = join(folder, "plots/")
         save_paths.append(save_path)
@@ -1197,8 +1199,8 @@ def main():
         # Plot XY
         cm = get_all_cmocean_colours()
         plot_fictrac_XY_cmap(df,
-                             high_percentile=percentile_max_clamp,
                              cmap_cols=cmap_cols,
+                             high_percentile=percentile_max_clamp,
                              cmap_labels=cmap_labels,
                              palette=cm["thermal"],
                              alpha=alpha_cmap,
