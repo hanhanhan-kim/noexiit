@@ -38,19 +38,19 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, wait_time):
     rev_angles = list(fwd_angles[::-1])
     dt = 0.01
 
-    for _, pos in enumerate(posns):
+    for pos in posns:
         # Move stepper to pos:
         stepper.move_to(pos)
         stepper.busy_wait()
         # Extend linear servo:
-        for _, angle in enumerate(fwd_angles):
+        for angle in fwd_angles:
             stepper.set_servo_angle(angle)
             while stepper.get_servo_angle() <= ext_angle is True:
                 time.sleep(dt)
         # Wait at extension:
         time.sleep(wait_time)
         # Retract linear servo:
-        for _, angle in enumerate(rev_angles):
+        for angle in rev_angles:
             stepper.set_servo_angle(angle)
             while stepper.get_servo_angle() >= 0 is True:
                 time.sleep(dt)
