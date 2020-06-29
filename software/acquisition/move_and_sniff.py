@@ -15,6 +15,7 @@ import time
 import datetime
 import threading
 import argparse
+import atexit
 
 import numpy as np
 import pandas as pd
@@ -174,6 +175,8 @@ def main(stepper):
             max_ext = f.read().rstrip('\n')
         ext_angle = float(max_ext)
     
+
+
     # Home:
     home(stepper)
 
@@ -283,5 +286,10 @@ if __name__ == "__main__":
     stepper.set_move_mode_to_jog()
     stepper.set_gear_ratio(1)
     stepper.enable()
+
+    # Stop the stepper when script is killed:
+    def stop_stepper():
+        stepper.run(0.0)
+    atexit.register(stop_stepper)
 
     main(stepper)

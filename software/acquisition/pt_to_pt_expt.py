@@ -90,6 +90,11 @@ def main():
         with open ("calib_servo.noexiit", "r") as f:
             max_ext = f.read().rstrip('\n')
         ext_angle = float(max_ext)
+    
+    # Stop the stepper when script is killed:
+    def stop_stepper():
+        stepper.run(0.0)
+    atexit.register(stop_stepper)
 
     # EXECUTE:
     #----------------------------------------------------------------------------------------
