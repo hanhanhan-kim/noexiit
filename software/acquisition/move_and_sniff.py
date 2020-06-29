@@ -15,14 +15,23 @@ import u3
 def pt_to_pt_and_poke(stepper, posns, ext_angle, wait_time):
     
     '''
-    Specifies stepper motor and servo motor behaviours according to a list of target positions. \n
-    Arguments:
+    Specifies stepper motor and servo motor behaviours according to a 
+    list of target positions. 
+
+    Parameters:
+    -----------
         stepper (Autostep obj): The Autostep object, defined with respect to the correct port.
                                 Do NOT make this object more than once.
+
         posns (list): List of target absolute positions to move to.
+
         ext_angle (float): The linear servo's extension 'angle' for full extension.
+
         wait_time (float): Duration of time (s) for which to wait at each position in posns.
-    Returns nothing. 
+
+    Returns:
+    --------
+    Moves motors to specified positions with wait times. 
     '''
 
     fwd_angles = list(np.linspace(0, ext_angle, int(ext_angle)))
@@ -62,7 +71,7 @@ def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
     pre_exp_time (fl): The time interval in secs after executing the home function.
 
     homing_speed (int): The speed in degs/sec with which the stepper reaches home. 
-    
+
     motor_port (str): The port that the Autostep Teensy connects to
     """
 
@@ -91,6 +100,11 @@ def sniff(AIN_int=0):
 
     """
     Get PID readings from the `AIN_int` AIN on the LabJack U3 DAQ.
+
+    Parameters:
+    -----------
+    AIN_int (int): The analog input (AIN) channel the U3 reads from. 
+        Will be 0 or 1. Default is 0. 
     """
 
     device = u3.U3()
@@ -192,12 +206,14 @@ def main(stepper):
 if __name__ == "__main__":
 
     # Set up Autostep motors:
-    motor_port = '/dev/ttyACM0' # change as necessary
+    # change as necessary: 
+    motor_port = '/dev/ttyACM0' 
     stepper = Autostep(motor_port)
     stepper.set_step_mode('STEP_FS_128') 
     stepper.set_fullstep_per_rev(200)
     stepper.set_kval_params({'accel':30, 'decel':30, 'run':30, 'hold':30})
-    stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) # deg/s and deg/s2
+    # deg/s and deg/s2:
+    stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) 
     stepper.set_move_mode_to_jog()
     stepper.set_gear_ratio(1)
     stepper.enable()
