@@ -1,10 +1,20 @@
 #!/usr/bin/env python3
 
+"""
+Move the tethered stimulus to each angular position in a list of specified 
+positions.
+Upon arriving at a position, extend the tethered stimulus. Remain extended 
+for a fixed duration. Then retract the tethered stimulus. Remain retracted 
+for the same fixed duration. 
+Collect ongoing motor position data as well as photoionization detector data.
+"""
+
 from __future__ import print_function
 from autostep import Autostep
 import time
 import datetime
 import threading
+import argparse
 
 import numpy as np
 import pandas as pd
@@ -91,8 +101,8 @@ def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
     stepper.set_position(0)
 
     # Wait before starting experiment:
-    print("Home found. Position is %f." %stepper.get_position(), 
-          " Experiment starting in %s seconds." %pre_exp_time)
+    print(f"Home found. Position is {stepper.get_position()}.", 
+          f" Experiment starting in {pre_exp_time} seconds.")
     time.sleep(pre_exp_time)
 
 
@@ -115,13 +125,37 @@ def sniff(AIN_int=0):
 
 
 def main(stepper):
+    
+    # Set up arguments:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("-p", "--posns", nargs="+", type=float, required=True,
+        help="A list of angular positions the tethered stimulus will move to. \
+            The stimulus will poke and retract at each position in the list. \
+            This argument is required.")
+    parser.add_argument("wait_time", type=float,
+        help="Number of seconds the tethered stimulus remains extended \
+            or retracted at a given angular position.")
+    parser.add_argument("poke_speed", type=int,
+        help="Speed at which the tethered stimulus extends or retracts.")
+    parser.add_argument("-e", "--ext", type=float, default=None, 
+        help="The maximum linear servo extension angle. If None, will \
+            inherit the value in the `calib_servo.noexiit` file. Default \
+            is None. This argument is required.")
+    
+    args = parser.parse_args()
 
-    # Arguments for pt_to_pt_and_poke():
-    posns = [0.0, 180.0, 360.0, 2*360, 540.0]
-    wait_time = 2.0
-    with open ("calib_servo.noexiit", "r") as f:
-        max_ext = f.read().rstrip('\n')
-    ext_angle = float(max_ext)
+    posns = args.posns
+    wait_time = args.wait_time
+    poke_speed = args.poke_speed
+    ext_angle = args.ext
+
+    if ext_angle is None:
+        with open ("calib_servo.noexiit", "r") as f:
+            max_ext = f.read().rstrip('\n')
+        ext_angle = float(max_ext)
+    
+    # TODO: Split wait_time into two--for extend and for retract
+    # TODO: Compute approx speed from np.linspace steps
 
     # Home:
     home(stepper)
