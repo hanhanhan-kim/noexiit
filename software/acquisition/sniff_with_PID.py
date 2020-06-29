@@ -7,15 +7,20 @@ DAQ's AIN0 channel.
 
 import datetime
 import time
+import argparse
+
 import pandas as pd
 import matplotlib.pyplot as plt
-
 import u3
 
 
 def main():
-
-    duration_secs = 10 
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("duration", type=float,
+        help="Duration (s) of the PID acquisition.")
+    args = parser.parse_args()
+    
+    duration_secs = args.duration
     t_end = time.time() + duration_secs
 
     times = []
