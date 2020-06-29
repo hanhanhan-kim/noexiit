@@ -2,7 +2,7 @@
 
 """
 Move the tethered stimulus to each angular position in a list of specified 
-positions.
+positions, while collecting stimulus data.
 Upon arriving at a position, extend the tethered stimulus. Remain extended 
 for a fixed duration. Then retract the tethered stimulus. Remain retracted 
 for the same fixed duration. 

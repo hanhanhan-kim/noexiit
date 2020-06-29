@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 
+"""
+Move the tethered stimulus to each angular position in a list of specified 
+positions, while collecting stimulus and camera data.
+Upon arriving at a position, extend the tethered stimulus. Remain extended 
+for a fixed duration. Then retract the tethered stimulus. Remain retracted 
+for the same fixed duration. 
+Collect ongoing motor position data as well as photoionization detector data.
+In addition, activate an ATMega328P-based camera trigger.
+"""
+
 from __future__ import print_function
 from autostep import Autostep
 import datetime

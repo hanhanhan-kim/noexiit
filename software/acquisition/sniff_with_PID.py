@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+Collect photoionization detector data via the LabJack U3 
+DAQ's AIN0 channel.
+"""
+
 import datetime
 import time
 import pandas as pd
