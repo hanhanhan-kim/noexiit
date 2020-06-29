@@ -30,7 +30,7 @@ def command_BIAS(port, cmd, success_msg, fail_msg, retries=10):
         response has a False value to the success key.
     """
 
-    url = "http://localhost:" + port + f"/?{cmd}"
+    url = f"http://localhost:{port}/?{cmd}"
     ret = requests.get(url)
 
     ret_dict = ret.json()[0]
