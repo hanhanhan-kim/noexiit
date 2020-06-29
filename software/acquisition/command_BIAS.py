@@ -2,7 +2,7 @@
 
 """
 Control Will Dickson's BIAS (Basic Image Acquisition Software) via external
-HTTPS commands. 
+HTTP commands. 
 """
 
 import argparse
