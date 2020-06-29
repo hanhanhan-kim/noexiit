@@ -157,7 +157,7 @@ def main(stepper):
             PID_volts.append(sniff())
 
             # Convert timedelta to elapsed seconds:
-            print(f"Elapsed time: {time_delta.total_seconds()}     ", 
+            print(f"Elapsed time (s): {time_delta.total_seconds()}     ", 
                   f"Calendar time: {now}     ", 
                   f"Stepper output (degs): {stepper.get_position()}     ", 
                   f"Servo output (degs): {stepper.get_servo_angle()}     ",
@@ -167,7 +167,7 @@ def main(stepper):
         stepper_th.join()
 
         # Save outputs to a csv:
-        df = pd.DataFrame({"Elapsed time": elapsed_times,
+        df = pd.DataFrame({"Elapsed time (s)": elapsed_times,
                            "Calendar time": cal_times,
                            "Stepper output (degs)": stepper_posns,
                            "Servo output (degs)": servo_posns,
