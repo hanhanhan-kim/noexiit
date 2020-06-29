@@ -12,19 +12,21 @@ import datetime
 
 from start_trigger import start_trigger
 from init_BIAS import init_BIAS
-from move import home, pt_to_pt_and_poke
+from move_and_sniff import home, pt_to_pt_and_poke, sniff
 
 def main():
 
     # SET UP PARAMS:
     #----------------------------------------------------------------------------------------
     # Set up autostep motors:
-    motor_port = '/dev/ttyACM0' # change as necessary
+    # change as necessary:
+    motor_port = '/dev/ttyACM0' 
     stepper = Autostep(motor_port)
     stepper.set_step_mode('STEP_FS_128') 
     stepper.set_fullstep_per_rev(200)
     stepper.set_kval_params({'accel':30, 'decel':30, 'run':30, 'hold':30})
-    stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) # deg/s and deg/s2
+    # deg/s and deg/s2
+    stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) 
     stepper.set_move_mode_to_jog()
     stepper.set_gear_ratio(1)
     stepper.enable() 
@@ -98,7 +100,7 @@ def main():
             servo_posns.append(stepper.get_servo_angle())
 
             # Convert timedelta to elapsed seconds:
-            print(f"Elapsed time: {time_delta.total_seconds()}     ", 
+            print(f"Elapsed time (s): {time_delta.total_seconds()}     ", 
                   f"Calendar time: {now}     ", 
                   f"Stepper output (degs): {stepper.get_position()}     ", 
                   f"Servo output (degs): {stepper.get_servo_angle()}")
@@ -136,7 +138,7 @@ def main():
             print("max extension angle: %f" %ext_angle, file =f)
 
         # Save outputs to a csv:
-        df = pd.DataFrame({'Elapsed time': elapsed_times,
+        df = pd.DataFrame({'Elapsed time (s)': elapsed_times,
                            'Calendar time': cal_times,
                            'Stepper output (degs)': stepper_posns,
                            'Servo output (degs)': servo_posns})
