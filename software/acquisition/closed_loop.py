@@ -47,9 +47,9 @@ def main():
 
     # Set up user arguments:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("duration", type=int,
+    parser.add_argument("duration", type=float,
         help="Duration (s) of the closed-loop acquisition mode.")
-    parser.add_argument("ball_radius", nargs="?", default=5.0, type=int,
+    parser.add_argument("ball_radius", nargs="?", default=5.0, type=float,
         help="Radius of the spherical treadmill in mm. Default is 5.0 mm.")
 
     args = parser.parse_args()
