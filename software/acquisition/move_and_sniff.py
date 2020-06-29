@@ -197,8 +197,22 @@ def main(stepper):
             print("max extension angle: %f" %ext_angle, file =f)
 
         # Plot and save results:
-        plt.plot(elapsed_times, stepper_posns, 
-                elapsed_times, servo_posns)
+        # Motors:
+        plt.subplot(2, 1, 1)
+        plt.plot(elapsed_times, stepper_posns,
+                 label="stepper position (degs)")
+        plt.plot(elapsed_times, servo_posns,
+                 label="servo position (degs)")
+        plt.xlabel("time (s)")
+        plt.ylabel("motor position (degs)")
+        plt.legend()
+        plt.grid(True)
+        # PID readings:
+        plt.subplot(2, 1, 2)
+        plt.plot(elapsed_times, PID_volts)
+        plt.xlabel("time (s)")
+        plt.ylabel("PID reading (V)")
+        plt.grid(True)
         plt.savefig(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.png')
         plt.show()
 
