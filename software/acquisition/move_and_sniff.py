@@ -218,16 +218,8 @@ def main(stepper):
         # Join the stepper thread back to the main:
         stepper_th.join()
 
-        # Save outputs to a csv:
-        df = pd.DataFrame({"Elapsed time (s)": elapsed_times,
-                           "Calendar time": cal_times,
-                           "Stepper output (degs)": stepper_posns,
-                           "Servo output (degs)": servo_posns,
-                           "PID (V)": PID_volts})
-        df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.csv', index=False)
-
-        stepper.print_params()
         # Save the stepper settings and servo extension angle: 
+        stepper.print_params()
         with open(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_settings.txt", "a") as f:
             print("autostep parameters", file=f)
             print("--------------------------", file=f)
@@ -247,6 +239,14 @@ def main(stepper):
             print("\nlinear servo parameters", file=f)
             print("--------------------------", file=f)
             print("max extension angle: %f" %ext_angle, file =f)
+
+        # Save outputs to a csv:
+        df = pd.DataFrame({"Elapsed time (s)": elapsed_times,
+                           "Calendar time": cal_times,
+                           "Stepper output (degs)": stepper_posns,
+                           "Servo output (degs)": servo_posns,
+                           "PID (V)": PID_volts})
+        df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.csv', index=False)
 
         # Plot and save results:
         # Motors:
