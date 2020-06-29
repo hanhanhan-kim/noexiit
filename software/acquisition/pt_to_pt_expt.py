@@ -40,7 +40,7 @@ def main():
     duration = 120.0
 
     # Set motor function params:
-    pos_list = [0.0, 90.0, 180.0, 360, 0.0]
+    target_posns = [0.0, 90.0, 180.0, 360, 0.0]
     wait_time = 5.0
     with open ("calib_servo.noexiit", "r") as f:
         max_ext = f.read().rstrip('\n')
@@ -76,7 +76,7 @@ def main():
 
         # Start move function in its own thread:
         stepper_th = threading.Thread(target=pt_to_pt_and_poke, 
-                                      args=(stepper, pos_list, ext_angle, wait_time))
+                                      args=(stepper, target_posns, ext_angle, wait_time))
         stepper_th.start()
         
         # Save data for plotting and csv:
@@ -84,6 +84,7 @@ def main():
         cal_times = []
         stepper_posns = []
         servo_posns = []
+        PID_volts = []
         t_start = datetime.datetime.now()
 
         # Print motor parameters while move function thread is alive:
@@ -98,13 +99,14 @@ def main():
             cal_times.append(now)
             stepper_posns.append(stepper.get_position())
             servo_posns.append(stepper.get_servo_angle())
+            PID_volts.append(sniff())
 
             # Convert timedelta to elapsed seconds:
             print(f"Elapsed time (s): {time_delta.total_seconds()}     ", 
                   f"Calendar time: {now}     ", 
                   f"Stepper output (degs): {stepper.get_position()}     ", 
-                  f"Servo output (degs): {stepper.get_servo_angle()}")
-
+                  f"Servo output (degs): {stepper.get_servo_angle()}     ",
+                  f"PID (V): {sniff()}")
 
         # Join the stepper thread back to the main:
         stepper_th.join()
@@ -138,15 +140,29 @@ def main():
             print("max extension angle: %f" %ext_angle, file =f)
 
         # Save outputs to a csv:
-        df = pd.DataFrame({'Elapsed time (s)': elapsed_times,
-                           'Calendar time': cal_times,
-                           'Stepper output (degs)': stepper_posns,
-                           'Servo output (degs)': servo_posns})
+        df = pd.DataFrame({"Elapsed time (s)": elapsed_times,
+                           "Calendar time": cal_times,
+                           "Stepper output (degs)": stepper_posns,
+                           "Servo output (degs)": servo_posns,
+                           "PID (V)": PID_volts})
         df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.csv', index=False)
 
         # Plot and save outputs:
+        plt.subplot(2, 1, 1)
         plt.plot(elapsed_times, stepper_posns,
-                 elapsed_times, servo_posns)
+                 label="stepper position (degs)")
+        plt.plot(elapsed_times, servo_posns,
+                 label="servo position (degs)")
+        plt.xlabel("time (s)")
+        plt.ylabel("motor position (degs)")
+        plt.legend()
+        plt.grid(True)
+        # PID readings:
+        plt.subplot(2, 1, 2)
+        plt.plot(elapsed_times, PID_volts)
+        plt.xlabel("time (s)")
+        plt.ylabel("PID reading (V)")
+        plt.grid(True)
         plt.savefig(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.png')
         plt.show()
 
