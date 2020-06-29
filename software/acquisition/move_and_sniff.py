@@ -139,14 +139,6 @@ def main(stepper):
     
     # Set up arguments:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("-p", "--posns", nargs="+", type=float, required=True,
-        help="A list of angular positions the tethered stimulus will move to. \
-            The stimulus will poke and retract at each position in the list. \
-            This argument is required.")
-    parser.add_argument("-e", "--ext", type=float, default=None, 
-        help="The maximum linear servo extension angle. If None, will \
-            inherit the value in the `calib_servo.noexiit` file. Default \
-            is None.")
     parser.add_argument("poke_speed", type=int,
         help="A scalar speed factor for the tethered stimulus' extension \
             and retraction. Must be positive. 10 is the fastest. Higher values \
@@ -157,14 +149,22 @@ def main(stepper):
     parser.add_argument("retr_wait_time", type=float,
         help="Duration (s) for which the tethered stimulus is retracted at each \
             set angular position.")
+    parser.add_argument("-p", "--posns", nargs="+", type=float, required=True,
+        help="A list of angular positions the tethered stimulus will move to. \
+            The stimulus will poke and retract at each position in the list. \
+            This argument is required.")
+    parser.add_argument("-e", "--ext", type=float, default=None, 
+        help="The maximum linear servo extension angle. If None, will \
+            inherit the value in the `calib_servo.noexiit` file. Default \
+            is None.")
     
     args = parser.parse_args()
 
-    posns = args.posns
-    ext_angle = args.ext
     poke_speed = args.poke_speed
     ext_wait_time = args.ext_wait_time
     retr_wait_time = args.retr_wait_time
+    posns = args.posns
+    ext_angle = args.ext
 
     assert(poke_speed >= 10), \
         "The poke_speed must be 10 or greater."
