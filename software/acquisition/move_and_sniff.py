@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import u3
 
 
-def pt_to_pt_and_poke(stepper, posns, ext_angle, wait_time):
+def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed, wait_time):
     
     '''
     Specifies stepper motor and servo motor behaviours according to a 
@@ -30,21 +30,30 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, wait_time):
 
     Parameters:
     -----------
-        stepper (Autostep obj): The Autostep object, defined with respect to the correct port.
-                                Do NOT make this object more than once.
+        stepper (Autostep obj): The Autostep object, defined with respect 
+            to the correct port. Do NOT make this object more than once.
 
         posns (list): List of target absolute positions to move to.
 
-        ext_angle (float): The linear servo's extension 'angle' for full extension.
+        ext_angle (float): The linear servo's extension 'angle' for full 
+            extension.
 
-        wait_time (float): Duration of time (s) for which to wait at each position in posns.
+        poke_speed (int): A scalar speed factor for the tethered stimulus' 
+            extension and retraction. Must be positive. 10 is the fastest. 
+            Higher values are slower. 
+
+        wait_time (float): Duration of time (s) for which to wait at each 
+            position in posns.
 
     Returns:
     --------
     Moves motors to specified positions with wait times. 
     '''
 
-    fwd_angles = list(np.linspace(0, ext_angle, int(ext_angle)))
+    assert(poke_speed >= 10), \
+        "The poke_speed must be 10 or greater."
+
+    fwd_angles = list(np.linspace(0, ext_angle, int(poke_speed)))
     rev_angles = list(fwd_angles[::-1])
     dt = 0.01
 
@@ -81,8 +90,6 @@ def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
     pre_exp_time (fl): The time interval in secs after executing the home function.
 
     homing_speed (int): The speed in degs/sec with which the stepper reaches home. 
-
-    motor_port (str): The port that the Autostep Teensy connects to
     """
 
     # If servo is extended, retract:
@@ -136,7 +143,9 @@ def main(stepper):
         help="Number of seconds the tethered stimulus remains extended \
             or retracted at a given angular position.")
     parser.add_argument("poke_speed", type=int,
-        help="Speed at which the tethered stimulus extends or retracts.")
+        help="A scalar speed factor for the tethered stimulus' extension \
+            and retraction. Must be positive. 2 is the fastest. Higher values \
+            are slower.")
     parser.add_argument("-e", "--ext", type=float, default=None, 
         help="The maximum linear servo extension angle. If None, will \
             inherit the value in the `calib_servo.noexiit` file. Default \
@@ -148,6 +157,9 @@ def main(stepper):
     wait_time = args.wait_time
     poke_speed = args.poke_speed
     ext_angle = args.ext
+
+    assert(poke_speed >= 10), \
+        "The poke_speed must be 10 or greater."
 
     if ext_angle is None:
         with open ("calib_servo.noexiit", "r") as f:
@@ -165,7 +177,8 @@ def main(stepper):
         
         # Run move function in a separate thread:
         stepper_th = threading.Thread(target=pt_to_pt_and_poke, 
-                                      args=(stepper, posns, ext_angle, wait_time))
+                                      args=(stepper, posns, ext_angle, 
+                                            poke_speed, wait_time))
         stepper_th.start()
         
         # Save data for plotting and csv:
