@@ -22,7 +22,8 @@ import matplotlib.pyplot as plt
 import u3
 
 
-def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed, wait_time):
+def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed, 
+                      ext_wait_time, retr_wait_time):
     
     '''
     Specifies stepper motor and servo motor behaviours according to a 
@@ -42,8 +43,11 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed, wait_time):
             extension and retraction. Must be positive. 10 is the fastest. 
             Higher values are slower. 
 
-        wait_time (float): Duration of time (s) for which to wait at each 
-            position in posns.
+        ext_wait_time (float): Duration (s) for which the tethered stimulus 
+            is extended at each set angular position. 
+
+        retr_wait_time (float): Duration (s) for which the tethered stimulus
+            is retracted at each set angular position. 
 
     Returns:
     --------
@@ -51,7 +55,7 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed, wait_time):
     '''
 
     assert(poke_speed >= 10), \
-        "The poke_speed must be 10 or greater."
+        "The `poke_speed` must be 10 or greater."
 
     fwd_angles = list(np.linspace(0, ext_angle, int(poke_speed)))
     rev_angles = list(fwd_angles[::-1])
@@ -67,14 +71,14 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed, wait_time):
             while stepper.get_servo_angle() <= ext_angle is True:
                 time.sleep(dt)
         # Wait at extension:
-        time.sleep(wait_time)
+        time.sleep(ext_wait_time)
         # Retract linear servo:
         for angle in rev_angles:
             stepper.set_servo_angle(angle)
             while stepper.get_servo_angle() >= 0 is True:
                 time.sleep(dt)
         # Wait at retraction:
-        time.sleep(wait_time)
+        time.sleep(retr_wait_time)
 
 
 def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
@@ -139,24 +143,28 @@ def main(stepper):
         help="A list of angular positions the tethered stimulus will move to. \
             The stimulus will poke and retract at each position in the list. \
             This argument is required.")
-    parser.add_argument("wait_time", type=float,
-        help="Number of seconds the tethered stimulus remains extended \
-            or retracted at a given angular position.")
-    parser.add_argument("poke_speed", type=int,
-        help="A scalar speed factor for the tethered stimulus' extension \
-            and retraction. Must be positive. 2 is the fastest. Higher values \
-            are slower.")
     parser.add_argument("-e", "--ext", type=float, default=None, 
         help="The maximum linear servo extension angle. If None, will \
             inherit the value in the `calib_servo.noexiit` file. Default \
-            is None. This argument is required.")
+            is None.")
+    parser.add_argument("poke_speed", type=int,
+        help="A scalar speed factor for the tethered stimulus' extension \
+            and retraction. Must be positive. 10 is the fastest. Higher values \
+            are slower.")
+    parser.add_argument("ext_wait_time", type=float,
+        help="Duration (s) for which the tethered stimulus is extended at each \
+            set angular position.")
+    parser.add_argument("retr_wait_time", type=float,
+        help="Duration (s) for which the tethered stimulus is retracted at each \
+            set angular position.")
     
     args = parser.parse_args()
 
     posns = args.posns
-    wait_time = args.wait_time
-    poke_speed = args.poke_speed
     ext_angle = args.ext
+    poke_speed = args.poke_speed
+    ext_wait_time = args.ext_wait_time
+    retr_wait_time = args.retr_wait_time
 
     assert(poke_speed >= 10), \
         "The poke_speed must be 10 or greater."
@@ -166,9 +174,6 @@ def main(stepper):
             max_ext = f.read().rstrip('\n')
         ext_angle = float(max_ext)
     
-    # TODO: Split wait_time into two--for extend and for retract
-    # TODO: Compute approx speed from np.linspace steps
-
     # Home:
     home(stepper)
 
@@ -177,8 +182,8 @@ def main(stepper):
         
         # Run move function in a separate thread:
         stepper_th = threading.Thread(target=pt_to_pt_and_poke, 
-                                      args=(stepper, posns, ext_angle, 
-                                            poke_speed, wait_time))
+                                      args=(stepper, posns, ext_angle, poke_speed, 
+                                            ext_wait_time, retr_wait_time))
         stepper_th.start()
         
         # Save data for plotting and csv:
