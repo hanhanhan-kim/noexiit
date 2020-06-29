@@ -56,3 +56,7 @@ I use FLIR Blackfly S cameras (BFS-U3-04S2M-CS) and Spinnaker 1.27.0.48 for Ubun
 See [Richard Moore's official repo](https://github.com/rjdmoore/fictrac) for additional details. My cloned repo is rolled back to commit `f60cae42ec747ad8e050f46079b49df2f7698749`. I use the following dependencies:
 - `vcpkg` rolled back to commit `85211f3ab66e15c7669a1c14a25564afcf31e2e6`. 
 - [cmake v.3.15.0](https://github.com/Kitware/CMake/releases/tag/v3.15.0).
+
+### LabJack U3 DAQ
+
+I use the LabJack U3 as my DAQ for collecting stimulus data from a photoionization detector. I us Python3 to interface with the LabJack U3. Instructions for installing the `exodriver` library  necessary for using the LabJack U3 are available [here](https://labjack.com/support/software/installers/exodriver). Instructions for installing the LabJack U3 Python3 module are available on the [official LabJack GitHub](https://github.com/labjack/LabJackPython). 
