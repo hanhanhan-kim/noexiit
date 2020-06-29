@@ -2,13 +2,15 @@
 
 from __future__ import print_function
 from autostep import Autostep
+import datetime
 import time
 import datetime
 import threading
+import argparse
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import datetime
 
 from start_trigger import start_trigger
 from init_BIAS import init_BIAS
@@ -39,12 +41,45 @@ def main():
     trig_port = "/dev/ttyUSB0"
     duration = 120.0
 
-    # Set motor function params:
-    target_posns = [0.0, 90.0, 180.0, 360, 0.0]
-    wait_time = 5.0
-    with open ("calib_servo.noexiit", "r") as f:
-        max_ext = f.read().rstrip('\n')
-    ext_angle = float(max_ext)
+    # Set up user arguments:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("duration", type=int,
+        help="Duration (s) of the synchronized multi-cam video recordings.")
+    parser.add_argument("poke_speed", type=int,
+        help="A scalar speed factor for the tethered stimulus' extension \
+            and retraction. Must be positive. 10 is the fastest. Higher values \
+            are slower.")
+    parser.add_argument("ext_wait_time", type=float,
+        help="Duration (s) for which the tethered stimulus is extended at each \
+            set angular position.")
+    parser.add_argument("retr_wait_time", type=float,
+        help="Duration (s) for which the tethered stimulus is retracted at each \
+            set angular position.")
+    parser.add_argument("-p", "--posns", nargs="+", type=float, required=True,
+        help="A list of angular positions the tethered stimulus will move to. \
+            The stimulus will poke and retract at each position in the list. \
+            This argument is required.")
+    parser.add_argument("-e", "--ext", type=float, default=None, 
+        help="The maximum linear servo extension angle. If None, will \
+            inherit the value in the `calib_servo.noexiit` file. Default \
+            is None.")
+    
+    args = parser.parse_args()
+
+    duration = args.duration
+    poke_speed = args.poke_speed
+    ext_wait_time = args.ext_wait_time
+    retr_wait_time = args.retr_wait_time
+    posns = args.posns
+    ext_angle = args.ext
+
+    assert(poke_speed >= 10), \
+        "The poke_speed must be 10 or greater."
+
+    if ext_angle is None:
+        with open ("calib_servo.noexiit", "r") as f:
+            max_ext = f.read().rstrip('\n')
+        ext_angle = float(max_ext)
 
     # EXECUTE:
     #----------------------------------------------------------------------------------------
@@ -70,13 +105,14 @@ def main():
     if stepper.get_position() == 0:
 
         # Start external cam trigger in its own thread:
-        trig_th = threading.Thread(target = start_trigger, 
-                                   args = (duration, trig_port))
+        trig_th = threading.Thread(target=start_trigger, 
+                                   args=(duration, trig_port))
         trig_th.start()
 
         # Start move function in its own thread:
         stepper_th = threading.Thread(target=pt_to_pt_and_poke, 
-                                      args=(stepper, target_posns, ext_angle, wait_time))
+                                      args=(stepper, posns, ext_angle, poke_speed,
+                                            ext_wait_time, retr_wait_time))
         stepper_th.start()
         
         # Save data for plotting and csv:
@@ -116,8 +152,8 @@ def main():
 
         # SAVE DATA:
         #----------------------------------------------------------------------------------------
-        stepper.print_params()
         # Save the stepper settings and servo extension angle: 
+        stepper.print_params()
         with open(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_settings.txt", "a") as f:
 
             print("autostep parameters", file=f)
