@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+Control Will Dickson's BIAS (Basic Image Acquisition Software) via external
+HTTPS commands. 
+"""
+
 import argparse
 import json
 import sys
@@ -64,9 +69,19 @@ def command_BIAS(port, cmd, success_msg, fail_msg, retries=10):
 
 def main():
     
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("config_path",
+        help="Absolute path to the .json configuration file. Include the \
+            name of the .json file. \
+            E.g. `/home/platyusa/Videos/bias_test_ext_trig.json`")
+    parser.add_argument("backoff_time", nargs="?", type=float, default=1.0,
+        help="Duration (s) between subsequent connection retries.")
+
+    args = parser.parse_args()
+
+    config_path = args.config_path
+    backoff_time = args.backoff_time
     cam_ports = ['5010', '5020', '5030', '5040', '5050']
-    config_path = '/home/platyusa/Videos/bias_test_ext_trig.json'
-    backoff_time = 1.0
 
     # Connect cameras:
     for port in cam_ports:
