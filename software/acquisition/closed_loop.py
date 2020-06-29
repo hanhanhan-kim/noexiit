@@ -8,6 +8,7 @@ import datetime
 import atexit
 import warnings
 import datetime
+import argparse
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28,29 +29,39 @@ def main():
     dev.set_gear_ratio(1.0)
     dev.set_jog_mode_params({'speed': 200,  'accel': 1000, 'decel': 1000})
     dev.set_max_mode_params({'speed': 1000,  'accel': 30000, 'decel': 30000})
-    dev.set_move_mode_to_max() # change to jog for debugging
+    
+    # Change to jog for debugging: 
+    dev.set_move_mode_to_max() 
     dev.enable()
     dev.print_params()
 
     dev.run(0.0)  
 
-    HOST = '127.0.0.1'  # The server's hostname or IP address
-    PORT = 27654         # The port used by the server
-
-    # Set duration of closed loop mode:
-    t_end = 60.0 # secs
-    t_start = datetime.datetime.now()
-
-    # Specify trackball size:
-    ball_radius = 5 # mm
-
     # Stop the stepper when script is killed:
     def stop_stepper():
         dev.run(0.0)
     atexit.register(stop_stepper)
+
+    # Set connection parameters:
+    HOST = '127.0.0.1'  # The server's hostname or IP address
+    PORT = 27654         # The port used by the server
+
+    # Set up user arguments:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("duration", type=int,
+        help="Duration (s) of the closed-loop acquisition mode.")
+    parser.add_argument("ball_radius", nargs="?", default=5.0, type=int,
+        help="Radius of the spherical treadmill in mm. Default is 5.0 mm.")
+
+    args = parser.parse_args()
+
+    duration = args.duration
+    ball_radius = args.ball_radius
     
     # EXECUTE:
     #---------------------------------------------------------------------------------------------------------
+    t_start = datetime.datetime.now()
+    
     # Open the connection (FicTrac must be waiting for socket connection)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((HOST, PORT))
@@ -168,7 +179,7 @@ def main():
             print("\n")
     
             # Check if we are done:
-            if elapsed_time >= t_end:
+            if elapsed_time >= duration:
                 done = True
             
             # Save to list:
