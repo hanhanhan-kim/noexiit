@@ -6,7 +6,6 @@ import socket
 import time
 import datetime
 import atexit
-import warnings
 import datetime
 import argparse
 
