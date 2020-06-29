@@ -33,7 +33,6 @@ def main():
     # Change to jog for debugging: 
     dev.set_move_mode_to_max() 
     dev.enable()
-    dev.print_params()
 
     dev.run(0.0)  
 
@@ -57,6 +56,9 @@ def main():
 
     duration = args.duration
     ball_radius = args.ball_radius
+
+    # Show stepper motor parameters:
+    dev.print_params()
     
     # EXECUTE:
     #---------------------------------------------------------------------------------------------------------
