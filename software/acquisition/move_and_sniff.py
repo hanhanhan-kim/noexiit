@@ -66,6 +66,8 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed,
         # Move stepper to pos:
         stepper.move_to(pos)
         stepper.busy_wait()
+        # Wait at initial retraction:
+        time.sleep(retr_wait_time)
         # Extend linear servo:
         for angle in fwd_angles:
             stepper.set_servo_angle(angle)
