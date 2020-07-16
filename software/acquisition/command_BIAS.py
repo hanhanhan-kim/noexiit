@@ -161,6 +161,7 @@ def main():
                 cmd = "start-capture",
                 success_msg = f"Started acquisition on port {port}",
                 fail_msg = f"Could not start acquisition on port {port}"
+            )
 
     # Config json specifies an external trigger. 
     # Config json stops acquisition with a timer.
