@@ -16,6 +16,7 @@ import datetime
 import time
 import datetime
 import threading
+import atexit
 import argparse
 
 import numpy as np
