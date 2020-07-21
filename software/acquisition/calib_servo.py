@@ -34,6 +34,25 @@ def main():
     # Proceed with experimental conditions once the home is set to 0:
     if stepper.get_position() == 0:
 
+        # Ask for user input on stepper angle position:
+        while True:
+            stepper_test_angle = float(input("Enter a stepper angle (degs) to test: \n"))
+            if isinstance(stepper_test_angle, float):
+                stepper.move_to(stepper_test_angle)
+                stepper.busy_wait()
+                proceed_stepper = input("Test another stepper angle? Enter y or n: \n").lower()
+                if proceed_stepper == "n":
+                    print("Ok! Moving on.")
+                    break
+                elif proceed_stepper == "y":
+                    continue
+                else:
+                    print("Please input y or n: \n")
+                    continue
+            else: 
+                print("Please enter a number. It can be 0, positive, or negative.")
+                continue
+
         # Ask for user input on linear servo extension:
         while True:
             max_ext = float(input("Enter a desired max servo extension angle from 0 to 180: \n"))
@@ -41,11 +60,11 @@ def main():
                 stepper.set_servo_angle(max_ext)
                 # Give ample time for servo to reach inputted position:
                 time.sleep(1.5)
-                proceed = input("Are you happy with this max extension angle? Enter y or n: \n").lower()
-                if proceed == "y":
+                proceed_servo = input("Are you happy with this max extension angle? Enter y or n: \n").lower()
+                if proceed_servo == "y":
                     print("Great! Good choice!")
                     break
-                elif proceed == "n":
+                elif proceed_servo == "n":
                     continue
                 else:
                     print("Please input y or n: \n")
@@ -63,7 +82,7 @@ def main():
         pos_list = [0.0, 90.0, 180.0, 270.0, 360.0, 0.0]
         wait_time = 1.5
 
-        for _, pos in enumerate(pos_list):
+        for pos in pos_list:
             # Move stepper to pos:
             stepper.move_to(pos)
             stepper.busy_wait()
