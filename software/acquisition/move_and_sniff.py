@@ -1,10 +1,21 @@
 #!/usr/bin/env python3
 
+"""
+Move the tethered stimulus to each angular position in a list of specified 
+positions, while collecting stimulus data.
+Upon arriving at a position, extend the tethered stimulus. Remain extended 
+for a fixed duration. Then retract the tethered stimulus. Remain retracted 
+for the same fixed duration. 
+Collect ongoing motor position data as well as photoionization detector data.
+"""
+
 from __future__ import print_function
 from autostep import Autostep
 import time
 import datetime
 import threading
+import argparse
+import atexit
 
 import numpy as np
 import pandas as pd
@@ -12,7 +23,8 @@ import matplotlib.pyplot as plt
 import u3
 
 
-def pt_to_pt_and_poke(stepper, posns, ext_angle, wait_time):
+def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed, 
+                      ext_wait_time, retr_wait_time):
     
     '''
     Specifies stepper motor and servo motor behaviours according to a 
@@ -20,21 +32,33 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, wait_time):
 
     Parameters:
     -----------
-        stepper (Autostep obj): The Autostep object, defined with respect to the correct port.
-                                Do NOT make this object more than once.
+        stepper (Autostep obj): The Autostep object, defined with respect 
+            to the correct port. Do NOT make this object more than once.
 
         posns (list): List of target absolute positions to move to.
 
-        ext_angle (float): The linear servo's extension 'angle' for full extension.
+        ext_angle (float): The linear servo's extension 'angle' for full 
+            extension.
 
-        wait_time (float): Duration of time (s) for which to wait at each position in posns.
+        poke_speed (int): A scalar speed factor for the tethered stimulus' 
+            extension and retraction. Must be positive. 10 is the fastest. 
+            Higher values are slower. 
+
+        ext_wait_time (float): Duration (s) for which the tethered stimulus 
+            is extended at each set angular position. 
+
+        retr_wait_time (float): Duration (s) for which the tethered stimulus
+            is retracted at each set angular position. 
 
     Returns:
     --------
     Moves motors to specified positions with wait times. 
     '''
 
-    fwd_angles = list(np.linspace(0, ext_angle, int(ext_angle)))
+    assert(poke_speed >= 10), \
+        "The `poke_speed` must be 10 or greater."
+
+    fwd_angles = list(np.linspace(0, ext_angle, int(poke_speed)))
     rev_angles = list(fwd_angles[::-1])
     dt = 0.01
 
@@ -42,20 +66,22 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, wait_time):
         # Move stepper to pos:
         stepper.move_to(pos)
         stepper.busy_wait()
+        # Wait at initial retraction:
+        time.sleep(retr_wait_time)
         # Extend linear servo:
         for angle in fwd_angles:
             stepper.set_servo_angle(angle)
             while stepper.get_servo_angle() <= ext_angle is True:
                 time.sleep(dt)
         # Wait at extension:
-        time.sleep(wait_time)
+        time.sleep(ext_wait_time)
         # Retract linear servo:
         for angle in rev_angles:
             stepper.set_servo_angle(angle)
             while stepper.get_servo_angle() >= 0 is True:
                 time.sleep(dt)
         # Wait at retraction:
-        time.sleep(wait_time)
+        time.sleep(retr_wait_time)
 
 
 def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
@@ -71,8 +97,6 @@ def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
     pre_exp_time (fl): The time interval in secs after executing the home function.
 
     homing_speed (int): The speed in degs/sec with which the stepper reaches home. 
-
-    motor_port (str): The port that the Autostep Teensy connects to
     """
 
     # If servo is extended, retract:
@@ -91,8 +115,8 @@ def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
     stepper.set_position(0)
 
     # Wait before starting experiment:
-    print("Home found. Position is %f." %stepper.get_position(), 
-          " Experiment starting in %s seconds." %pre_exp_time)
+    print(f"Home found. Position is {stepper.get_position()}.", 
+          f" Experiment starting in {pre_exp_time} seconds.")
     time.sleep(pre_exp_time)
 
 
@@ -115,13 +139,45 @@ def sniff(AIN_int=0):
 
 
 def main(stepper):
+    
+    # Set up arguments:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("poke_speed", type=int,
+        help="A scalar speed factor for the tethered stimulus' extension \
+            and retraction. Must be positive. 10 is the fastest. Higher values \
+            are slower.")
+    parser.add_argument("ext_wait_time", type=float,
+        help="Duration (s) for which the tethered stimulus is extended at each \
+            set angular position.")
+    parser.add_argument("retr_wait_time", type=float,
+        help="Duration (s) for which the tethered stimulus is retracted at each \
+            set angular position.")
+    parser.add_argument("-p", "--posns", nargs="+", type=float, required=True,
+        help="A list of angular positions the tethered stimulus will move to. \
+            The stimulus will poke and retract at each position in the list. \
+            This argument is required.")
+    parser.add_argument("-e", "--ext", type=float, default=None, 
+        help="The maximum linear servo extension angle. If None, will \
+            inherit the value in the `calib_servo.noexiit` file. Default \
+            is None.")
+    
+    args = parser.parse_args()
 
-    # Arguments for pt_to_pt_and_poke():
-    posns = [0.0, 180.0, 360.0, 2*360, 540.0]
-    wait_time = 2.0
-    with open ("calib_servo.noexiit", "r") as f:
-        max_ext = f.read().rstrip('\n')
-    ext_angle = float(max_ext)
+    poke_speed = args.poke_speed
+    ext_wait_time = args.ext_wait_time
+    retr_wait_time = args.retr_wait_time
+    posns = args.posns
+    ext_angle = args.ext
+
+    assert(poke_speed >= 10), \
+        "The poke_speed must be 10 or greater."
+
+    if ext_angle is None:
+        with open ("calib_servo.noexiit", "r") as f:
+            max_ext = f.read().rstrip('\n')
+        ext_angle = float(max_ext)
+    
+
 
     # Home:
     home(stepper)
@@ -131,7 +187,8 @@ def main(stepper):
         
         # Run move function in a separate thread:
         stepper_th = threading.Thread(target=pt_to_pt_and_poke, 
-                                      args=(stepper, posns, ext_angle, wait_time))
+                                      args=(stepper, posns, ext_angle, poke_speed, 
+                                            ext_wait_time, retr_wait_time))
         stepper_th.start()
         
         # Save data for plotting and csv:
@@ -166,16 +223,8 @@ def main(stepper):
         # Join the stepper thread back to the main:
         stepper_th.join()
 
-        # Save outputs to a csv:
-        df = pd.DataFrame({"Elapsed time (s)": elapsed_times,
-                           "Calendar time": cal_times,
-                           "Stepper output (degs)": stepper_posns,
-                           "Servo output (degs)": servo_posns,
-                           "PID (V)": PID_volts})
-        df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.csv', index=False)
-
-        stepper.print_params()
         # Save the stepper settings and servo extension angle: 
+        stepper.print_params()
         with open(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_settings.txt", "a") as f:
             print("autostep parameters", file=f)
             print("--------------------------", file=f)
@@ -195,6 +244,14 @@ def main(stepper):
             print("\nlinear servo parameters", file=f)
             print("--------------------------", file=f)
             print("max extension angle: %f" %ext_angle, file =f)
+
+        # Save outputs to a csv:
+        df = pd.DataFrame({"Elapsed time (s)": elapsed_times,
+                           "Calendar time": cal_times,
+                           "Stepper output (degs)": stepper_posns,
+                           "Servo output (degs)": servo_posns,
+                           "PID (V)": PID_volts})
+        df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.csv', index=False)
 
         # Plot and save results:
         # Motors:
@@ -231,5 +288,10 @@ if __name__ == "__main__":
     stepper.set_move_mode_to_jog()
     stepper.set_gear_ratio(1)
     stepper.enable()
+
+    # Stop the stepper when script is killed:
+    def stop_stepper():
+        stepper.run(0.0)
+    atexit.register(stop_stepper)
 
     main(stepper)

@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 
-import requests
+"""
+Control Will Dickson's BIAS (Basic Image Acquisition Software) via external
+HTTP commands. 
+"""
+
+import argparse
 import json
 import sys
 import time
+
+import requests
 
 
 def command_BIAS(port, cmd, success_msg, fail_msg, retries=10):
@@ -11,16 +18,24 @@ def command_BIAS(port, cmd, success_msg, fail_msg, retries=10):
     """
     Uses HTTP request commands to control BIAS.
 
-    Params:
+    Paramseters:
+    ------------
     port (str): The port number of the target camera 
+
     cmd (str): The HTTP get command to use with BIAS
-    success_msg (str): The message if port connection and HTTP response both succeed.
+
+    success_msg (str): The message if port connection and HTTP response 
+        both succeed.
     fail_msg (str): The message if port connection and HTTP both fail.
-    check_success (bool): Pass as true, to check the "success" key in the BIAS request response.
-    retries (int): The number of retries if connection is 404 or request response has a False value to the success key.
+
+    check_success (bool): Pass as true, to check the "success" key in the 
+        BIAS request response.
+
+    retries (int): The number of retries if connection is 404 or request 
+        response has a False value to the success key.
     """
 
-    url = "http://localhost:" + port + f"/?{cmd}"
+    url = f"http://localhost:{port}/?{cmd}"
     ret = requests.get(url)
 
     ret_dict = ret.json()[0]
@@ -54,29 +69,39 @@ def command_BIAS(port, cmd, success_msg, fail_msg, retries=10):
 
 def main():
     
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("config_path",
+        help="Absolute path to the .json configuration file. Include the \
+            name of the .json file. \
+            E.g. `/home/platyusa/Videos/bias_test_ext_trig.json`")
+    parser.add_argument("backoff_time", nargs="?", type=float, default=1.0,
+        help="Duration (s) between subsequent connection retries.")
+
+    args = parser.parse_args()
+
+    config_path = args.config_path
+    backoff_time = args.backoff_time
     cam_ports = ['5010', '5020', '5030', '5040', '5050']
-    config_path = '/home/platyusa/Videos/bias_test_ext_trig.json'
-    backoff_time = 1.0
 
     # Connect cameras:
-    for _, port in enumerate(cam_ports):
+    for port in cam_ports:
         command_BIAS(
             port = port,
             cmd = "connect", 
-            success_msg = "Camera on port " + f"{port}" + " connected", 
-            fail_msg = "Port" + f"{port}" + " not connected"
+            success_msg = f"Camera on port {port} connected", 
+            fail_msg = f"Port {port} not connected"
         )
         time.sleep(backoff_time)
 
     # Load json configuration file:
-    for _, port in enumerate(cam_ports):
+    for port in cam_ports:
 
         # First check if the target json is already loaded:
         current_json = command_BIAS(
             port = port,
             cmd = "get-configuration",
-            success_msg = "Got config json on port " + f"{port}",
-            fail_msg = "Could not get config json on port " + f"{port}"
+            success_msg = f"Got config json on port {port}",
+            fail_msg = f"Could not get config json on port {port}"
         ).get("value")
         
         time.sleep(backoff_time)
@@ -91,9 +116,9 @@ def main():
             print(f"Current json on port {port} is not the target json. Loading target json ...")
             command_BIAS(
                 port = port,
-                cmd = "load-configuration" + '=' + config_path,
-                success_msg = "Loaded configuration json on port " + f"{port}",
-                fail_msg = "Could not load configuration json on port " + f"{port}"
+                cmd = f"load-configuration={config_path}",
+                success_msg = f"Loaded configuration json on port {port}",
+                fail_msg = f"Could not load configuration json on port {port}"
             )
             time.sleep(backoff_time)
 
@@ -113,14 +138,14 @@ def main():
             continue
 
     # Capture frames:
-    for _, port in enumerate(cam_ports):
+    for port in cam_ports:
 
         # First check if camera is already capturing:
         status_dict = command_BIAS(
             port = port,
             cmd = "get-status",
-            success_msg = "Got status on port " + f"{port}",
-            fail_msg = "Could not get status on port " + f"{port}"
+            success_msg = f"Got status on port {port}",
+            fail_msg = f"Could not get status on port {port}"
         )
         time.sleep(backoff_time)
 
@@ -134,10 +159,9 @@ def main():
             command_BIAS(
                 port = port,
                 cmd = "start-capture",
-                success_msg = "Started acquisition on port " + f"{port}",
-                fail_msg = "Could not start acquisition on port " + f"{port}"
+                success_msg = f"Started acquisition on port {port}",
+                fail_msg = f"Could not start acquisition on port {port}"
             )
-
 
     # Config json specifies an external trigger. 
     # Config json stops acquisition with a timer.
