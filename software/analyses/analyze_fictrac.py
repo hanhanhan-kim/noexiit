@@ -6,7 +6,7 @@
 Process and visualize FicTrac data with helper functions. 
 When run as a script, transforms .dat FicTrac files into a single concatenated 
 Pandas dataframe with some additional columns. Then performs various processing 
-and plotting of the FicTrac data. Includes individual animal visualizations of 
+and plotting of the FicTrac data. Includes individual visualizations of 
 the frequency domain, low-pass Butterworth filtering, XY path with a colour map, ___. 
 Includes population visualizations, such as histograms, ECDFs, and __. 
 """
@@ -185,8 +185,8 @@ def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
         df['Y_mm'] = df['integrat_y_posn'] * ball_radius
         df['speed_mm_s'] = df['animal_mvmt_spd'] * df["framerate_hz"] * ball_radius
 
-        # Assign animal number:
-        df['animal'] = str(i) 
+        # Assign ID number:
+        df['ID'] = str(i) 
 
         dfs.append(df)
 
@@ -195,32 +195,32 @@ def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
     return concat_df
 
 
-def unconcat_df(concat_df, col_name="animal"):
+def unconcat_df(concat_df, col_name="ID"):
     """
-    Splits up a concatenated dataframe according to each unique animal.
+    Splits up a concatenated dataframe according to each unique ID.
     Returns a list of datafrmaes. 
 
     Parameters:
     -----------
     concat_df: A Pandas dataframe
     col_name (str): A column name in 'concat_df' with which to split into smaller dataframes. 
-        Default is "animal". 
+        Default is "ID". 
 
     Returns:
     --------
-    A list of dataframes, split up by each unique animal. 
+    A list of dataframes, split up by each unique ID. 
     """
 
     assert (col_name in concat_df), \
         f"The column, {col_name}, is not in in the input dataframe."
 
-    dfs_by_animal = []
+    dfs_by_ID = []
 
     for df in concat_df[col_name].unique():
         df = concat_df.loc[concat_df[col_name]==df]
-        dfs_by_animal.append(df)
+        dfs_by_ID.append(df)
 
-    return(dfs_by_animal)
+    return(dfs_by_ID)
 
 
 def plot_fictrac_fft(concat_df, val_cols, time_col, 
@@ -229,8 +229,8 @@ def plot_fictrac_fft(concat_df, val_cols, time_col,
                      val_labels=None, time_label=None,
                      save_path=None, show_plots=True):  
     """
-    Perform a Fourier transform on FicTrac data for each animal. Generate 
-    frequency domain plots for each animal. 
+    Perform a Fourier transform on FicTrac data for each ID. Generate 
+    frequency domain plots for each ID. 
     Accepts one column from `concat_df`, rather than a list of columns.
 
     Parameters:
@@ -284,15 +284,15 @@ def plot_fictrac_fft(concat_df, val_cols, time_col,
             else:
                 exit("Re-run this function with a 'time_col' whose units are secs.")
 
-    dfs_by_animal = unconcat_df(concat_df, col_name="animal")
+    dfs_by_ID = unconcat_df(concat_df, col_name="ID")
 
     bokeh_ps = []
-    for df in dfs_by_animal: 
+    for df in dfs_by_ID: 
 
         assert (time_col in concat_df), \
             f"The column, {time_col}, is not in the input dataframe."
-        assert ("animal" in concat_df), \
-            f"The column 'animal' is not in in the input dataframe."
+        assert ("ID" in concat_df), \
+            f"The column 'ID' is not in in the input dataframe."
         
         time = list(df[str(time_col)])
 
@@ -402,10 +402,10 @@ def get_filtered_fictrac(concat_df, val_cols, order, cutoff_freq, framerate=None
     Filtered columns are denoted with a "filtered_" prefix.
     """
 
-    dfs_by_animal = unconcat_df(concat_df, col_name="animal")
+    dfs_by_ID = unconcat_df(concat_df, col_name="ID")
 
     filtered_dfs = []
-    for df in dfs_by_animal:
+    for df in dfs_by_ID:
         
         if framerate is None:
             framerate = np.mean(df["framerate_hz"])
@@ -496,10 +496,10 @@ def plot_filtered_fictrac(concat_df, val_cols, time_col,
         f"The view percentage, {view_perc}, must be between 0 and 100."
     
     filtered_concat_df = get_filtered_fictrac(concat_df, val_cols, order, cutoff_freq).dropna()
-    dfs_by_animal = unconcat_df(filtered_concat_df, col_name="animal")
+    dfs_by_ID = unconcat_df(filtered_concat_df, col_name="ID")
 
     bokeh_ps = []
-    for df in dfs_by_animal:
+    for df in dfs_by_ID:
         
         # Format axes labels:
         if time_label is None:
@@ -517,8 +517,8 @@ def plot_filtered_fictrac(concat_df, val_cols, time_col,
                 f"The column, {time_col}, is not in the input dataframe."
             assert (val_col in concat_df), \
                 f"The column, {val_col}, is not in the input dataframe."
-            assert ("animal" in concat_df), \
-                f"The column 'animal' is not in in the input dataframe."
+            assert ("ID" in concat_df), \
+                f"The column 'ID' is not in in the input dataframe."
             assert (f"filtered_{val_col}" in filtered_concat_df), \
                 f"The column, filtered_{val_col} is not in the filtered dataframe."
             
@@ -582,7 +582,7 @@ def plot_fictrac_XY_cmap(concat_df, cmap_cols, low=0, high_percentile=95, respec
                          save_path=None, show_plots=True):
     # TODO: Is it wise to not give option to use non-filtered data?
     """
-    Plot XY FicTrac coordinates of the animal with a linear colourmap for 
+    Plot XY FicTrac coordinates of the individual with a linear colourmap for 
     a FicTrac variable of choice. 
     
     Parameters:
@@ -602,7 +602,7 @@ def plot_fictrac_XY_cmap(concat_df, cmap_cols, low=0, high_percentile=95, respec
         percentile will be mapped to the colour map, and all values above the
         95th percentile will be clamped. 
 
-    respective (bool): If True, will re-scale colourmap for each individual animal to 
+    respective (bool): If True, will re-scale colourmap for each individual to 
         their respective 'high_percentile' cut-off value. If False, will use
         the 'high_percentile' value computed from the population, i.e. from `concat_df`. 
         Default is False. 
@@ -656,15 +656,15 @@ def plot_fictrac_XY_cmap(concat_df, cmap_cols, low=0, high_percentile=95, respec
         f"The column, 'X_mm', is not in the input dataframe."
     assert ("Y_mm" in concat_df), \
         f"The column, 'Y_mm', is not in the input dataframe."
-    assert ("animal" in concat_df), \
-            f"The column 'animal' is not in in the input dataframe."
+    assert ("ID" in concat_df), \
+            f"The column 'ID' is not in in the input dataframe."
     
     filtered_concat_df = get_filtered_fictrac(concat_df, cmap_cols, 
                                               order=order, cutoff_freq=cutoff_freq).dropna()
-    dfs_by_animal = unconcat_df(filtered_concat_df, col_name="animal")
+    dfs_by_ID = unconcat_df(filtered_concat_df, col_name="ID")
 
     bokeh_ps = []
-    for df in dfs_by_animal:
+    for df in dfs_by_ID:
         
         # Format axes labels:
         if cmap_labels is None:
@@ -683,10 +683,10 @@ def plot_fictrac_XY_cmap(concat_df, cmap_cols, low=0, high_percentile=95, respec
             cmap_col = f"filtered_{cmap_col}"
 
             if respective is False:
-                # Normalize colourmap range to animal population:
+                # Normalize colourmap range to population:
                 high = np.percentile(filtered_concat_df[cmap_col], high_percentile)
             elif respective is True:
-                # Individual animal sets its own colourmap range:
+                # Individual ID sets its own colourmap range:
                 high = np.percentile(df[cmap_col], high_percentile)
             
             source = ColumnDataSource(df)
@@ -803,8 +803,8 @@ def plot_fictrac_histograms(concat_df, cols=None, labels=None,
 
     if both show_plots and save are False, will return nothing. 
     """
-    assert ("animal" in concat_df), \
-            f"The column 'animal' is not in in the input dataframe."
+    assert ("ID" in concat_df), \
+            f"The column 'ID' is not in in the input dataframe."
     
     all_cols = list(concat_df.columns)
     
@@ -820,7 +820,7 @@ def plot_fictrac_histograms(concat_df, cols=None, labels=None,
                          "datetime",
                          "framerate",
                          "min",
-                         "animal",
+                         "ID",
                          "__"] 
     banned_cols = []
     for col in all_cols:
@@ -844,7 +844,7 @@ def plot_fictrac_histograms(concat_df, cols=None, labels=None,
     bokeh_ps = []
     for i, col in enumerate(cols):
         p = bokeh_catplot.histogram(data=concat_df,
-                                    cats=['animal'],
+                                    cats=['ID'],
                                     val=col,
                                     density=True,
                                     width=1000,
@@ -858,7 +858,7 @@ def plot_fictrac_histograms(concat_df, cols=None, labels=None,
                            line_width=2)
         
         p.legend.location = "top_right"
-        p.legend.title = "animal ID"
+        p.legend.title = "ID"
         p.legend.background_fill_color = "#f8f5f2"
         p.border_fill_color = "#f8f5f2"
         p.xgrid.grid_line_color = "#efe8e2"
@@ -872,7 +872,7 @@ def plot_fictrac_histograms(concat_df, cols=None, labels=None,
             
         # Output:
         if save_path is not None:
-            filename = save_path + f"fictrac_histogram_by_animal_{col}"
+            filename = save_path + f"fictrac_histogram_by_ID_{col}"
 
             p.output_backend = "svg"
             
@@ -938,8 +938,8 @@ def plot_fictrac_ecdfs(concat_df, cols=None, labels=None,
 
     if both show_plots and save are False, will return nothing. 
     """
-    assert ("animal" in concat_df), \
-            f"The column 'animal' is not in in the input dataframe."
+    assert ("ID" in concat_df), \
+            f"The column 'ID' is not in in the input dataframe."
     
     all_cols = list(concat_df.columns)
         
@@ -955,7 +955,7 @@ def plot_fictrac_ecdfs(concat_df, cols=None, labels=None,
                          "datetime",
                          "framerate", 
                          "min",
-                         "animal",
+                         "ID",
                          "__"] 
     banned_cols = []
     for col in all_cols:
@@ -979,7 +979,7 @@ def plot_fictrac_ecdfs(concat_df, cols=None, labels=None,
     bokeh_ps = []
     for i, col in enumerate(cols):
         p = bokeh_catplot.ecdf(data=concat_df,
-                               cats=["animal"],
+                               cats=["ID"],
                                val=col,
                                kind="colored",
                                width=1000,
@@ -992,7 +992,7 @@ def plot_fictrac_ecdfs(concat_df, cols=None, labels=None,
                            line_width=2)
         
         p.legend.location = 'top_right'
-        p.legend.title = "animal ID"
+        p.legend.title = "ID"
         p.legend.background_fill_color = "#f8f5f2"
         p.border_fill_color = "#f8f5f2"
         p.xgrid.grid_line_color = "#efe8e2"
@@ -1151,14 +1151,14 @@ def main():
     concat_df = parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=False).dropna()
     
     # Unconcatenate the concatenated df:
-    dfs_by_animal = unconcat_df(concat_df, col_name="animal")
+    dfs_by_ID = unconcat_df(concat_df, col_name="ID")
 
-    # Save each individual animal bokeh plot to its respective animal folder. 
+    # Save each individual bokeh plot to its respective ID folder. 
     folders = sorted(glob.glob(join(root, nesting * "*/", "fictrac/")))
 
-    # Generate individual animal plots:
+    # Generate individual ID plots:
     save_paths = []
-    for df, folder in zip(dfs_by_animal, folders):
+    for df, folder in zip(dfs_by_ID, folders):
         
         save_path = join(folder, "plots/")
         save_paths.append(save_path)
