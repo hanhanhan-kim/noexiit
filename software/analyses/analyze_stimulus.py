@@ -89,12 +89,12 @@ def parse_2dof_stimulus (root, nesting, servo_min, servo_max, servo_touch):
         # Convert to distance from stim: 
         df["dist_from_stim_mm"] = servo_touch - df["Servo output (mm)"]
         
-        # Assign animal number:
-        df['animal'] = str(i)
+        # Assign ID number:
+        df['ID'] = str(i)
 
-        # My older stimulus csvs have this col instead of "secs_elapsed":
-        if "Elapsed time" in df:
-            df = df.rename(columns={"Elapsed time": "secs_elapsed"})
+        # Some of my stimulus csvs have this col instead of "secs_elapsed":
+        if "Elapsed time (s)" in df:
+            df = df.rename(columns={"Elapsed time (s)": "secs_elapsed"})
 
         dfs.append(df)
     
@@ -135,53 +135,53 @@ def merge_stimulus_with_data (concat_stim, concat_df1, concat_df2=None,
         input dataframes. 
     """
     
-    # TODO: assert "animal" in all dataframes
+    # TODO: assert "ID" in all dataframes
 
-    stims_by_animal = unconcat_df(concat_stim)
-    df1s_by_animal = unconcat_df(concat_df1)
+    stims_by_ID = unconcat_df(concat_stim)
+    df1s_by_ID = unconcat_df(concat_df1)
 
     assert common_time in concat_stim and common_time in concat_df1, \
         f"concat_stim and concat_df1 do not share {common_time}"
-    assert len(stims_by_animal) == len(df1s_by_animal), \
+    assert len(stims_by_ID) == len(df1s_by_ID), \
         f"concat_stim and concat_df1 possess a different number of experiments."
 
     if concat_df2 is not None:
 
-        df2s_by_animal = unconcat_df(concat_df2)
+        df2s_by_ID = unconcat_df(concat_df2)
 
         assert common_time in concat_stim and common_time in concat_df2, \
             f"concat_stim and concat_df2 do not share {common_time}"
-        assert len(stims_by_animal) == len(df2s_by_animal), \
+        assert len(stims_by_ID) == len(df2s_by_ID), \
             f"concat_stim and concat_df2 possess a different number of experiments."
 
     merged_dfs = []
-    for i, stim_df in enumerate(stims_by_animal): 
+    for i, stim_df in enumerate(stims_by_ID): 
         
         # Compare stim_df vs df_1:
-        smaller_last_val = get_smaller_last_val(stim_df, df1s_by_animal[i], common_time)
+        smaller_last_val = get_smaller_last_val(stim_df, df1s_by_ID[i], common_time)
 
         if fill_method is "ffill":
             # Merge stim_df with df1:
-            merged_df = pd.merge_ordered(stim_df, df1s_by_animal[i], 
-                                         on=[common_time, "animal"], 
+            merged_df = pd.merge_ordered(stim_df, df1s_by_ID[i], 
+                                         on=[common_time, "ID"], 
                                          fill_method=fill_method)
             # Truncate merged with smaller of the mergees:
             merged_df = merged_df[merged_df[common_time] < smaller_last_val]    
             
             if concat_df2 is not None: 
                 # Compare lower of previous with df_2 and update:
-                maybe_even_smaller = get_smaller_last_val(stim_df, df2s_by_animal[i], common_time)
+                maybe_even_smaller = get_smaller_last_val(stim_df, df2s_by_ID[i], common_time)
                 if smaller_last_val > maybe_even_smaller:
                     smaller_last_val = maybe_even_smaller
                 # Merge stim_df+df1 with df2:
-                merged_df = pd.merge_ordered(merged_df, df2s_by_animal[i], 
+                merged_df = pd.merge_ordered(merged_df, df2s_by_ID[i], 
                                              on=common_time,
                                              fill_method=fill_method)
         
         elif fill_method is "linear":
             # Merge stim_df with df1:
-            merged_df = pd.merge_ordered(stim_df, df1s_by_animal[i], 
-                                         on=[common_time, "animal"], 
+            merged_df = pd.merge_ordered(stim_df, df1s_by_ID[i], 
+                                         on=[common_time, "ID"], 
                                          fill_method=None)
             # Truncate merged with smaller of the mergees:
             merged_df = merged_df[merged_df[common_time] < smaller_last_val] 
@@ -190,11 +190,11 @@ def merge_stimulus_with_data (concat_stim, concat_df1, concat_df2=None,
 
             if concat_df2 is not None:
                 # Compare lower of previous with df_2 and update:
-                maybe_even_smaller = get_smaller_last_val(stim_df, df2s_by_animal[i], common_time)
+                maybe_even_smaller = get_smaller_last_val(stim_df, df2s_by_ID[i], common_time)
                 if smaller_last_val > maybe_even_smaller:
                     smaller_last_val = maybe_even_smaller 
                 # Merge stim_df+df1 with df2:
-                merged_df = pd.merge_ordered(merged_df, df2s_by_animal[i], 
+                merged_df = pd.merge_ordered(merged_df, df2s_by_ID[i], 
                                              on=common_time, 
                                              fill_method=None)
                 # Truncate merged with smaller of the mergees:
@@ -235,10 +235,10 @@ def make_stimulus_trajectory(merged_df):
         and "dist_from_stim_mm" in merged_df, \
         f"The 'X_mm', 'Y_mm', and 'dist_from_stim_mm' columns are not in merged_df"
 
-    dfs_by_animal = unconcat_df(merged_df)
+    dfs_by_ID = unconcat_df(merged_df)
 
     trigged_dfs = []
-    for df in dfs_by_animal:
+    for df in dfs_by_ID:
 
         df['stim_X_mm'] = df.apply(lambda row: (row["X_mm"] + \
             (row["dist_from_stim_mm"] * np.cos(np.deg2rad(row["Stepper output (degs)"])))), 
@@ -278,7 +278,7 @@ def plot_fictrac_XY_with_stim(dfs, low=0, high_percentile=95, respective=False,
         'high_percentile' value. E.g. if set to 95, all values below the 95th 
         percentile will be mapped to the colour map, and all values above the
         95th percentile will be clamped. 
-    respective (bool): If True, will re-scale colourmap for each individual animal to 
+    respective (bool): If True, will re-scale colourmap for each individual to 
         their respective 'high_percentile' cut-off value. If False, will use
         the 'high_percentile' value computed from the population, i.e. the
         concatenated 'dfs' dataframe. Default is False. 
@@ -326,16 +326,16 @@ def plot_fictrac_XY_with_stim(dfs, low=0, high_percentile=95, respective=False,
         f"The column, 'Y_mm', is not in the input dataframe, {dfs}"
     assert (cmap_col in dfs), \
         f"The column, {cmap_col}, is not in the input dataframe, {dfs}"
-    assert ("animal" in dfs), \
-            f"The column 'animal' is not in in the input dataframe, {dfs}"
+    assert ("ID" in dfs), \
+            f"The column 'ID' is not in in the input dataframe, {dfs}"
     
-    dfs_by_animal = unconcat_df(dfs, col_name="animal")
+    dfs_by_ID = unconcat_df(dfs, col_name="ID")
     
     if respective is False:
         high = np.percentile(dfs[cmap_col], high_percentile)
 
     bokeh_ps = []
-    for df in dfs_by_animal:
+    for df in dfs_by_ID:
         
         assert len(df["X_mm"] == len(df["Y_mm"])), \
             "X_mm and Y_mm are different lengths! They must be the same."
