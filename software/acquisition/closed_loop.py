@@ -76,8 +76,10 @@ def main():
         yaw_delta_filts = []
         yaw_vel_filts = []
         headings = []
-        servo_angles = []
         stepper_posns = []
+        servo_angles = []
+
+        servo_posn = 0
 
         # Define filter;
         freq_cutoff = 5 # in Hz
@@ -142,28 +144,25 @@ def main():
             yaw_delta_filt = filt.update(yaw_delta)
             yaw_vel_filt = yaw_delta_filt / delta_ts
 
-            # Compute extension size of linear servo:
             # TODO: Add filters to servo inputs?
             # TODO: Add an explicit gain term for servo?
-
-            # extend_delta = speed * np.cos(heading) # use heading or direction as theta? unit is mm/frame
-            # # Map the range of my linear servo, 0 to 27 mm, to 0-180. Account for negatives: 
-            # servo_map = interp1d([-27,27],[-180,180])
-            # # Add extend_delta to current position:
-            # extend_to = dev.get_servo_angle() + servo_map(extend_delta) 
-            # if extend_to < 0:
-            #     extend_to = 0
-            # elif extend_to > 180:
-            #     extend_to = 180
-            # # Move!
-            # gain = 1
-            # stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt)
-
-
-            # Move!
-            gain = 1 
-            stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt)
             
+            # Map the range of my linear servo, 0 to 27 mm, to 0 to 180:
+            servo_map = interp1d([-27,27],[-180,180])
+
+            # Compute servo position from animal speed and heading:
+            servo_delta = speed * np.cos(heading) # mm/frame; use heading or direction as theta?           
+            servo_posn = servo_posn + servo_map(servo_delta)
+
+            if servo_posn < 0:
+                servo_posn = 0
+            elif servo_posn > 180:
+                servo_posn = 180
+                        
+            # Move!
+            gain = -1
+            stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt, servo_posn)
+
             # Get times:
             now = datetime.datetime.now()
             time_delta = now - t_start
