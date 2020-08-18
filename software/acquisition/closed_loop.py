@@ -77,7 +77,7 @@ def main():
         yaw_vel_filts = []
         headings = []
         stepper_posns = []
-        servo_angles = []
+        servo_posns = []
 
         servo_posn = 0
 
@@ -175,6 +175,7 @@ def main():
             print(f"filtered yaw delta (deg): {yaw_delta_filt}")
             print(f"yaw velocity (deg/s): {yaw_vel}")
             print(f"filtered yaw velocity (deg/s): {yaw_vel_filt}")
+            print(f"servo position (deg): {servo_posn}")
             # print(f"servo extension angle (0-180): {extend_to}")
             print("\n")
     
@@ -190,9 +191,12 @@ def main():
             yaw_vels.append(yaw_vel) # deg/s
             yaw_vel_filts.append(yaw_vel_filt) # deg/s
             headings.append(heading) # rad
-            # servo_angles.append(extend_to)
+            
             stepper_posns.append(stepper_pos) # deg
             stepper_posn_deltas = list(np.diff(stepper_posns)) # deg
+
+            servo_posns.append(servo_posn) # deg
+            
             # Add None object to beginning of list, so its length matches with times:
             stepper_posn_deltas.insert(0, None) 
 
@@ -201,17 +205,17 @@ def main():
     
     # PLOT RESULTS:
     #---------------------------------------------------------------------------------------------------------
-    # Raw:
-    plt.subplot(3, 1, 1)
-    plt.plot(elapsed_times, yaw_deltas, '.b', label="raw")
-    plt.plot(elapsed_times, yaw_delta_filts, label="filtered")
-    # plt.xlabel("time (s)")
-    plt.ylabel("yaw delta (deg)")
-    plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
-    plt.grid(True)
+    # # Raw:
+    # plt.subplot(3, 1, 1)
+    # plt.plot(elapsed_times, yaw_deltas, '.b', label="raw")
+    # plt.plot(elapsed_times, yaw_delta_filts, label="filtered")
+    # # plt.xlabel("time (s)")
+    # plt.ylabel("yaw delta (deg)")
+    # plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
+    # plt.grid(True)
 
     # Filtered:
-    plt.subplot(3, 1, 2)
+    plt.subplot(3, 1, 1)
     plt.plot(elapsed_times, yaw_vels, '.b', label="raw")
     plt.plot(elapsed_times, yaw_vel_filts, label="filtered")
     # plt.xlabel("time (s)")
@@ -220,12 +224,21 @@ def main():
     plt.grid(True)
     
     # Stepper:
-    plt.subplot(3, 1, 3)
+    plt.subplot(3, 1, 2)
     plt.plot(elapsed_times, yaw_delta_filts, '.b', label="filtered yaw delta (deg)")
     plt.plot(elapsed_times, stepper_posn_deltas, 'r', label="stepper position delta (deg)")
     plt.xlabel("time (s)")
     plt.ylabel("yaw delta (deg)")
     plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
+    plt.grid(True)
+    plt.legend()
+
+    # Servo:
+    plt.subplot(3, 1, 3)
+    plt.plot(elapsed_times, servo_posns, 'g', label="servo position (deg)")
+    plt.xlabel("time (s)")
+    plt.ylabel("servo position (deg)")
+    plt.title(f"servo position commands (deg)")
     plt.grid(True)
     plt.legend()
 
@@ -240,7 +253,8 @@ def main():
                        "Yaw velocity (deg)": yaw_vels,
                        "Yaw filtered velocity (deg)": yaw_vel_filts,
                        "Stepper position (deg)": stepper_posns,
-                       "Stepper delta (deg)": stepper_posn_deltas})
+                       "Stepper delta (deg)": stepper_posn_deltas,
+                       "Servo position (deg)": servo_posns})
     
     df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_loop.csv", index=False)
     
