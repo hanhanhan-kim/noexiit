@@ -79,6 +79,8 @@ def main():
         stepper_posns = []
         servo_posns = []
 
+        # Map the range of my linear servo, 0 to 27 mm, to 0 to 180:
+        servo_map = interp1d([-27,27],[-180,180])
         servo_posn = 0
 
         # Define filter;
@@ -146,13 +148,10 @@ def main():
 
             # TODO: Add filters to servo inputs?
             # TODO: Add an explicit gain term for servo?
-            
-            # Map the range of my linear servo, 0 to 27 mm, to 0 to 180:
-            servo_map = interp1d([-27,27],[-180,180])
 
             # Compute servo position from animal speed and heading:
             servo_delta = speed * np.cos(heading) # mm/frame; use heading or direction as theta?           
-            servo_posn = servo_posn + servo_map(servo_delta)
+            servo_posn = servo_posn + servo_map(servo_delta) # degs
 
             if servo_posn < 0:
                 servo_posn = 0
@@ -160,7 +159,7 @@ def main():
                 servo_posn = 180
                         
             # Move!
-            gain = -1
+            gain = 1
             stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt, servo_posn)
 
             # Get times:
@@ -176,7 +175,6 @@ def main():
             print(f"yaw velocity (deg/s): {yaw_vel}")
             print(f"filtered yaw velocity (deg/s): {yaw_vel_filt}")
             print(f"servo position (deg): {servo_posn}")
-            # print(f"servo extension angle (0-180): {extend_to}")
             print("\n")
     
             # Check if we are done:
