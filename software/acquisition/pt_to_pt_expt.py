@@ -50,7 +50,6 @@ def main():
 
     # Set external cam trigger params:
     trig_port = "/dev/ttyUSB0"
-    duration = 120.0
 
     # Set up user arguments:
     parser = argparse.ArgumentParser(description=__doc__)
