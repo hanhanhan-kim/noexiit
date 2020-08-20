@@ -6,7 +6,6 @@ import socket
 import time
 import datetime
 import atexit
-import datetime
 import argparse
 
 import numpy as np
