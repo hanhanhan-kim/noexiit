@@ -44,9 +44,7 @@ def main():
     dev.set_gear_ratio(1.0)
     dev.set_jog_mode_params({'speed': 200,  'accel': 1000, 'decel': 1000})
     dev.set_max_mode_params({'speed': 1000,  'accel': 30000, 'decel': 30000})
-    
-    # Change to jog for debugging: 
-    dev.set_move_mode_to_max() 
+    dev.set_move_mode_to_jog() 
     dev.enable()
     dev.run(0.0)
 
@@ -85,8 +83,11 @@ def main():
 
     # The fictive resting stimulus experiment assumes the initial relative position of 
     # the stimulus to be in front of the tethered animal:
+    print("Initialize the stimulus in front of the tethered animal...")
     dev.move_to(180)
     dev.busy_wait()
+    # Change to jog for debugging: 
+    dev.set_move_mode_to_max()
     
     # Start camera trigger first, and put it in its own thread:
     trig_th = threading.Thread(target=start_trigger, 
@@ -97,6 +98,7 @@ def main():
     time.sleep(trig_delay)
 
     # Start experiment
+    print("Begin data acquisition...")
     t_start = datetime.datetime.now()
     
     # Open the connection (FicTrac must be waiting for socket connection)
@@ -249,6 +251,7 @@ def main():
     plt.ylabel("yaw vel (deg/s)")
     plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
     plt.grid(True)
+    plt.legend()
     
     # Stepper:
     plt.subplot(4, 1, 2)
@@ -269,7 +272,7 @@ def main():
 
     # PID:
     plt.subplot(4, 1, 4)
-    plt.plot(elapsed_times, servo_posns, "darkorange")
+    plt.plot(elapsed_times, PID_volts, "darkorange")
     plt.xlabel("time (s)")
     plt.ylabel("PID reading (V)")
     plt.grid(True)
