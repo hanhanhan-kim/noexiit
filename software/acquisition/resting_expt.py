@@ -114,6 +114,7 @@ def main():
         headings = []
         stepper_posns = []
         servo_posns = []
+        PID_volts = []
 
         # Map the range of my linear servo, 0 to 27 mm, to 0 to 180:
         servo_map = interp1d([-27,27],[-180,180])
@@ -198,6 +199,7 @@ def main():
             print(f"yaw velocity (deg/s): {yaw_vel}")
             print(f"filtered yaw velocity (deg/s): {yaw_vel_filt}")
             print(f"servo position (deg): {servo_posn}")
+            print(f"PID (V): {sniff()}")
             print("\n")
     
             # Check if we are done:
@@ -215,8 +217,9 @@ def main():
             
             stepper_posns.append(stepper_pos) # deg
             stepper_posn_deltas = list(np.diff(stepper_posns)) # deg
-
             servo_posns.append(servo_posn) # deg
+
+            PID_volts.append(sniff())
             
             # Add None object to beginning of list, so its length matches with times:
             stepper_posn_deltas.insert(0, None) 
@@ -239,7 +242,7 @@ def main():
     # plt.grid(True)
 
     # Filtered:
-    plt.subplot(3, 1, 1)
+    plt.subplot(4, 1, 1)
     plt.plot(elapsed_times, yaw_vels, '.b', label="raw")
     plt.plot(elapsed_times, yaw_vel_filts, label="filtered")
     # plt.xlabel("time (s)")
@@ -248,7 +251,7 @@ def main():
     plt.grid(True)
     
     # Stepper:
-    plt.subplot(3, 1, 2)
+    plt.subplot(4, 1, 2)
     plt.plot(elapsed_times, yaw_delta_filts, '.b', label="filtered yaw delta (deg)")
     plt.plot(elapsed_times, stepper_posn_deltas, 'r', label="stepper position delta (deg)")
     plt.xlabel("time (s)")
@@ -258,13 +261,18 @@ def main():
     plt.legend()
 
     # Servo:
-    plt.subplot(3, 1, 3)
-    plt.plot(elapsed_times, servo_posns, 'g', label="servo position (deg)")
+    plt.subplot(4, 1, 3)
+    plt.plot(elapsed_times, servo_posns, 'g')
     plt.xlabel("time (s)")
     plt.ylabel("servo position (deg)")
-    plt.title(f"servo position commands (deg)")
     plt.grid(True)
-    plt.legend()
+
+    # PID:
+    plt.subplot(4, 1, 4)
+    plt.plot(elapsed_times, servo_posns, "darkorange")
+    plt.xlabel("time (s)")
+    plt.ylabel("PID reading (V)")
+    plt.grid(True)
 
     plt.show()
 
@@ -278,7 +286,8 @@ def main():
                        "Yaw filtered velocity (deg)": yaw_vel_filts,
                        "Stepper position (deg)": stepper_posns,
                        "Stepper delta (deg)": stepper_posn_deltas,
-                       "Servo position (deg)": servo_posns})
+                       "Servo position (deg)": servo_posns,
+                       "PID (V)": PID_volts})
     
     df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_loop.csv", index=False)
     
