@@ -293,7 +293,8 @@ def main():
                        "Stepper position (deg)": stepper_posns,
                        "Stepper delta (deg)": stepper_posn_deltas,
                        "Servo position (deg)": servo_posns,
-                       "PID (V)": PID_volts})
+                       "PID (V)": PID_volts
+                       })
     
     df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_loop.csv", index=False)
     
