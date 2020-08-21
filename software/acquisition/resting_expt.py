@@ -30,7 +30,7 @@ from scipy.interpolate import interp1d
 
 from autostep import Autostep
 from butter_filter import ButterFilter
-from start_trigger import start_trigger
+from camera_trigger import CameraTrigger
 from move_and_sniff import home, sniff
 
 
@@ -90,9 +90,11 @@ def main():
     dev.set_move_mode_to_max()
     
     # Start camera trigger first, and put it in its own thread:
-    trig_th = threading.Thread(target=start_trigger, 
-                                args=(duration + trig_delay, trig_port))
-    trig_th.start()
+    trig = CameraTrigger(trig_port)
+    trig.set_freq(100)   # frequency (Hz)
+    trig.set_width(10)
+    trig.start()
+    threading.Timer(duration + trig_delay, trig.stop)
 
     # I need to wait a bit before starting to stream info from FicTrac, or else I crash:
     time.sleep(trig_delay)
