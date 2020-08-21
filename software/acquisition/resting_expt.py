@@ -230,7 +230,7 @@ def main():
             stepper_posn_deltas.insert(0, None) 
 
     # Join the trigger thread back to the main:
-    trig_th.join()
+    cam_timer.join()
 
     # Stop stepper:
     dev.run(0.0)
