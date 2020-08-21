@@ -94,7 +94,8 @@ def main():
     trig.set_freq(100)   # frequency (Hz)
     trig.set_width(10)
     trig.start()
-    threading.Timer(duration + trig_delay, trig.stop)
+    cam_timer = threading.Timer(duration + trig_delay, trig.stop)
+    cam_timer.start()
 
     # I need to wait a bit before starting to stream info from FicTrac, or else I crash:
     time.sleep(trig_delay)
