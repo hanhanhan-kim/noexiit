@@ -182,19 +182,23 @@ def main():
             servo_delta = speed * np.cos(heading) # mm/frame; use heading or direction as theta?           
             servo_posn = servo_posn + servo_map(servo_delta) # degs
 
+            # Global servo limits to prevent crashes:
+            servo_max = 180
             if servo_posn < 0:
                 servo_posn = 0
+            elif servo_posn > servo_max:
+                servo_posn = servo_max
+            
+            # Local servo limits around beetle tether vertex to prevent crashes:
+            if heading >= 1.25*np.pi and heading <=  1.75*np.pi:
+                servo_max = servo_max - 20
+                if servo_posn > servo_max:
+                    servo_posn = servo_max
 
-            # Limit tether tear-offs:
-
-            # Global limits:
-            elif servo_posn > 170:
-                servo_posn = 170
-
-            # Speed up retractions in the back half of the beetle:
-            k_servo = 10
-            if servo_delta < 0 and heading >= np.pi:
-                servo_delta = servo_delta * k_servo
+            # # Speed up retractions in the back half of the beetle:
+            # k_servo = 10
+            # if servo_delta < 0 and heading >= np.pi:
+            #     servo_delta = servo_delta * k_servo
                         
             # Move!
             k_stepper = 1
