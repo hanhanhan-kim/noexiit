@@ -184,12 +184,21 @@ def main():
 
             if servo_posn < 0:
                 servo_posn = 0
-            elif servo_posn > 180:
-                servo_posn = 180
+
+            # Limit tether tear-offs:
+
+            # Global limits:
+            elif servo_posn > 170:
+                servo_posn = 170
+
+            # Speed up retractions in the back half of the beetle:
+            k_servo = 10
+            if servo_delta < 0 and heading >= np.pi:
+                servo_delta = servo_delta * k_servo
                         
             # Move!
-            gain = 1
-            stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt, servo_posn)
+            k_stepper = 1
+            stepper_pos = dev.run_with_feedback(-1 * k_stepper * yaw_vel_filt, servo_posn)
 
             # Get times:
             now = datetime.datetime.now()
