@@ -73,6 +73,25 @@ def main():
                 print("Please enter a valid servo extension angle from 0 to 180! \n")
                 continue
 
+        # Ask for user input on stepper angle position, again:
+        while True:
+            stepper_test_angle = float(input("Enter a stepper angle (degs) to test: \n"))
+            if isinstance(stepper_test_angle, float):
+                stepper.move_to(stepper_test_angle)
+                stepper.busy_wait()
+                proceed_stepper = input("Test another stepper angle? Enter y or n: \n").lower()
+                if proceed_stepper == "n":
+                    print("Ok! Moving on.")
+                    break
+                elif proceed_stepper == "y":
+                    continue
+                else:
+                    print("Please input y or n: \n")
+                    continue
+            else: 
+                print("Please enter a number. It can be 0, positive, or negative.")
+                continue
+
         # Reset servo to 0:
         stepper.set_servo_angle(0)
         time.sleep(3.0)
