@@ -1,9 +1,10 @@
 # Pre-processing:
 # ----------------------------------------------
-root: /mnt/2TB/data_in/HK_20200317/pson_closed_loop_yaw_gain_unity/
-nesting: 1
-# I have to hardcode ctrl_option in main() ...
-ctrl_option: online 
+# Using the same settings for open loop FicTrac data from 2020-07-21 to 2020-08-08:
+root: /mnt/2TB/data_in/noexiit_data/2020-08-08/
+nesting: 2
+# I have to hardcode acq_mode in main() ...
+acq_mode: offline 
 ball_radius: 5 # mm
 
 # Dependent variables:
