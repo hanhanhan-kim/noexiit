@@ -1113,7 +1113,9 @@ def main():
 
     # no_save = args.no_save
     # show_plots = args.show 
-
+    
+    # TODO: Write docs for script arguments, maybe in a README.md
+    # TODO: Don't hardcode .yaml file name, pass it in as an argument instead.
     # TODO: Specify default .yaml values, for key-value pairs that are unspecified:
     with open("fictrac_analyses_params.yaml") as f:
 
@@ -1123,8 +1125,9 @@ def main():
     root = params["root"]
     nesting = params["nesting"]
     acq_mode = params["acq_mode"]
-    # TODO: FIX!
-    acq_mode = "online"
+    # TODO: FIX! acq_mode requires hardcoding:
+    acq_mode = "offline"
+    # acq_mode = params["acq_mode"]
     ball_radius = params["ball_radius"]
 
     val_cols = params["val_cols"]
@@ -1143,7 +1146,9 @@ def main():
     cmap_labels = params["cmap_labels"]
     alpha_cmap = params["alpha_cmap"]
     percentile_max_clamp = params["percentile_max_clamp"]
-    respective = params["respective"]
+    # TODO: FIX! respective requires hardcoding:
+    # respective = params["respective"]
+    respective = False
 
     no_save = params["no_save"]
     show_plots = params["show_plots"]
