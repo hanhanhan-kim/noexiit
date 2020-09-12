@@ -1126,8 +1126,8 @@ def main():
     nesting = params["nesting"]
     acq_mode = params["acq_mode"]
     # TODO: FIX! acq_mode requires hardcoding:
-    acq_mode = "offline"
     # acq_mode = params["acq_mode"]
+    acq_mode = "offline"
     ball_radius = params["ball_radius"]
 
     val_cols = params["val_cols"]
