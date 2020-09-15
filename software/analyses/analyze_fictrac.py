@@ -34,7 +34,7 @@ from bokeh.layouts import gridplot
 import bokeh.palettes
 import colorcet as cc
 
-import bokeh_catplot
+import iqplot
 
 from fourier_transform import fft, bokeh_freq_domain
 path.insert(1, expanduser('~/src/cmocean-bokeh'))
@@ -844,7 +844,7 @@ def plot_fictrac_histograms(concat_df, cols=None, labels=None,
     
     bokeh_ps = []
     for i, col in enumerate(cols):
-        p = bokeh_catplot.histogram(data=concat_df,
+        p = iqplot.histogram(data=concat_df,
                                     cats=['ID'],
                                     val=col,
                                     density=True,
@@ -979,7 +979,7 @@ def plot_fictrac_ecdfs(concat_df, cols=None, labels=None,
     
     bokeh_ps = []
     for i, col in enumerate(cols):
-        p = bokeh_catplot.ecdf(data=concat_df,
+        p = iqplot.ecdf(data=concat_df,
                                cats=["ID"],
                                val=col,
                                kind="colored",
