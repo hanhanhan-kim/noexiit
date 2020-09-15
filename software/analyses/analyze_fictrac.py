@@ -753,6 +753,7 @@ def plot_fictrac_XY_cmap(concat_df, cmap_cols, low=0, high_percentile=95, respec
                 p.output_backend = "canvas"
                 show(p)
             else:
+                # TODO: For some reason, length of bokeh_ps seems 1 longer than expected...
                 bokeh_ps.append(p)
         
     if show_plots is False:
