@@ -366,15 +366,14 @@ def plot_fictrac_fft(df, val_cols, time_col,
             return p
 
 
-def get_filtered_fictrac(concat_df, val_cols, order, cutoff_freq, framerate=None):
+def get_filtered_fictrac(df, val_cols, order, cutoff_freq, framerate=None):
     """
     Get low-pass Butterworth filtered data on offline FicTrac data. 
     Does not drop NA values.
 
     Parameters:
     -----------
-    concat_df (DataFrame): Concatenated dataframe of FicTrac data generated from 
-        parse_dats()
+    df (DataFrame): Dataframe of FicTrac data generated from parse_dats()
 
     val_cols (list): List of column names from `concat_df` to be filtered. 
 
@@ -392,37 +391,39 @@ def get_filtered_fictrac(concat_df, val_cols, order, cutoff_freq, framerate=None
     Filtered columns are denoted with a "filtered_" prefix.
     """
 
-    dfs_by_ID = unconcat_df(concat_df, col_name="ID")
+    # dfs_by_ID = unconcat_df(df, col_name="ID")
 
-    filtered_dfs = []
-    for df in dfs_by_ID:
+    # filtered_dfs = []
+    # for df in dfs_by_ID:
         
-        if framerate is None:
-            framerate = np.mean(df["framerate_hz"])
+    if framerate is None:
+        framerate = np.mean(df["framerate_hz"])
 
-        all_filtered_vals = []
-        filtered_cols = []
+    all_filtered_vals = []
+    filtered_cols = []
 
-        for val_col in val_cols:
+    for val_col in val_cols:
 
-            vals = list(df[str(val_col)])
+        vals = list(df[str(val_col)])
 
-            # Design low-pass filter:
-            b, a = sps.butter(int(order), float(cutoff_freq), fs=framerate)
-            # Apply filter and save:
-            filtered_vals = sps.lfilter(b, a, vals)
-            all_filtered_vals.append(filtered_vals)
+        # Design low-pass filter:
+        b, a = sps.butter(int(order), float(cutoff_freq), fs=framerate)
+        # Apply filter and save:
+        filtered_vals = sps.lfilter(b, a, vals)
+        all_filtered_vals.append(filtered_vals)
 
-            filtered_col = f"filtered_{val_col}"
-            filtered_cols.append(filtered_col)
-        
-        # Convert filtered values into df:
-        filtered_cols_vals = dict(zip(filtered_cols, all_filtered_vals))
-        filtered_df = pd.DataFrame.from_dict(filtered_cols_vals)
-        df_with_filtered = pd.concat([df, filtered_df], axis=1)
-        filtered_dfs.append(df_with_filtered)
+        filtered_col = f"filtered_{val_col}"
+        filtered_cols.append(filtered_col)
     
-    return pd.concat(filtered_dfs, axis=0)
+    # Convert filtered values into df:
+    filtered_cols_vals = dict(zip(filtered_cols, all_filtered_vals))
+    filtered_df = pd.DataFrame.from_dict(filtered_cols_vals)
+    df_with_filtered = pd.concat([df, filtered_df], axis=1)
+
+    return df_with_filtered
+
+    # filtered_dfs.append(df_with_filtered)
+    # return pd.concat(filtered_dfs, axis=0)
 
 
 def plot_filtered_fictrac(concat_df, val_cols, time_col, 
