@@ -366,9 +366,9 @@ def plot_fictrac_fft(df, val_cols, time_col,
             return p
 
 
-def get_filtered_fictrac(df, val_cols, order, cutoff_freq, framerate=None):
+def filter_fictrac(df, val_cols, order, cutoff_freq, framerate=None):
     """
-    Get low-pass Butterworth filtered data on offline FicTrac data. 
+    Applies low-pass Buterworth filter on offline FicTrac data. 
     Does not drop NA values.
 
     Parameters:
@@ -390,11 +390,6 @@ def get_filtered_fictrac(df, val_cols, order, cutoff_freq, framerate=None):
     A dataframe with both the filtered and raw values. 
     Filtered columns are denoted with a "filtered_" prefix.
     """
-
-    # dfs_by_ID = unconcat_df(df, col_name="ID")
-
-    # filtered_dfs = []
-    # for df in dfs_by_ID:
         
     if framerate is None:
         framerate = np.mean(df["framerate_hz"])
@@ -422,23 +417,21 @@ def get_filtered_fictrac(df, val_cols, order, cutoff_freq, framerate=None):
 
     return df_with_filtered
 
-    # filtered_dfs.append(df_with_filtered)
-    # return pd.concat(filtered_dfs, axis=0)
 
-
-def plot_filtered_fictrac(concat_df, val_cols, time_col, 
-                          order, cutoff_freq,
-                          val_labels=None, time_label=None,
-                          view_perc=100, 
-                          save_path=None, show_plots=True):
+def compare_filtered_fictrac(df, val_cols, time_col, 
+                             order, cutoff_freq,
+                             val_labels=None, time_label=None,
+                             view_perc=100, 
+                             save_path=None, show_plots=True):
     """
-    Apply a low-pass Butterworth filter on offline FicTrac data for plotting. 
+    Apply a low-pass Butterworth filter on offline FicTrac data. 
+    Plot filtered vs. non-filtered data. 
     Purpose is to assess filter parameters on data. 
 
     Parameters:
     -----------
-    concat_df (DataFrame): Concatenated and filtered dataframe of FicTrac data generated 
-        from parse_dats(). 
+    df (DataFrame): Filtered dataframe of FicTrac data generated from parse_dats(). 
+        Should have columns with the "filtered_" prefix. 
 
     val_cols (list): List of column names from `concat_df` to be Fourier-transformed. 
 
@@ -485,84 +478,75 @@ def plot_filtered_fictrac(concat_df, val_cols, time_col,
     
     assert (0 <= view_perc <= 100), \
         f"The view percentage, {view_perc}, must be between 0 and 100."
+    assert (df.filter(regex="^filtered_") is not None), \
+        f"At least one column in the dataframe must begin with 'filtered_'."
     
-    filtered_concat_df = get_filtered_fictrac(concat_df, val_cols, order, cutoff_freq).dropna()
-    dfs_by_ID = unconcat_df(filtered_concat_df, col_name="ID")
+    # Format axes labels:
+    if time_label is None:
+        time_label = time_col.replace("_", " ")
+    if val_labels is None:
+        val_labels = [val_col.replace("_", " ") for val_col in val_cols]
+    
+    # View the first _% of the data:
+    domain = int(view_perc/100 * len(df[time_col])) 
 
-    bokeh_ps = []
-    for df in dfs_by_ID:
+    for i, val_col in enumerate(val_cols):
+        assert (len(df[time_col] == len(df[val_col]))), \
+            "time and vals are different lengths! They must be the same."
+        assert (time_col in df), \
+            f"The column, {time_col}, is not in the input dataframe."
+        assert (val_col in df), \
+            f"The column, {val_col}, is not in the input dataframe."
+        assert ("ID" in df), \
+            f"The column 'ID' is not in in the input dataframe."
         
-        # Format axes labels:
-        if time_label is None:
-            time_label = time_col.replace("_", " ")
-        if val_labels is None:
-            val_labels = [val_col.replace("_", " ") for val_col in val_cols]
+        # Plot:
+        p = figure(
+            width=1600,
+            height=500,
+            x_axis_label=time_label,
+            y_axis_label=val_labels[i] 
+        )
+        p.line(
+            x=df[time_col][:domain],
+            y=df[val_col.replace("filtered_","")][:domain],
+            color=bokeh.palettes.brewer["Paired"][3][0],
+            legend_label="raw"
+        )
+        p.line(
+            x=df[time_col][:domain],
+            y=df[val_col][:domain],
+            color=bokeh.palettes.brewer["Paired"][3][1],
+            legend_label="filtered"
+        )
+        p.title.text = f"first {view_perc}% with butterworth filter: cutoff = {cutoff_freq} Hz, order = {order}"
+        p.title.text_font_size = "14pt"
+        p.yaxis.axis_label_text_font_size = "12pt"
+        p.yaxis.axis_label_text_font_size = "12pt"
+        p.xaxis.axis_label_text_font_size = "12pt"
+        p.legend.background_fill_color = "#f8f5f2"
+        p.border_fill_color = "#f8f5f2"
+        p.xgrid.grid_line_color = "#efe8e2"
+        p.ygrid.grid_line_color = "#efe8e2"
+        p.background_fill_color = "#f8f5f2" 
         
-        # View the first _% of the data:
-        domain = int(view_perc/100 * len(df[time_col]))
-
-        for i, val_col in enumerate(val_cols):
-            assert (len(df[time_col] == len(df[val_col]))), \
-                "time and vals are different lengths! They must be the same."
-            assert (time_col in concat_df), \
-                f"The column, {time_col}, is not in the input dataframe."
-            assert (val_col in concat_df), \
-                f"The column, {val_col}, is not in the input dataframe."
-            assert ("ID" in concat_df), \
-                f"The column 'ID' is not in in the input dataframe."
-            assert (f"filtered_{val_col}" in filtered_concat_df), \
-                f"The column, filtered_{val_col} is not in the filtered dataframe."
+        # Output:
+        if save_path is not None:
+            filename = join(save_path, val_col)
             
-            # Plot:
-            p = figure(
-                width=1600,
-                height=500,
-                x_axis_label=time_label,
-                y_axis_label=val_labels[i] 
-            )
-            p.line(
-                x=df[time_col][:domain],
-                y=df[val_col][:domain],
-                color=bokeh.palettes.brewer["Paired"][3][0],
-                legend_label="raw"
-            )
-            p.line(
-                x=df[time_col][:domain],
-                y=df[f"filtered_{val_col}"][:domain],
-                color=bokeh.palettes.brewer["Paired"][3][1],
-                legend_label="filtered"
-            )
-            p.title.text = f"first {view_perc}% with butterworth filter: cutoff = {cutoff_freq} Hz, order = {order}"
-            p.title.text_font_size = "14pt"
-            p.yaxis.axis_label_text_font_size = "12pt"
-            p.yaxis.axis_label_text_font_size = "12pt"
-            p.xaxis.axis_label_text_font_size = "12pt"
-            p.legend.background_fill_color = "#f8f5f2"
-            p.border_fill_color = "#f8f5f2"
-            p.xgrid.grid_line_color = "#efe8e2"
-            p.ygrid.grid_line_color = "#efe8e2"
-            p.background_fill_color = "#f8f5f2"
+            p.output_backend = "svg"
+            export_svgs(p, filename=filename + ".svg")
+            export_png(p, filename=filename + ".png")
+            output_file(filename=filename + ".html", 
+                        title=filename)
             
-            # Output:
-            if save_path is not None:
-                filename = join(save_path, f"filtered_{val_col}")
-                
-                p.output_backend = "svg"
-                export_svgs(p, filename=filename + ".svg")
-                export_png(p, filename=filename + ".png")
-                output_file(filename=filename + ".html", 
-                            title=filename)
-                
-            if show_plots is True:
-                # In case this script is run in Jupyter, change output_backend 
-                # back to "canvas" for faster performance:
-                p.output_backend = "canvas"
-                show(p)
-            else:
-                bokeh_ps.append(p)
-        
-    if show_plots is False:
-        return bokeh_ps
+        if show_plots is True:
+            # In case this script is run in Jupyter, change output_backend 
+            # back to "canvas" for faster performance:
+            p.output_backend = "canvas"
+            show(p)
+        else:
+            return p
 
 
 def plot_fictrac_XY_cmap(concat_df, cmap_cols, low=0, high_percentile=95, respective=False, 
@@ -650,9 +634,9 @@ def plot_fictrac_XY_cmap(concat_df, cmap_cols, low=0, high_percentile=95, respec
     assert ("ID" in concat_df), \
             f"The column 'ID' is not in in the input dataframe."
     
-    filtered_concat_df = get_filtered_fictrac(concat_df, cmap_cols, 
+    filtered_df = get_filtered_fictrac(concat_df, cmap_cols, 
                                               order=order, cutoff_freq=cutoff_freq).dropna()
-    dfs_by_ID = unconcat_df(filtered_concat_df, col_name="ID")
+    dfs_by_ID = unconcat_df(filtered_df, col_name="ID")
 
     bokeh_ps = []
     for df in dfs_by_ID:
@@ -665,7 +649,7 @@ def plot_fictrac_XY_cmap(concat_df, cmap_cols, low=0, high_percentile=95, respec
             
             assert (cmap_col in concat_df), \
                 f"The column, {cmap_col}, is not in the input dataframe."
-            assert (f"filtered_{cmap_col}" in filtered_concat_df), \
+            assert (f"filtered_{cmap_col}" in filtered_df), \
                 f"The column, filtered_{cmap_col} is not in the filtered dataframe."
             assert (len(df["X_mm"] == len(df["Y_mm"]))), \
                 "X_mm and Y_mm are different lengths! They must be the same."
@@ -675,7 +659,7 @@ def plot_fictrac_XY_cmap(concat_df, cmap_cols, low=0, high_percentile=95, respec
 
             if respective is False:
                 # Normalize colourmap range to population:
-                high = np.percentile(filtered_concat_df[cmap_col], high_percentile)
+                high = np.percentile(filtered_df[cmap_col], high_percentile)
             elif respective is True:
                 # Individual ID sets its own colourmap range:
                 high = np.percentile(df[cmap_col], high_percentile)
