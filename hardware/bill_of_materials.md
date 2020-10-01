@@ -14,12 +14,13 @@ For most cases in this build, the 3/8" length and 1/2" length screws of a given 
 
 | Vendor        | Product no.                                                  | Price per unit (USD) | Quantity | Description                                                  |
 | ------------- | ------------------------------------------------------------ | -------------------- | -------- | ------------------------------------------------------------ |
+| Thor Labs     | [MB12](https://www.thorlabs.com/thorproduct.cfm?partnumber=MB12) | 155.53               | 1        | Aluminum breadboard, 12"x12"x1/2", 1/4"-20 taps              |
 | Servocity     | [615420](https://www.servocity.com/5mm-15-tooth-pinion-pulley/) | 8.99                 | 1        | 15 tooth pinion pulley. .40” inside the flanges allow for belts up to 3/8” in width. |
 | Sparkfun      | [ROB-13656](ROB-13656)                                       | 30.95                | 1        | NEMA 23 stepper motor, 200 steps per revolution (1.8 degree step angle), 3.2 V, 2.0 A/phase, 2-phase, recommended holding torque of 125 oz.in. An equivalent part can be used, provided it is 200 steps per revolution. |
 | McMaster-Carr | [93505A683](https://www.mcmaster.com/93505A683/)             | 9.32                 | 2        | Aluminum male-female threaded hex standoff. 1/2" hex size, 3 1/2" long, 1/4"-20 thread size. |
 | McMaster-Carr | [93505A459](https://www.mcmaster.com/93505A459/)             | 1.12                 | 4        | Aluminum male-female threaded hex standoff. 1/4" hex size, 2" long, 8-32 thread size. |
 | Servocity     | [B375-110XL](https://www.servocity.com/11-55t-3-8-wide-xl-timing-belt/) | 4.05                 | 1        | XL series timing belt, 3/8” wide, 1/5 pitch (5.08mm) . Neoprene with fiberglass cords. 11" circumference, 55 teeth. |
-| McMaster-Carr | [92510A765](https://www.mcmaster.com/92510A765/)             | 1.65                 | 4        | Aluminum unthreaded spacer. 1/2" OD, 1/2" length for 1/4" screw size. |
+| McMaster-Carr | [92510A765](https://www.mcmaster.com/92510A765/)             | 1.65                 | 4        | Aluminum unthreaded spacer, 1/2" OD, 1/2" length for 1/4" screw size. |
 | Servocity     | [545588](https://www.servocity.com/0-250-0-770-clamping-hub/) | 6.99                 | 1        | 1/4" aluminum clamping hub.                                  |
 | McMaster-Carr | [89895K722](https://www.mcmaster.com/89895K722/)             | 11.26                | 1        | Smooth-bore seamless 304 stainless steel tubing, 1/4" OD, 0.02" wall thickness, 1 ft length. Cut to length. |
 | SDP/SI        | [A 6C 3-15DF03716](https://shop.sdp-si.com/catalog/product/?id=A_6C_3-15DF03716) | 13.30                | 1        | 0.200" (XL) pitch, 15 teeth, 0.5" bore, 2 flanges with hub, carbon steel timing pulley for 0.375" wide belt. |
@@ -37,5 +38,6 @@ For most cases in this build, the 3/8" length and 1/2" length screws of a given 
 | Servocity     | [545360](https://www.servocity.com/side-tapped-pattern-mount-c/) | 5.99                 | 1        | Side-tapped pattern mount C.                                 |
 | Servocity     | [545556](https://www.servocity.com/0-375-0-770-set-screw-hub/) | 4.99                 | 2        | 3/8" diameter, aluminum pattern set screw hub.               |
 | Servocity     | [635250](https://www.servocity.com/0-375-3-8-x-12-00-aluminum-tubing/) | 4.09                 | 1        | 3/8" aluminum tube, 12" length stock, .035" wall thickness. Cut to length. |
-| IR Robot USA  | [L12-40PT-3](https://www.irrobotusa.com/products/premium-mighty-zap-mini-linear-servo-12v?_pos=1&_sid=07ad8e762&_ss=r) | 114                  | 1        | Mini linear actuator, 12 V, 12 N, 110.0 mm/s, PWM protocol, 27 mm stroke length |
-
+| IR Robot USA  | [L12-40PT-3](https://www.irrobotusa.com/products/premium-mighty-zap-mini-linear-servo-12v?_pos=1&_sid=07ad8e762&_ss=r) | 114.00               | 1        | Mini linear actuator, 12 V, 12 N, 110.0 mm/s, PWM protocol, 27 mm stroke length |
+| Digi-Key      | [HE667-ND](https://www.digikey.com/product-detail/en/littelfuse-inc/MITI-3V1-6-8/HE667-ND/859130) | 2.14                 | 1        | Reed switch for homing.                                      |
+|               |                                                              |                      |          | Magnet for triggering the reed switch.                       |
