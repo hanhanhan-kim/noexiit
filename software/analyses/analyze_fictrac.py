@@ -194,15 +194,15 @@ def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
 
 
 # TODO: I should probably put this function in some common utilities.py file
-def unconcat_df(concat_df, col_name="ID"):
+def unconcat_df(df, col_name="ID"):
     """
     Splits up a concatenated dataframe according to each unique ID.
     Returns a list of datafrmaes. 
 
     Parameters:
     -----------
-    concat_df: A Pandas dataframe
-    col_name (str): A column name in 'concat_df' with which to split into smaller dataframes. 
+    df: A Pandas dataframe
+    col_name (str): A column name in 'df' with which to split into smaller dataframes. 
         Default is "ID". 
 
     Returns:
@@ -210,13 +210,13 @@ def unconcat_df(concat_df, col_name="ID"):
     A list of dataframes, split up by each unique ID. 
     """
 
-    assert (col_name in concat_df), \
+    assert (col_name in df), \
         f"The column, {col_name}, is not in in the input dataframe."
 
     dfs_by_ID = []
 
-    for df in concat_df[col_name].unique():
-        df = concat_df.loc[concat_df[col_name]==df]
+    for df in df[col_name].unique():
+        df = df.loc[df[col_name]==df]
         dfs_by_ID.append(df)
 
     return(dfs_by_ID)
@@ -230,15 +230,15 @@ def plot_fft(df, val_cols, time_col,
     """
     Perform a Fourier transform on FicTrac data for each ID. Generate 
     frequency domain plots for each ID. 
-    Accepts one column from `concat_df`, rather than a list of columns.
+    Accepts one column from `df`, rather than a list of columns.
 
     Parameters:
     ------------
     df (DataFrame): Dataframe of FicTrac data generated from parse_dats()
 
-    val_cols (list): List of column names from `concat_df` to be Fourier-transformed.  
+    val_cols (list): List of column names from `df` to be Fourier-transformed.  
 
-    time_col (str): Column name in `concat_df` that specifies time in SECONDS. 
+    time_col (str): Column name in `df` that specifies time in SECONDS. 
 
     even (bool): If False, will interpolate even sampling. 
 
@@ -375,14 +375,14 @@ def filter(df, val_cols, order, cutoff_freq, framerate=None):
     -----------
     df (DataFrame): Dataframe of FicTrac data generated from parse_dats()
 
-    val_cols (list): List of column names from `concat_df` to be filtered. 
+    val_cols (list): List of column names from `df` to be filtered. 
 
     order (int): Order of the filter.
 
     cutoff_freq (float): The cutoff frequency for the filter in Hz.
 
     framerate (float): The mean framerate used for acquisition with FicTrac. 
-        If None, will use the average frame rate as computed in the input 'concat_df'. 
+        If None, will use the average frame rate as computed in the input 'df'. 
         Can be overridden with a provided manual value. Default is None.
 
     Returns:
@@ -433,9 +433,9 @@ def plot_filtered(df, val_cols, time_col,
     df (DataFrame): Filtered dataframe of FicTrac data generated from parse_dats(). 
         Should have columns with the "filtered_" prefix. 
 
-    val_cols (list): List of column names from `concat_df` to be Fourier-transformed. 
+    val_cols (list): List of column names from `df` to be Fourier-transformed. 
 
-    time_col (str): Column name from `concat_df` that specifies time. 
+    time_col (str): Column name from `df` that specifies time. 
 
     order (int): Order of the filter.
 
@@ -579,10 +579,10 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
 
     respective (bool): If True, will re-scale colourmap for each individual to 
         their respective 'high_percentile' cut-off value. If False, will use
-        the 'high_percentile' value computed from the population, i.e. from `concat_df`. 
+        the 'high_percentile' value computed from the population, i.e. from `df`. 
         Default is False. 
 
-    cmap_cols (list): List of column names from `concat_df` to be colour-mapped. 
+    cmap_cols (list): List of column names from `df` to be colour-mapped. 
 
     cmap_labels (list): List of labels for the plots' colourbars. If None, will 
         be a formatted version of cmap_cols. Default is None.
@@ -712,22 +712,37 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
             p.output_backend = "canvas"
             show(p)
         else:
-            p
+            return p
 
 
-def plot_fictrac_histograms(concat_df, cols=None, labels=None, 
-                            cutoff_percentile=95,
-                            save_path=None, show_plots=True):
+banned_substrings = ["integrat_x_posn", 
+                     "integrat_y_posn", 
+                     "X_mm", 
+                     "Y_mm", 
+                     "seq_cntr", 
+                     "timestamp", 
+                     "cam", 
+                     "frame", 
+                     "elapse", 
+                     "datetime",
+                     "framerate",
+                     "min",
+                     "ID",
+                     "__"] 
+
+
+def plot_histograms(df, cols=None, labels=None, 
+                    cutoff_percentile=95,
+                    save_path=None, show_plots=True): 
     """
     Generate histograms for multiple FicTrac kinematic variables. 
 
     Parameters:
     -----------
-    concat_df (DataFrame): Concatenated dataframe of FicTrac data generated from 
-        parse_dats()
+    df (DataFrame): Dataframe of FicTrac data generated from parse_dats()
 
-    cols (list): List of strings specifying column names in 'concat_df'. If None, 
-        uses default columns that specify real-world and 'lab' kinematic measurements.
+    cols (list): List of strings specifying column names in 'df'. If None, 
+        uses default columns that specify real-world and 'lab' kinematic measurements. 
         Otherwise, will use both input arguments and the default columns. Default is None.
 
     labels (list): List of strings specifying the labels for the histograms' x-axes.
@@ -760,25 +775,11 @@ def plot_fictrac_histograms(concat_df, cols=None, labels=None,
 
     if both show_plots and save are False, will return nothing. 
     """
-    assert ("ID" in concat_df), \
+    assert ("ID" in df), \
             f"The column 'ID' is not in in the input dataframe."
     
-    all_cols = list(concat_df.columns)
+    all_cols = list(df.columns)
     
-    banned_substrings = ["integrat_x_posn", 
-                         "integrat_y_posn", 
-                         "X_mm", 
-                         "Y_mm", 
-                         "seq_cntr", 
-                         "timestamp", 
-                         "cam", 
-                         "frame", 
-                         "elapse", 
-                         "datetime",
-                         "framerate",
-                         "min",
-                         "ID",
-                         "__"] 
     banned_cols = []
     for col in all_cols:
         for substring in banned_substrings:
@@ -793,21 +794,20 @@ def plot_fictrac_histograms(concat_df, cols=None, labels=None,
     else:
         cols = ok_cols + cols 
         for col in cols:
-            assert (col in concat_df), f"The column, {col}, is not in the input dataframe."
+            assert (col in df), f"The column, {col}, is not in the input dataframe."
     
     if labels is None:
         labels = [col.replace("_", " ") for col in cols] 
     
-    bokeh_ps = []
     for i, col in enumerate(cols):
-        p = iqplot.histogram(data=concat_df,
-                                    cats=['ID'],
-                                    val=col,
-                                    density=True,
-                                    width=1000,
-                                    height=500)
+        p = iqplot.histogram(data=df,
+                             cats=['ID'],
+                             val=col,
+                             density=True,
+                             width=1000,
+                             height=500)
         
-        cutoff_line = Span(location=np.percentile(concat_df[col], cutoff_percentile), 
+        cutoff_line = Span(location=np.percentile(df[col], cutoff_percentile), 
                            dimension="height", 
                            # line_color="#e41a1c",
                            line_color = "#775a42",
@@ -829,10 +829,8 @@ def plot_fictrac_histograms(concat_df, cols=None, labels=None,
             
         # Output:
         if save_path is not None:
-            filename = save_path + f"fictrac_histogram_by_ID_{col}"
-
+            filename = join(save_path, f"fictrac_histogram_by_ID_{col}")
             p.output_backend = "svg"
-            
             export_svgs(p, filename=filename + ".svg")
             export_png(p, filename=filename + ".png")
             output_file(filename=filename + ".html", 
@@ -844,13 +842,10 @@ def plot_fictrac_histograms(concat_df, cols=None, labels=None,
             p.output_backend = "canvas"
             show(p)
         else:
-            bokeh_ps.append(p)
-    
-    if show_plots is False:
-        return bokeh_ps
+            return p
 
 
-def plot_fictrac_ecdfs(concat_df, cols=None, labels=None, 
+def plot_ecdfs(df, cols=None, labels=None, 
                        cutoff_percentile=95, 
                        save_path=None, show_plots=True):
     """
@@ -858,10 +853,9 @@ def plot_fictrac_ecdfs(concat_df, cols=None, labels=None,
 
     Parameters:
     -----------
-    concat_df (DataFrame): Concatenated dataframe of FicTrac data generated from 
-        parse_dats()
+    df (DataFrame): Concatenated dataframe of FicTrac data generated from parse_dats()
 
-    cols (list): List of strings specifying column names in 'concat_df'. If None, 
+    cols (list): List of strings specifying column names in 'df'. If None, 
         uses default columns that specify real-world and 'lab' kinematic measurements.
         Otherwise, will use both input arguments and the default columns. Default is None.
 
@@ -895,25 +889,25 @@ def plot_fictrac_ecdfs(concat_df, cols=None, labels=None,
 
     if both show_plots and save are False, will return nothing. 
     """
-    assert ("ID" in concat_df), \
+    assert ("ID" in df), \
             f"The column 'ID' is not in in the input dataframe."
     
-    all_cols = list(concat_df.columns)
+    all_cols = list(df.columns)
         
-    banned_substrings = ["integrat_x_posn", 
-                         "integrat_y_posn", 
-                         "X_mm", 
-                         "Y_mm", 
-                         "seq_cntr", 
-                         "timestamp", 
-                         "cam", 
-                         "frame", 
-                         "elapse",
-                         "datetime",
-                         "framerate", 
-                         "min",
-                         "ID",
-                         "__"] 
+    # banned_substrings = ["integrat_x_posn", 
+    #                      "integrat_y_posn", 
+    #                      "X_mm", 
+    #                      "Y_mm", 
+    #                      "seq_cntr", 
+    #                      "timestamp", 
+    #                      "cam", 
+    #                      "frame", 
+    #                      "elapse",
+    #                      "datetime",
+    #                      "framerate", 
+    #                      "min",
+    #                      "ID",
+    #                      "__"] 
     banned_cols = []
     for col in all_cols:
         for substring in banned_substrings:
@@ -928,21 +922,20 @@ def plot_fictrac_ecdfs(concat_df, cols=None, labels=None,
     else:
         cols = ok_cols + cols 
         for col in cols:
-            assert (col in concat_df), f"The column, {col}, is not in the input dataframe"
+            assert (col in df), f"The column, {col}, is not in the input dataframe"
     
     if labels is None:
         labels = [col.replace("_", " ") for col in cols] 
     
-    bokeh_ps = []
     for i, col in enumerate(cols):
-        p = iqplot.ecdf(data=concat_df,
+        p = iqplot.ecdf(data=df,
                                cats=["ID"],
                                val=col,
                                kind="colored",
                                width=1000,
                                height=500)
         
-        cutoff_line = Span(location=np.percentile(concat_df[col], cutoff_percentile), 
+        cutoff_line = Span(location=np.percentile(df[col], cutoff_percentile), 
                            dimension="height", 
                            line_color="#775a42",
                            line_dash="dashed",
@@ -977,10 +970,7 @@ def plot_fictrac_ecdfs(concat_df, cols=None, labels=None,
             p.output_backend = "canvas"
             show(p)
         else:
-            bokeh_ps.append(p)
-    
-    if show_plots is False:
-        return bokeh_ps
+            return p
 
 
 def main():
