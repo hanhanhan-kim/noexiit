@@ -194,29 +194,27 @@ def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
 
 
 # TODO: I should probably put this function in some common utilities.py file
-def unconcat_df(df, col_name="ID"):
+def unconcat_df(concat_df, col_name="ID"):
     """
     Splits up a concatenated dataframe according to each unique ID.
     Returns a list of datafrmaes. 
-
     Parameters:
     -----------
-    df: A Pandas dataframe
-    col_name (str): A column name in 'df' with which to split into smaller dataframes. 
+    concat_df: A Pandas dataframe
+    col_name (str): A column name in 'concat_df' with which to split into smaller dataframes. 
         Default is "ID". 
-
     Returns:
     --------
     A list of dataframes, split up by each unique ID. 
     """
 
-    assert (col_name in df), \
+    assert (col_name in concat_df), \
         f"The column, {col_name}, is not in in the input dataframe."
 
     dfs_by_ID = []
 
-    for df in df[col_name].unique():
-        df = df.loc[df[col_name]==df]
+    for df in concat_df[col_name].unique():
+        df = concat_df.loc[concat_df[col_name]==df]
         dfs_by_ID.append(df)
 
     return(dfs_by_ID)
@@ -741,8 +739,9 @@ def plot_histograms(df, cols=None, labels=None,
     -----------
     df (DataFrame): Dataframe of FicTrac data generated from parse_dats()
 
-    cols (list): List of strings specifying column names in 'df'. If None, 
+    cols (list): List of strings specifying column names in `df`. If None, 
         uses default columns that specify real-world and 'lab' kinematic measurements. 
+        See `banned_substrings`. 
         Otherwise, will use both input arguments and the default columns. Default is None.
 
     labels (list): List of strings specifying the labels for the histograms' x-axes.
@@ -893,21 +892,7 @@ def plot_ecdfs(df, cols=None, labels=None,
             f"The column 'ID' is not in in the input dataframe."
     
     all_cols = list(df.columns)
-        
-    # banned_substrings = ["integrat_x_posn", 
-    #                      "integrat_y_posn", 
-    #                      "X_mm", 
-    #                      "Y_mm", 
-    #                      "seq_cntr", 
-    #                      "timestamp", 
-    #                      "cam", 
-    #                      "frame", 
-    #                      "elapse",
-    #                      "datetime",
-    #                      "framerate", 
-    #                      "min",
-    #                      "ID",
-    #                      "__"] 
+
     banned_cols = []
     for col in all_cols:
         for substring in banned_substrings:
@@ -929,11 +914,11 @@ def plot_ecdfs(df, cols=None, labels=None,
     
     for i, col in enumerate(cols):
         p = iqplot.ecdf(data=df,
-                               cats=["ID"],
-                               val=col,
-                               kind="colored",
-                               width=1000,
-                               height=500)
+                        cats=["ID"],
+                        val=col,
+                        kind="colored",
+                        width=1000,
+                        height=500)
         
         cutoff_line = Span(location=np.percentile(df[col], cutoff_percentile), 
                            dimension="height", 
