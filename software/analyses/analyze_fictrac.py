@@ -222,11 +222,11 @@ def unconcat_df(concat_df, col_name="ID"):
     return(dfs_by_ID)
 
 
-def plot_fictrac_fft(df, val_cols, time_col, 
-                     even=False, window=np.hanning, pad=1, 
-                     cutoff_freq=None, 
-                     val_labels=None, time_label=None,
-                     save_path=None, show_plots=True):  
+def plot_fft(df, val_cols, time_col, 
+             even=False, window=np.hanning, pad=1, 
+             cutoff_freq=None, 
+             val_labels=None, time_label=None,
+             save_path=None, show_plots=True):  
     """
     Perform a Fourier transform on FicTrac data for each ID. Generate 
     frequency domain plots for each ID. 
@@ -366,7 +366,7 @@ def plot_fictrac_fft(df, val_cols, time_col,
             return p
 
 
-def filter_fictrac(df, val_cols, order, cutoff_freq, framerate=None):
+def filter(df, val_cols, order, cutoff_freq, framerate=None):
     """
     Applies low-pass Buterworth filter on offline FicTrac data. 
     Does not drop NA values.
@@ -392,8 +392,8 @@ def filter_fictrac(df, val_cols, order, cutoff_freq, framerate=None):
     """
         
     if framerate is None:
-        framerate = np.mean(df["framerate_hz"])
-
+        framerate = np.mean(df["framerate_hz"]) 
+    
     all_filtered_vals = []
     filtered_cols = []
 
@@ -418,7 +418,7 @@ def filter_fictrac(df, val_cols, order, cutoff_freq, framerate=None):
     return df_with_filtered
 
 
-def compare_filtered_fictrac(df, val_cols, time_col, 
+def plot_filtered(df, val_cols, time_col, 
                              order, cutoff_freq,
                              val_labels=None, time_label=None,
                              view_perc=100, 
@@ -478,8 +478,8 @@ def compare_filtered_fictrac(df, val_cols, time_col,
     
     assert (0 <= view_perc <= 100), \
         f"The view percentage, {view_perc}, must be between 0 and 100."
-    assert (df.filter(regex="^filtered_") is not None), \
-        f"At least one column in the dataframe must begin with 'filtered_'."
+    assert (len(df.filter(regex="^filtered_").columns) > 0), \
+        "At least one column in the dataframe must begin with 'filtered_'"
     
     # Format axes labels:
     if time_label is None:
@@ -499,6 +499,8 @@ def compare_filtered_fictrac(df, val_cols, time_col,
             f"The column, {val_col}, is not in the input dataframe."
         assert ("ID" in df), \
             f"The column 'ID' is not in in the input dataframe."
+        assert ("filtered_" in val_col), \
+            f"The column, {val_col}, does not begin with the 'filtered_' prefix." 
         
         # Plot:
         p = figure(
@@ -533,7 +535,6 @@ def compare_filtered_fictrac(df, val_cols, time_col,
         # Output:
         if save_path is not None:
             filename = join(save_path, val_col)
-            
             p.output_backend = "svg"
             export_svgs(p, filename=filename + ".svg")
             export_png(p, filename=filename + ".png")
@@ -549,21 +550,20 @@ def compare_filtered_fictrac(df, val_cols, time_col,
             return p
 
 
-def plot_fictrac_XY_cmap(concat_df, cmap_cols, low=0, high_percentile=95, respective=False, 
-                         cmap_labels=None,
-                         order=2, cutoff_freq=4, 
-                         palette = cc.CET_L16, size=2.5, alpha=0.3, 
-                         show_start=False, 
-                         save_path=None, show_plots=True):
-    # TODO: Is it wise to not give option to use non-filtered data?
+def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False, 
+                    cmap_labels=None,
+                    order=2, cutoff_freq=4, 
+                    palette = cc.CET_L16, size=2.5, alpha=0.3, 
+                    show_start=False, 
+                    save_path=None, show_plots=True):
+    
     """
     Plot XY FicTrac coordinates of the individual with a linear colourmap for 
     a FicTrac variable of choice. 
     
     Parameters:
     -----------
-    concat_df (DataFrame): Concatenated dataframe of FicTrac data generated from 
-        parse_dats()
+    df (DataFrame): Dataframe of FicTrac data generated from parse_dats()
 
     low (float): The minimum value of the colour map range. Any value below the set 
         'low' value will be 'clamped', i.e. will appear as the same colour as 
@@ -627,111 +627,92 @@ def plot_fictrac_XY_cmap(concat_df, cmap_cols, low=0, high_percentile=95, respec
     """
     assert (low >= 0), \
         f"The low end of the colour map range must be non-negative"
-    assert ("X_mm" in concat_df), \
+    assert ("X_mm" in df), \
         f"The column, 'X_mm', is not in the input dataframe."
-    assert ("Y_mm" in concat_df), \
+    assert ("Y_mm" in df), \
         f"The column, 'Y_mm', is not in the input dataframe."
-    assert ("ID" in concat_df), \
+    assert ("ID" in df), \
             f"The column 'ID' is not in in the input dataframe."
-    
-    filtered_df = get_filtered_fictrac(concat_df, cmap_cols, 
-                                              order=order, cutoff_freq=cutoff_freq).dropna()
-    dfs_by_ID = unconcat_df(filtered_df, col_name="ID")
+  
+    # Format axes labels:
+    if cmap_labels is None:
+        cmap_labels = [cmap_col.replace("_", " ") for cmap_col in cmap_cols]
 
-    bokeh_ps = []
-    for df in dfs_by_ID:
+    for i, cmap_col in enumerate(cmap_cols):
         
-        # Format axes labels:
-        if cmap_labels is None:
-            cmap_labels = [cmap_col.replace("_", " ") for cmap_col in cmap_cols]
+        assert (cmap_col in df), \
+            f"The column, {cmap_col}, is not in the input dataframe."
+        assert (len(df["X_mm"] == len(df["Y_mm"]))), \
+            "X_mm and Y_mm are different lengths! They must be the same."
 
-        for i, cmap_col in enumerate(cmap_cols):
-            
-            assert (cmap_col in concat_df), \
-                f"The column, {cmap_col}, is not in the input dataframe."
-            assert (f"filtered_{cmap_col}" in filtered_df), \
-                f"The column, filtered_{cmap_col} is not in the filtered dataframe."
-            assert (len(df["X_mm"] == len(df["Y_mm"]))), \
-                "X_mm and Y_mm are different lengths! They must be the same."
-
-            # Use only the FILTERED cmap_col:
-            cmap_col = f"filtered_{cmap_col}"
-
-            if respective is False:
-                # Normalize colourmap range to population:
-                high = np.percentile(filtered_df[cmap_col], high_percentile)
-            elif respective is True:
-                # Individual ID sets its own colourmap range:
-                high = np.percentile(df[cmap_col], high_percentile)
-            
-            source = ColumnDataSource(df)
-
-            mapper = linear_cmap(field_name=cmap_col, 
-                                palette=palette, 
-                                low=low, 
-                                high=high)
-            
-            p = figure(width=800,
-                       height=800,
-                       x_axis_label="X (mm)",
-                       y_axis_label="Y (mm)")
-            
-            p.circle(source=source,
-                       x="X_mm",
-                       y="Y_mm",
-                       color=mapper,
-                       size=size,
-                       alpha=alpha)
-            
-            if show_start is True:
-                # Other options include .cross, .circle_x, and .hex:
-                p.circle(x=df["X_mm"][0], 
-                         y=df["Y_mm"][0], 
-                         size=12,
-                         color="darkgray",
-                         fill_alpha=0.5)
-
-            # TODO: also change colorbar labels so max has =< symbol
-            color_bar = ColorBar(color_mapper=mapper['transform'], 
-                                 title=cmap_labels[i],
-                                 title_text_font_size="7pt",
-                                 width=10,
-                                 background_fill_color="#f8f5f2",
-                                 location=(0,0))
-
-            p.add_layout(color_bar, "right")
-
-            p.title.text_font_size = "14pt"
-            p.xaxis.axis_label_text_font_size = '10pt'
-            p.yaxis.axis_label_text_font_size = '10pt'
-            p.border_fill_color = "#f8f5f2"
-            p.xgrid.grid_line_color = "#efe8e2"
-            p.ygrid.grid_line_color = "#efe8e2"
-            p.background_fill_color = "#f8f5f2"
-
-            bokeh_ps.append(p)
-
-            # Output:
-            if save_path is not None:
-                filename = save_path + f"fictrac_XY_{cmap_col}"
-                
-                p.output_backend = "svg"
-                export_svgs(p, filename=filename + ".svg")
-                export_png(p, filename=filename + ".png")
-                output_file(filename=filename + ".html", 
-                            title=filename)
-                
-            if show_plots is True:
-                # In case this script is run in Jupyter, change output_backend 
-                # back to "canvas" for faster performance:
-                p.output_backend = "canvas"
-                show(p)
-            else:
-                # TODO: For some reason, length of bokeh_ps seems 1 longer than expected...
-                bokeh_ps.append(p)
+        if respective is False:
+            # Normalize colourmap range to population:
+            high = np.percentile(df[cmap_col], high_percentile)
+        elif respective is True:
+            # Individual animal sets its own colourmap range:
+            high = np.percentile(df[cmap_col], high_percentile)
         
-    if show_plots is False:
-        return bokeh_ps
+        source = ColumnDataSource(df)
+
+        mapper = linear_cmap(field_name=cmap_col, 
+                            palette=palette, 
+                            low=low, 
+                            high=high)
+        
+        p = figure(width=800,
+                    height=800,
+                    x_axis_label="X (mm)",
+                    y_axis_label="Y (mm)")
+        
+        p.circle(source=source,
+                    x="X_mm",
+                    y="Y_mm",
+                    color=mapper,
+                    size=size,
+                    alpha=alpha)
+        
+        if show_start is True:
+            # Other options include .cross, .circle_x, and .hex:
+            p.circle(x=df["X_mm"][0], 
+                        y=df["Y_mm"][0], 
+                        size=12,
+                        color="darkgray",
+                        fill_alpha=0.5)
+
+        # TODO: also change colorbar labels so max has =< symbol
+        color_bar = ColorBar(color_mapper=mapper['transform'], 
+                                title=cmap_labels[i],
+                                title_text_font_size="7pt",
+                                width=10,
+                                background_fill_color="#f8f5f2",
+                                location=(0,0))
+
+        p.add_layout(color_bar, "right")
+
+        p.title.text_font_size = "14pt"
+        p.xaxis.axis_label_text_font_size = '10pt'
+        p.yaxis.axis_label_text_font_size = '10pt'
+        p.border_fill_color = "#f8f5f2"
+        p.xgrid.grid_line_color = "#efe8e2"
+        p.ygrid.grid_line_color = "#efe8e2"
+        p.background_fill_color = "#f8f5f2"
+
+        # Output:
+        if save_path is not None:
+            filename = save_path + f"fictrac_XY_{cmap_col}"
+            p.output_backend = "svg"
+            export_svgs(p, filename=filename + ".svg")
+            export_png(p, filename=filename + ".png")
+            output_file(filename=filename + ".html", 
+                        title=filename)
+            
+        if show_plots is True:
+            # In case this script is run in Jupyter, change output_backend 
+            # back to "canvas" for faster performance:
+            p.output_backend = "canvas"
+            show(p)
+        else:
+            p
 
 
 def plot_fictrac_histograms(concat_df, cols=None, labels=None, 
