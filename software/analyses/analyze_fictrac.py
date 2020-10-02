@@ -15,7 +15,7 @@ import argparse
 import glob
 from sys import exit, path
 from shutil import rmtree
-from os.path import join, expanduser, exists
+from os.path import join, expanduser, exists, commonpath
 from os import mkdir
 import re
 import datetime
@@ -196,17 +196,19 @@ def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
     return dfs
 
 
-# TODO: I should probably put this function in some common utilities.py file
+# TODO: Move this fxn to something like utilities.py or common.py
 def unconcat_df(concat_df, col_name="ID"):
 
     """
     Splits up a concatenated dataframe according to each unique `col_name`.
     Returns a list of datafrmaes. 
+
     Parameters:
     -----------
     concat_df: A Pandas dataframe
     col_name (str): A column name in 'concat_df' with which to split into smaller dataframes. 
         Default is "ID". 
+
     Returns:
     --------
     A list of dataframes, split up by each `col_name`. 
@@ -222,6 +224,166 @@ def unconcat_df(concat_df, col_name="ID"):
         dfs_by_ID.append(df)
 
     return(dfs_by_ID)
+
+
+# TODO: Move this fxn to something like utilities.py or common.py
+def flatten_list(list_of_lists):
+    
+    """
+    Flatten a list of lists into a list.
+
+    Parameters:
+    -----------
+    list_of_lists: A list of lists
+
+    Returns:
+    --------
+    A list.
+    """
+    
+    # Reach into each inner list and append into a new list: 
+    flat_list = [item for inner_list in list_of_lists for item in inner_list]
+
+    return flat_list
+
+
+# TODO: Move this fxn to something like common.py
+def read_csv_and_add_metadata(paths):
+
+    """
+    Reads `.csv` data into a dataframe, then adds metadata from each file's path to the 
+    dataframe. Assumes that there exists somewhere in the path, a directory structure 
+    that goes 'date -> animal -> trial', where 'trial' holds the `.csv` data. 
+    
+    Parameters:
+    ------------
+    paths: A list of paths
+
+    Returns:
+    ---------
+    A list of dataframes
+    """
+    
+    common_path = commonpath(paths)
+    
+    dfs = []
+    for path in paths:
+        
+        new_path = path.replace(f"{common_path}/", "")
+        date = new_path.split("/")[0]
+        animal = new_path.split("/")[1]
+        trial = new_path.split("/")[2]
+        
+        df = pd.read_csv(path)
+        df["date"] = date
+        df["animal"] = animal
+        df["trial"] = trial
+        
+        dfs.append(df)
+        
+    return(dfs)
+
+
+def add_metadata_to_dfs(paths, dfs):
+
+    """
+    Adds metadata from each file's path to the FicTrac dataframe. Assumes that there exists 
+    somewhere in the path, a directory structure that goes 'date -> animal -> trial', where
+    'trial' holds the `.dat` data. 
+    
+    Parameters:
+    -------------
+    paths: list of paths
+    dfs: list of FicTrac dataframes
+
+    Returns:
+    ---------
+    A list of dataframes
+    """
+    
+    common_path = commonpath(paths)
+    
+    dfs_with_metadata = []
+    for path, df in zip(paths, dfs):
+        
+        assert len(paths) == len(dfs), "Lengths of `paths` and `dfs` are unequal"
+        # TODO: Add check to see if `paths` and `dfs` are sorted in the same way. 
+        
+        new_path = path.replace(f"{common_path}/", "")
+        date = new_path.split("/")[0]
+        animal = new_path.split("/")[1]
+        trial = new_path.split("/")[2]
+        
+        df["date"] = date
+        df["animal"] = animal
+        df["trial"] = trial
+        
+        dfs_with_metadata.append(df)
+        
+    return(dfs_with_metadata)
+
+
+def regenerate_IDs (df):
+
+    """
+    Regenerate unique animal IDs. Useful for when a previous function sets IDs according to 
+    some intermediate groupby structure. 
+    
+    Parameters:
+    ------------
+    df: dataframe
+    
+    Returns:
+    ---------
+    A dataframe
+    """
+    
+    df = df.drop(columns=["ID"])
+
+    # Assign unique group IDs:
+    df["ID"] = (df.groupby(["date", "animal", "trial"]).cumcount()==0).astype(int)
+    df["ID"] = df["ID"].cumsum()
+    
+    return df
+
+
+def curate_by_date_animal(df, included):
+
+    """
+    Curate a dataframe according to values in its `date` and `animal` columns.
+
+    Parameters:
+    ------------
+    df: the dataframe to be curated
+    included: list of (<date>, <animal>) tuples to be included in the groupby
+    
+    Returns:
+    ---------
+    The curated dataframe and the number of animals after curation
+    """
+
+    assert ("date" in df), \
+        "The dataframe must have a column called `date`"
+    assert ("animal" in df), \
+        "The dataframe must have a column called `animal`"
+    
+    # groupby has 3 keys:
+    grouped = df.groupby(["date", "animal", "trial"])
+    
+    # Apply curation to generate a list of dataframes:
+    groups = []
+    for name, group in grouped:
+        # Slice based on first 2 keys, date and animal, only:
+        if name[:2] in included:
+            groups.append(group)
+            
+    # Concatenate the dataframes back together:
+    concat_curated_df = pd.concat(groups)
+    
+    # Get n animals:
+    n_animals = len(concat_curated_df.groupby(["date", "animal"]))
+    
+    return(concat_curated_df, n_animals)
 
 
 def plot_fft(df, val_cols, time_col, 
