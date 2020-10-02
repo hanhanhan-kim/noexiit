@@ -42,9 +42,11 @@ from cmocean_cmaps import get_all_cmocean_colours
 
 
 def get_datetime_from_logs(log, acq_mode="online"):
+
     """
     Extract 't_sys' (ms) from the FicTrac .log files. 
     """
+
     assert (acq_mode is "online"), \
         "This function applies only to FicTrac data acquired in real-time"
     with open (log, "r") as f:
@@ -68,6 +70,7 @@ def get_datetime_from_logs(log, acq_mode="online"):
 
 
 def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
+
     """
     Batch processes subdirectories, where each subdirectory is labelled 'fictrac'
     and has a single FicTrac .dat file and a corresponding .log file. Returns a 
@@ -101,7 +104,7 @@ def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
 
     Returns:
     --------
-    A single Pandas dataframe that concatenates all the input .dat files.
+    A list of dataframes. 
     """
 
     assert acq_mode is "offline" or "online", \
@@ -195,8 +198,9 @@ def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
 
 # TODO: I should probably put this function in some common utilities.py file
 def unconcat_df(concat_df, col_name="ID"):
+
     """
-    Splits up a concatenated dataframe according to each unique ID.
+    Splits up a concatenated dataframe according to each unique `col_name`.
     Returns a list of datafrmaes. 
     Parameters:
     -----------
@@ -205,7 +209,7 @@ def unconcat_df(concat_df, col_name="ID"):
         Default is "ID". 
     Returns:
     --------
-    A list of dataframes, split up by each unique ID. 
+    A list of dataframes, split up by each `col_name`. 
     """
 
     assert (col_name in concat_df), \
@@ -221,13 +225,14 @@ def unconcat_df(concat_df, col_name="ID"):
 
 
 def plot_fft(df, val_cols, time_col, 
-             even=False, window=np.hanning, pad=1, 
+             is_evenly_sampled=False, window=np.hanning, pad=1, 
              cutoff_freq=None, 
              val_labels=None, time_label=None,
-             save_path=None, show_plots=True):  
+             save_path_to=None, show_plots=True):  
+
     """
     Perform a Fourier transform on FicTrac data for each ID. Generate 
-    frequency domain plots for each ID. 
+    power spectrum plots for each value in `val_cols`. 
     Accepts one column from `df`, rather than a list of columns.
 
     Parameters:
@@ -238,7 +243,7 @@ def plot_fft(df, val_cols, time_col,
 
     time_col (str): Column name in `df` that specifies time in SECONDS. 
 
-    even (bool): If False, will interpolate even sampling. 
+    is_evenly_sampled (bool): If False, will interpolate even sampling. 
 
     cutoff_freq (float): x-intercept value for plotting a vertical line. 
         To be used to visualize a candidate cut-off frequency. Default is None.
@@ -248,30 +253,22 @@ def plot_fft(df, val_cols, time_col,
 
     time_label (str): Label for the plot's time-axis.
 
-    save_path (str): Absolute path to which to save the plots as .png files. 
+    save_path_to (str): Absolute path to which to save the plots as .png files. 
         If None, will not save the plots. Default is None. 
 
-    show_plots (bool): If True, will show plots, but will not 
-        output a list of Bokeh plotting objects. If False, will not show 
-        plots, but will output a list of Bokeh plotting objects. If both 
-        save and show_plots are True, .html plots will be generated, in addition 
+    show_plots (bool): If True, will show plots, but will not output Bokeh plotting 
+        objects. If False, will not show plots, but will output Bokeh plotting objects. 
+        If both save and show_plots are True, .html plots will be generated, in addition 
         to the .png plots. Default is True.
 
     Returns:
     ---------
-    if show_plots is True: will show plots but will not output bokeh.plotting.figure
-         object.
-
-    if show_plots is False: will output a list of bokeh.plotting.figure objects, 
-        but will not show plots.
-
-    if save is True: will save .png plots.
-    
-    if both show_plots and save are True, will show plots and save .png and .html 
-        plots. 
-
-    if both show_plots and save are False, will return nothing. 
+    if show_plots is True: will show plots instead of outputting bokeh.plotting.figure object.
+    if show_plots is False: will output bokeh.plotting.figure objects, instead of showing plots.
+    if save_path_to is not None: will save .png plots to specified path. 
+    if save_path_to is None: will not save plots.
     """
+    
     if ("sec" or "secs") not in time_col:
         safe_secs = input(f"The substrings 'sec' or 'secs' was not detected in the 'time_col' variable, {time_col}. The units of the values in {time_col} MUST be in seconds. If the units are in seconds, please input 'y'. Otherwise input anything else to exit.")
         while True:
@@ -293,6 +290,7 @@ def plot_fft(df, val_cols, time_col,
     if val_labels is None:
         val_labels = [val_col.replace("_", " ") for val_col in val_cols]
 
+    plots = []
     for i, val_col, in enumerate(val_cols):
 
         assert (len(df[time_col] == len(df[val_col]))), \
@@ -305,7 +303,7 @@ def plot_fft(df, val_cols, time_col,
         # Fourier-transform:
         f = spi.interp1d(time, val)
 
-        if even is False:
+        if is_evenly_sampled is False:
             time_interp = np.linspace(time[1], time[-1], len(time))
             val_interp = f(time_interp)
         else:
@@ -322,7 +320,7 @@ def plot_fft(df, val_cols, time_col,
         # Plot:
         p1, p2 = bokeh_freq_domain(freq, amp)
 
-        p1.title.text = f"frequency domain of {val_labels[i]}"
+        p1.title.text = f"power spectrum of {val_labels[i]}"
         p1.title.text_font_size = "16pt"
         p1.yaxis.axis_label_text_font_size = "12pt"
         p1.border_fill_color = "#f8f5f2"
@@ -350,8 +348,8 @@ def plot_fft(df, val_cols, time_col,
         p = gridplot([p1, p2], ncols=1)
 
         # Output:
-        if save_path is not None:
-            filename = save_path + f"fictrac_freqs"
+        if save_path_to is not None:
+            filename = save_path_to + f"fictrac_freqs"
 
             # Bokeh does not atm support gridplot svg exports
             export_png(p, filename = filename + ".png")
@@ -360,11 +358,16 @@ def plot_fft(df, val_cols, time_col,
 
         if show_plots is True:
             show(p)
-        else:
-            return p
+
+        # In case show_plots is False:
+        plots.append(p)
+
+    if show_plots is False:
+        return plots
 
 
 def filter(df, val_cols, order, cutoff_freq, framerate=None):
+
     """
     Applies low-pass Buterworth filter on offline FicTrac data. 
     Does not drop NA values.
@@ -420,7 +423,8 @@ def plot_filtered(df, val_cols, time_col,
                              order, cutoff_freq,
                              val_labels=None, time_label=None,
                              view_perc=100, 
-                             save_path=None, show_plots=True):
+                             save_path_to=None, show_plots=True):
+
     """
     Apply a low-pass Butterworth filter on offline FicTrac data. 
     Plot filtered vs. non-filtered data. 
@@ -449,29 +453,20 @@ def plot_filtered(df, val_cols, time_col,
         timecourses. Default is set to 1, i.e. plot the data over the entire \
         timecourse. Must be a value between 0 and 1.
 
-    save_path (str): Absolute path to which to save the plots as .png and .svg files. 
+    save_path_to (str): Absolute path to which to save the plots as .png and .svg files. 
         If None, will not save the plots. Default is None. 
 
-    show_plots (bool): If True, will show plots, but will not 
-        output a list of Bokeh plotting objects. If False, will not show 
-        plots, but will output a list of Bokeh plotting objects. If both 
-        save and show_plots are True, .html plots will be generated, in addition 
-        to the .svg and .png plots. Default is True.
+    show_plots (bool): If True, will show plots, but will not output Bokeh plotting 
+        objects. If False, will not show plots, but will output Bokeh plotting objects. 
+        If both save and show_plots are True, .html plots will be generated, in addition 
+        to the .png plots. Default is True.
 
     Returns:
-    --------
-    if show_plots is True: will show plots but will not output bokeh.plotting.figure
-         object.
-
-    if show_plots is False: will output a list of bokeh.plotting.figure objects, 
-        but will not show plots.
-
-    if save is True: will save .svg and .png plots.
-    
-    if both show_plots and save are True, will show plots and save .svg, .png and 
-        .html plots. 
-
-    if both show_plots and save are False, will return nothing. 
+    ---------
+    if show_plots is True: will show plots instead of outputting bokeh.plotting.figure object.
+    if show_plots is False: will output bokeh.plotting.figure objects, instead of showing plots.
+    if save_path_to is not None: will save .png plots to specified path. 
+    if save_path_to is None: will not save plots.
     """
     
     assert (0 <= view_perc <= 100), \
@@ -488,6 +483,7 @@ def plot_filtered(df, val_cols, time_col,
     # View the first _% of the data:
     domain = int(view_perc/100 * len(df[time_col])) 
 
+    plots = []
     for i, val_col in enumerate(val_cols):
         assert (len(df[time_col] == len(df[val_col]))), \
             "time and vals are different lengths! They must be the same."
@@ -529,10 +525,10 @@ def plot_filtered(df, val_cols, time_col,
         p.xgrid.grid_line_color = "#efe8e2"
         p.ygrid.grid_line_color = "#efe8e2"
         p.background_fill_color = "#f8f5f2" 
-        
+
         # Output:
-        if save_path is not None:
-            filename = join(save_path, val_col)
+        if save_path_to is not None:
+            filename = join(save_path_to, val_col)
             p.output_backend = "svg"
             export_svgs(p, filename=filename + ".svg")
             export_png(p, filename=filename + ".png")
@@ -544,8 +540,12 @@ def plot_filtered(df, val_cols, time_col,
             # back to "canvas" for faster performance:
             p.output_backend = "canvas"
             show(p)
-        else:
-            return p
+
+        # In case show_plots is False:
+        plots.append(p)
+
+    if show_plots is False:
+        return plots
 
 
 def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False, 
@@ -553,11 +553,11 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
                     order=2, cutoff_freq=4, 
                     palette = cc.CET_L16, size=2.5, alpha=0.3, 
                     show_start=False, 
-                    save_path=None, show_plots=True):
+                    save_path_to=None, show_plots=True):
     
     """
     Plot XY FicTrac coordinates of the individual with a linear colourmap for 
-    a FicTrac variable of choice. 
+    a each element in `cmap_cols`. 
     
     Parameters:
     -----------
@@ -599,30 +599,22 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
     show_start (bool): If True, will plot a marking to explicitly denote the start 
         site. Default is False. 
     
-    save_path (str): Absolute path to which to save the plots as .png and .svg files. 
+    save_path_to (str): Absolute path to which to save the plots as .png and .svg files. 
         If None, will not save the plots. Default is None. 
 
-    show_plots (bool): If True, will show plots, but will not 
-        output a list of Bokeh plotting objects. If False, will not show 
-        plots, but will output a list of Bokeh plotting objects. If both 
-        save and show_plots are True, .html plots will be generated, in addition 
-        to the .svg and .png plots. Default is True.
+    show_plots (bool): If True, will show plots, but will not output Bokeh plotting 
+        objects. If False, will not show plots, but will output Bokeh plotting objects. 
+        If both save and show_plots are True, .html plots will be generated, in addition 
+        to the .png plots. Default is True.
 
     Returns:
-    --------
-    if show_plots is True: will show plots but will not output bokeh.plotting.figure
-         object.
-
-    if show_plots is False: will output a list of bokeh.plotting.figure objects, 
-        but will not show plots.
-
-    if save is True: will save .svg and .png plots.
-    
-    if both show_plots and save are True, will show plots and save .svg, .png and 
-        .html plots. 
-
-    if both show_plots and save are False, will return nothing. 
+    ---------
+    if show_plots is True: will show plots instead of outputting bokeh.plotting.figure object.
+    if show_plots is False: will output bokeh.plotting.figure objects, instead of showing plots.
+    if save_path_to is not None: will save .png plots to specified path. 
+    if save_path_to is None: will not save plots.
     """
+
     assert (low >= 0), \
         f"The low end of the colour map range must be non-negative"
     assert ("X_mm" in df), \
@@ -636,6 +628,7 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
     if cmap_labels is None:
         cmap_labels = [cmap_col.replace("_", " ") for cmap_col in cmap_cols]
 
+    plots = []
     for i, cmap_col in enumerate(cmap_cols):
         
         assert (cmap_col in df), \
@@ -696,8 +689,8 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
         p.background_fill_color = "#f8f5f2"
 
         # Output:
-        if save_path is not None:
-            filename = save_path + f"fictrac_XY_{cmap_col}"
+        if save_path_to is not None:
+            filename = save_path_to + f"fictrac_XY_{cmap_col}"
             p.output_backend = "svg"
             export_svgs(p, filename=filename + ".svg")
             export_png(p, filename=filename + ".png")
@@ -709,10 +702,15 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
             # back to "canvas" for faster performance:
             p.output_backend = "canvas"
             show(p)
-        else:
-            return p
+
+        # In case show_plots is False:
+        plots.append(p)
+
+    if show_plots is False:
+        return plots
 
 
+# Banned substrings to be used in `plot_histograms` and `plot_ecdfs`:
 banned_substrings = ["integrat_x_posn", 
                      "integrat_y_posn", 
                      "X_mm", 
@@ -731,9 +729,10 @@ banned_substrings = ["integrat_x_posn",
 
 def plot_histograms(df, cols=None, labels=None, 
                     cutoff_percentile=95,
-                    save_path=None, show_plots=True): 
+                    save_path_to=None, show_plots=True): 
+
     """
-    Generate histograms for multiple FicTrac kinematic variables. 
+    Generate histograms for multiple FicTrac variables. 
 
     Parameters:
     -----------
@@ -750,30 +749,22 @@ def plot_histograms(df, cols=None, labels=None,
     cutoff_percentile (float): Specifies the percentile of the AGGREGATE population data. 
         Plots a line at this value. Default is 95th percentile. 
         
-    save_path (str): Absolute path to which to save the plots as .png and .svg files. 
+    save_path_to (str): Absolute path to which to save the plots as .png and .svg files. 
         If None, will not save the plots. Default is None. 
 
-    show_plots (bool): If True, will show plots, but will not 
-        output a list of Bokeh plotting objects. If False, will not show 
-        plots, but will output a list of Bokeh plotting objects. If both 
-        save and show_plots are True, .html plots will be generated, in addition 
-        to the .svg and .png plots. Default is True.
+    show_plots (bool): If True, will show plots, but will not output Bokeh plotting 
+        objects. If False, will not show plots, but will output Bokeh plotting objects. 
+        If both save and show_plots are True, .html plots will be generated, in addition 
+        to the .png plots. Default is True.
 
     Returns:
-    --------
-    if show_plots is True: will show plots but will not output bokeh.plotting.figure
-         object.
-
-    if show_plots is False: will output a list of bokeh.plotting.figure objects, 
-        but will not show plots.
-
-    if save is True: will save .svg and .png plots.
-    
-    if both show_plots and save are True, will show plots and save .svg, .png and 
-        .html plots. 
-
-    if both show_plots and save are False, will return nothing. 
+    ---------
+    if show_plots is True: will show plots instead of outputting bokeh.plotting.figure object.
+    if show_plots is False: will output bokeh.plotting.figure objects, instead of showing plots.
+    if save_path_to is not None: will save .png plots to specified path. 
+    if save_path_to is None: will not save plots.
     """
+
     assert ("ID" in df), \
             f"The column 'ID' is not in in the input dataframe."
     
@@ -798,6 +789,7 @@ def plot_histograms(df, cols=None, labels=None,
     if labels is None:
         labels = [col.replace("_", " ") for col in cols] 
     
+    plots = []
     for i, col in enumerate(cols):
         p = iqplot.histogram(data=df,
                              cats=['ID'],
@@ -827,8 +819,8 @@ def plot_histograms(df, cols=None, labels=None,
         p.add_layout(cutoff_line)
             
         # Output:
-        if save_path is not None:
-            filename = join(save_path, f"fictrac_histogram_by_ID_{col}")
+        if save_path_to is not None:
+            filename = join(save_path_to, f"fictrac_histogram_by_ID_{col}")
             p.output_backend = "svg"
             export_svgs(p, filename=filename + ".svg")
             export_png(p, filename=filename + ".png")
@@ -840,15 +832,20 @@ def plot_histograms(df, cols=None, labels=None,
             # back to "canvas" for faster performance:
             p.output_backend = "canvas"
             show(p)
-        else:
-            return p
+
+        # In case show_plots is False:
+        plots.append(p)
+
+    if show_plots is False:
+        return plots
 
 
 def plot_ecdfs(df, cols=None, labels=None, 
-                       cutoff_percentile=95, 
-                       save_path=None, show_plots=True):
+               cutoff_percentile=95, 
+               save_path_to=None, show_plots=True):
+
     """
-    Generate ECDFs for multiple FicTrac kinematic variables. 
+    Generate ECDFs for multiple FicTrac variables. 
 
     Parameters:
     -----------
@@ -864,30 +861,22 @@ def plot_ecdfs(df, cols=None, labels=None,
     cutoff_percentile (float): Specifies the percentile of the AGGREGATE population data. 
         Plots a line at this value. Default is 95th percentile. 
     
-    save_path (str): Absolute path to which to save the plots as .png and .svg files. 
+    save_path_to (str): Absolute path to which to save the plots as .png and .svg files. 
         If None, will not save the plots. Default is None. 
 
-    show_plots (bool): If True, will show plots, but will not 
-        output a list of Bokeh plotting objects. If False, will not show 
-        plots, but will output a list of Bokeh plotting objects. If both 
-        save and show_plots are True, .html plots will be generated, in addition 
-        to the .svg and .png plots. Default is True.
+    show_plots (bool): If True, will show plots, but will not output Bokeh plotting 
+        objects. If False, will not show plots, but will output Bokeh plotting objects. 
+        If both save and show_plots are True, .html plots will be generated, in addition 
+        to the .png plots. Default is True.
 
     Returns:
-    --------
-    if show_plots is True: will show plots but will not output bokeh.plotting.figure
-         object.
-
-    if show_plots is False: will output a list of bokeh.plotting.figure objects, 
-        but will not show plots.
-
-    if save is True: will save .svg and .png plots.
-    
-    if both show_plots and save are True, will show plots and save .svg, .png and 
-        .html plots. 
-
-    if both show_plots and save are False, will return nothing. 
+    ---------
+    if show_plots is True: will show plots instead of outputting bokeh.plotting.figure object.
+    if show_plots is False: will output bokeh.plotting.figure objects, instead of showing plots.
+    if save_path_to is not None: will save .png plots to specified path. 
+    if save_path_to is None: will not save plots.
     """
+
     assert ("ID" in df), \
             f"The column 'ID' is not in in the input dataframe."
     
@@ -912,6 +901,7 @@ def plot_ecdfs(df, cols=None, labels=None,
     if labels is None:
         labels = [col.replace("_", " ") for col in cols] 
     
+    plots = []
     for i, col in enumerate(cols):
         p = iqplot.ecdf(data=df,
                         cats=["ID"],
@@ -940,8 +930,8 @@ def plot_ecdfs(df, cols=None, labels=None,
         p.add_layout(cutoff_line)
         
         # Output:
-        if save_path is not None:
-            filename = save_path + f"fictrac_ecdfs_{col}"
+        if save_path_to is not None:
+            filename = save_path_to + f"fictrac_ecdfs_{col}"
             
             p.output_backend = "svg"
             export_svgs(p, filename=filename + ".svg")
@@ -954,8 +944,12 @@ def plot_ecdfs(df, cols=None, labels=None,
             # back to "canvas" for faster performance:
             p.output_backend = "canvas"
             show(p)
-        else:
-            return p
+
+        # In case show_plots is False:
+        plots.append(p)
+
+    if show_plots is False:
+        return plots
 
 
 def main():
@@ -1062,6 +1056,7 @@ def main():
     ball_radius = params["ball_radius"]
 
     val_cols = params["val_cols"]
+    filtered_val_cols = ["filtered_" + val_col for val_col in val_cols]
     val_labels = params["val_labels"]
 
     time_col = params["time_col"]
@@ -1073,7 +1068,6 @@ def main():
 
     view_perc = params["view_perc"]
 
-    cmap_cols = params["cmap_cols"]
     cmap_labels = params["cmap_labels"]
     alpha_cmap = params["alpha_cmap"]
     percentile_max_clamp = params["percentile_max_clamp"]
@@ -1085,66 +1079,65 @@ def main():
     show_plots = params["show_plots"]
 
     # Parse FicTrac inputs:
-    concat_df = parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=False).dropna()
-    
-    # Unconcatenate the concatenated df:
-    dfs_by_ID = unconcat_df(concat_df, col_name="ID")
+    dfs = parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=False)
 
     # Save each individual bokeh plot to its respective ID folder. 
     folders = sorted(glob.glob(join(root, nesting * "*/", "fictrac/")))
 
-    # Generate individual ID plots:
     save_paths = []
-    for df, folder in zip(dfs_by_ID, folders):
-        
-        save_path = join(folder, "plots/")
-        save_paths.append(save_path)
-        
-        if exists(save_path):
-            rmtree(save_path)
-        mkdir(save_path)
+    for df, folder in zip(dfs, folders):
+        # Generate individual ID plots:
+        print(f"Generating individual plots for {folder} ...")
+        save_path_to = join(folder, "plots/")
+        save_paths.append(save_path_to)
+
+        if exists(save_path_to):
+            rmtree(save_path_to)
+        mkdir(save_path_to)
 
         if no_save is True:
-            save_path = None
-        
-        print(f"Generating individual plots for {folder} ...")
+            save_path_to = None
 
-        # Plot FFT frequency domain:
-        plot_fictrac_fft(df, 
-                        val_cols=val_cols, 
-                        time_col=time_col, 
-                        val_labels=val_labels,
-                        time_label=time_label,
-                        cutoff_freq=cutoff_freq, 
-                        save_path=save_path,
-                        show_plots=show_plots) 
+        # Plot FFT power spectrum:
+        plot_fft(df, 
+                 val_cols=val_cols, 
+                 time_col=time_col, 
+                 val_labels=val_labels,
+                 time_label=time_label,
+                 cutoff_freq=cutoff_freq, 
+                 save_path_to=save_path_to,
+                 show_plots=show_plots) 
 
-        # Plot filtered:
-        plot_filtered_fictrac(df, 
-                              val_cols=val_cols, 
+        # Plot raw vs. filtered:
+        plot_filtered(df, 
+                              val_cols=filtered_val_cols, 
                               time_col=time_col, 
                               val_labels=val_labels, 
                               time_label=time_label,
                               cutoff_freq=cutoff_freq, 
                               order=order, 
                               view_perc=view_perc,
-                              save_path=save_path,
+                              save_path_to=save_path_to,
                               show_plots=show_plots)
 
         # Plot XY
         cm = get_all_cmocean_colours()
-        plot_fictrac_XY_cmap(df,
-                             cmap_cols=cmap_cols,
-                             high_percentile=percentile_max_clamp,
-                             respective=respective,
-                             cmap_labels=cmap_labels,
-                             palette=cm["thermal"],
-                             alpha=alpha_cmap,
-                             save_path=save_path,
-                             show_plots=show_plots)
+        plot_trajectory(df,
+                        cmap_cols=filtered_val_cols,
+                        high_percentile=percentile_max_clamp,
+                        respective=respective,
+                        cmap_labels=cmap_labels,
+                        palette=cm["thermal"],
+                        alpha=alpha_cmap,
+                        save_path_to=save_path_to,
+                        show_plots=show_plots)
 
     # Generate population plots:
     print("Generating population plots ...")
+
+    # Concatenate data into a population:
+    concat_df = pd.concat(dfs).dropna()
+    
     save_path_popns = join(root, "popn_plots/")
     if exists(save_path_popns):
         rmtree(save_path_popns)
@@ -1152,22 +1145,22 @@ def main():
     subdirs = ["histograms/", "ecdfs/"]
     [mkdir(join(root, "popn_plots/", subdir)) for subdir in subdirs]
 
-    save_path_histos = join(root, "popn_plots/", "histograms/")
+    save_path_hists = join(root, "popn_plots/", "histograms/")
     save_path_ecdfs = join(root, "popn_plots/", "ecdfs/")
 
     # Plot histograms:
     print("Generating histograms ...")
-    plot_fictrac_histograms(concat_df, 
-                            cutoff_percentile=percentile_max_clamp,
-                            save_path=save_path_histos, 
-                            show_plots=False)
+    plot_histograms(concat_df, 
+                    cutoff_percentile=percentile_max_clamp,
+                    save_path_to=save_path_hists, 
+                    show_plots=False)
 
     # Plot ECDFs:
     print("Generating ECDFs ...")
-    plot_fictrac_ecdfs(concat_df,
-                       cutoff_percentile=percentile_max_clamp,
-                       save_path=save_path_ecdfs, 
-                       show_plots=False)
+    plot_ecdfs(concat_df,
+               cutoff_percentile=percentile_max_clamp,
+               save_path_to=save_path_ecdfs, 
+               show_plots=False)
     
 
 if __name__ == "__main__":
