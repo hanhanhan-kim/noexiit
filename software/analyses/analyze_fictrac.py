@@ -16,6 +16,7 @@ import glob
 from sys import exit, path
 from shutil import rmtree
 from os.path import join, expanduser, exists, commonpath
+from pathlib import Path
 from os import mkdir
 import re
 import datetime
@@ -69,7 +70,7 @@ def get_datetime_from_logs(log, acq_mode="online"):
     return datetime_list
 
 
-def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
+def parse_dats(root, ball_radius, acq_mode, do_confirm=True):
 
     """
     Batch processes subdirectories, where each subdirectory is labelled 'fictrac'
@@ -87,10 +88,6 @@ def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
     -----------
     root (str): Absolute path to the root directory. I.e. the outermost 
         folder that houses the FicTrac .avi files
-
-    nesting (int): Specifies the number of folders that are nested from the
-        root directory. I.e. the number of folders between root and the
-        'fictrac' subdirectory that houses the input .dat and .log files. E.g. 1.
 
     ball_radius (float): The radius of the ball (mm) the insect was on. 
         Used to compute the real-world values in mm.  
@@ -120,8 +117,8 @@ def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
     else:
         pass
 
-    logs = sorted(glob.glob(join(root, nesting * "*/", "fictrac/*.log"))) 
-    dats = sorted(glob.glob(join(root, nesting * "*/", "fictrac/*.dat")))
+    logs = sorted([path.absolute() for path in Path(root).rglob("*.log")])
+    dats = sorted([path.absolute() for path in Path(root).rglob("*.dat")])
     
     headers = [ "frame_cntr",
                 "delta_rotn_vector_cam_x", 
@@ -197,7 +194,7 @@ def parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=True):
 
 
 # TODO: Move this fxn to something like utilities.py or common.py
-def unconcat_df(concat_df, col_name="ID"):
+def unconcat(concat_df, col_name="ID"):
 
     """
     Splits up a concatenated dataframe according to each unique `col_name`.
@@ -337,6 +334,8 @@ def regenerate_IDs (df):
     ---------
     A dataframe
     """
+
+    # TODO: check that ID, date, animal, and trial columsn are in the dataframe
     
     df = df.drop(columns=["ID"])
 
@@ -345,6 +344,55 @@ def regenerate_IDs (df):
     df["ID"] = df["ID"].cumsum()
     
     return df
+
+
+def search_for_paths(basepath, search_dates):
+
+    """
+    """
+
+    # TODO: Fix--currently assumes that search_date immediately follows basepath, 
+    # as seen in the join() below. Need to make it more general. 
+    
+    new_paths = [str(path.absolute()) 
+                for search_date in search_dates 
+                for path in Path(join(basepath, search_date)).rglob("*/fictrac")]
+    
+    return new_paths
+
+
+# def parse_dat_by_group(basepath, group_members, 
+#                        nesting, ball_radius, acq_mode, do_confirm):
+    
+#     """
+#     Parse `.dat` files by a group of manually specified group members. 
+#     Wraps the `parse_dats()` function.
+
+#     Parameters:
+#     -----------
+#     basepath: Common path shared by each element in `group_members`. 
+#     group_members: List of group members. Each element must be a substring 
+#         in the path to the FicTrac `.dat` file. 
+
+#     Returns:
+#     --------
+#     A list of dataframes
+#     """
+
+#     # assert ("ID" in df), \
+#     #     "The dataframe must have a column called `ID`"
+
+#     dfs = [parse_dats(join(basepath, group_member), nesting, ball_radius, acq_mode, do_confirm) 
+#            for group_member in group_members] 
+
+#     all_dfs = []
+#     for df in dfs:
+#         new_dfs = unconcat(df) 
+#         all_dfs.extend(new_dfs)
+
+
+    
+#     return dfs
 
 
 def curate_by_date_animal(df, included):
@@ -1210,7 +1258,7 @@ def main():
         # print(params)
 
     root = params["root"]
-    nesting = params["nesting"]
+    # nesting = params["nesting"]
     acq_mode = params["acq_mode"]
     # TODO: FIX! acq_mode requires hardcoding:
     # acq_mode = params["acq_mode"]
@@ -1241,10 +1289,10 @@ def main():
     show_plots = params["show_plots"]
 
     # Parse FicTrac inputs:
-    dfs = parse_dats(root, nesting, ball_radius, acq_mode, do_confirm=False)
+    dfs = parse_dats(root, ball_radius, acq_mode, do_confirm=False)
 
     # Save each individual bokeh plot to its respective ID folder. 
-    folders = sorted(glob.glob(join(root, nesting * "*/", "fictrac/")))
+    folders = sorted([path.absolute() for path in Path(root).rglob("*/fictrac")])
 
     save_paths = []
     for df, folder in zip(dfs, folders):
