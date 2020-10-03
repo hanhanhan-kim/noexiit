@@ -332,9 +332,9 @@ def parse_dats_by_group(basepath, group_members,
     # TODO: Checks sorting
 
     paths = search_for_paths(basepath, group_members)
-    dfs = flatten_list([parse_dats(path, ball_radius, acq_mode, do_confirm) for path in paths])
+    dfs = [parse_dats(path, ball_radius, acq_mode, do_confirm) for path in paths]
     
-    return dfs
+    return flatten_list(dfs)
 
 
 def add_metadata_to_dfs(paths, dfs):
