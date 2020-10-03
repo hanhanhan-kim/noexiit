@@ -666,11 +666,13 @@ def filter(df, val_cols, order, cutoff_freq, framerate=None):
     return df_with_filtered
 
 
+# TODO: Move to a more general file like common.py
 # Themes for colouring plots:
 themes = {"beige":{"dark_hue":"#efe8e2", "light_hue":"#f8f5f2"}}
 
 
-def load_plot_theme(p, theme):
+# TODO: Move to a more general file like common.py
+def load_plot_theme(p, theme, has_legend=False):
     
     """
     Load theme colours into a Bokeh plotting object. 
@@ -696,9 +698,10 @@ def load_plot_theme(p, theme):
     p.ygrid.grid_line_color = dark_hue
     p.background_fill_color = light_hue 
 
-    # # TODO: How to handle legends?! Not all plots have them, although it's an 
-    # # attribute of every Bokeh plotting object.  
-    # p.legend.background_fill_color = light_hue
+    if has_legend is True:
+        p.legend.background_fill_color = light_hue
+    else:
+        pass
 
     return p
 
@@ -804,8 +807,7 @@ def plot_filtered(df, val_cols, time_col,
         p.yaxis.axis_label_text_font_size = "12pt"
         p.yaxis.axis_label_text_font_size = "12pt"
         p.xaxis.axis_label_text_font_size = "12pt"
-        p.legend.background_fill_color = "#f8f5f2"
-        load_plot_theme(p, theme="beige") 
+        load_plot_theme(p, theme="beige", has_legend=True) 
 
         # Output:
         if save_path_to is not None:
@@ -1083,8 +1085,7 @@ def plot_histograms(df, cols=None, labels=None,
         
         p.legend.location = "top_right"
         p.legend.title = "ID"
-        p.legend.background_fill_color = "#f8f5f2"
-        load_plot_theme(p, theme="beige")
+        load_plot_theme(p, theme="beige", has_legend=True)
         p.title.text = f" with aggregate {cutoff_percentile}% mark"
         p.xaxis.axis_label = labels[i]
         p.xaxis.axis_label_text_font_size = "12pt"
@@ -1193,8 +1194,7 @@ def plot_ecdfs(df, cols=None, labels=None,
         
         p.legend.location = 'top_right'
         p.legend.title = "ID"
-        p.legend.background_fill_color = "#f8f5f2"
-        load_plot_theme(p, theme="beige")
+        load_plot_theme(p, theme="beige", has_legend=True)
         p.title.text = f" with aggregate {cutoff_percentile}% mark"
         p.xaxis.axis_label = labels[i]
         p.xaxis.axis_label_text_font_size = "12pt"
