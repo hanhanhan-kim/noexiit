@@ -443,6 +443,42 @@ def curate_by_date_animal(df, included):
     return(concat_curated_df, n_animals)
 
 
+def process_dats(basepath, group_members, 
+                 ball_radius, acq_mode, do_confirm, 
+                 cols_to_filter, order, cutoff_freq): 
+    
+    """
+    Process a group of `.dat`s. Reads and parses `.dat`s, adds metadata 
+    from corresponding paths, filters specified columns, concatenates 
+    dataframes, and regenerates IDs.
+
+    Parameters:
+    -----------
+    basepath
+    group_members
+    ball_radius
+    acq_mode
+    do_confirm
+    cols_to_filter: A list of columns to filter
+
+    Returns:
+    --------
+    A single concatenated dataframe.        
+    """
+
+    paths = search_for_paths(basepath, group_members)
+    dfs = parse_dats_by_group(basepath, group_members, ball_radius, acq_mode, do_confirm)
+    dfs = add_metadata_to_dfs(paths, dfs)
+    # If the first row of a column to be filtered is NaN, all subsequent rows are NaNs:
+    dfs = [df.dropna() for df in dfs]
+    dfs = [filter(df, cols_to_filter, order, cutoff_freq) for df in dfs]
+    # Filtering results in NaNs in the first row of each dataframe:
+    dfs = [df.dropna() for df in dfs] 
+    df = regenerate_IDs(pd.concat(dfs))
+
+    return df
+
+
 def plot_fft(df, val_cols, time_col, 
              is_evenly_sampled=False, window=np.hanning, pad=1, 
              cutoff_freq=None, 
