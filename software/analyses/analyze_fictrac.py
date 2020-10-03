@@ -576,17 +576,11 @@ def plot_fft(df, val_cols, time_col,
         p1.title.text = f"power spectrum of {val_labels[i]}"
         p1.title.text_font_size = "16pt"
         p1.yaxis.axis_label_text_font_size = "12pt"
-        p1.border_fill_color = "#f8f5f2"
-        p1.xgrid.grid_line_color = "#efe8e2"
-        p1.ygrid.grid_line_color = "#efe8e2"
-        p1.background_fill_color = "#f8f5f2"
+        load_plot_theme(p1, theme="beige")
 
         p2.yaxis.axis_label_text_font_size = "12pt"
         p2.xaxis.axis_label_text_font_size = "12pt"
-        p2.border_fill_color = "#f8f5f2"
-        p2.xgrid.grid_line_color = "#efe8e2"
-        p2.ygrid.grid_line_color = "#efe8e2"
-        p2.background_fill_color = "#f8f5f2"
+        load_plot_theme(p2, theme="beige")
 
         if cutoff_freq is not None:
             float(cutoff_freq)
@@ -670,6 +664,43 @@ def filter(df, val_cols, order, cutoff_freq, framerate=None):
     df_with_filtered = pd.concat([df, filtered_df], axis=1)
 
     return df_with_filtered
+
+
+# Themes for colouring plots:
+themes = {"beige":{"dark_hue":"#efe8e2", "light_hue":"#f8f5f2"}}
+
+
+def load_plot_theme(p, theme):
+    
+    """
+    Load theme colours into a Bokeh plotting object. 
+
+    Parameters:
+    -----------
+    p: A Bokeh plotting object
+    
+    Returns:
+    --------
+    p with assigned plotting attributes
+    """
+    
+    assert (theme in themes), f"{theme} is not a valid key in `themes`"
+        
+    theme_colours = themes[theme]
+        
+    dark_hue = theme_colours["dark_hue"]
+    light_hue = theme_colours["light_hue"]
+
+    p.border_fill_color = light_hue
+    p.xgrid.grid_line_color = dark_hue
+    p.ygrid.grid_line_color = dark_hue
+    p.background_fill_color = light_hue 
+
+    # # TODO: How to handle legends?! Not all plots have them, although it's an 
+    # # attribute of every Bokeh plotting object.  
+    # p.legend.background_fill_color = light_hue
+
+    return p
 
 
 def plot_filtered(df, val_cols, time_col, 
@@ -774,10 +805,7 @@ def plot_filtered(df, val_cols, time_col,
         p.yaxis.axis_label_text_font_size = "12pt"
         p.xaxis.axis_label_text_font_size = "12pt"
         p.legend.background_fill_color = "#f8f5f2"
-        p.border_fill_color = "#f8f5f2"
-        p.xgrid.grid_line_color = "#efe8e2"
-        p.ygrid.grid_line_color = "#efe8e2"
-        p.background_fill_color = "#f8f5f2" 
+        load_plot_theme(p, theme="beige") 
 
         # Output:
         if save_path_to is not None:
@@ -868,14 +896,10 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
     if save_path_to is None: will not save plots.
     """
 
-    assert (low >= 0), \
-        f"The low end of the colour map range must be non-negative"
-    assert ("X_mm" in df), \
-        f"The column, 'X_mm', is not in the input dataframe."
-    assert ("Y_mm" in df), \
-        f"The column, 'Y_mm', is not in the input dataframe."
-    assert ("ID" in df), \
-            f"The column 'ID' is not in in the input dataframe."
+    assert (low >= 0), "The low end of the colour map range must be non-negative"
+    assert ("X_mm" in df), "The column, 'X_mm', is not in the input dataframe."
+    assert ("Y_mm" in df), "The column, 'Y_mm', is not in the input dataframe."
+    assert ("ID" in df), "The column 'ID' is not in in the input dataframe."
   
     # Format axes labels:
     if cmap_labels is None:
@@ -936,10 +960,7 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
         p.title.text_font_size = "14pt"
         p.xaxis.axis_label_text_font_size = '10pt'
         p.yaxis.axis_label_text_font_size = '10pt'
-        p.border_fill_color = "#f8f5f2"
-        p.xgrid.grid_line_color = "#efe8e2"
-        p.ygrid.grid_line_color = "#efe8e2"
-        p.background_fill_color = "#f8f5f2"
+        load_plot_theme(p, theme="beige")
 
         # Output:
         if save_path_to is not None:
@@ -1021,6 +1042,7 @@ def plot_histograms(df, cols=None, labels=None,
     assert ("ID" in df), \
             f"The column 'ID' is not in in the input dataframe."
     
+    # TODO: Refactor from here ------------------------------------------------
     all_cols = list(df.columns)
     
     banned_cols = []
@@ -1041,7 +1063,8 @@ def plot_histograms(df, cols=None, labels=None,
     
     if labels is None:
         labels = [col.replace("_", " ") for col in cols] 
-    
+    # TODO:-------------------------------------------------------------- to here
+
     plots = []
     for i, col in enumerate(cols):
         p = iqplot.histogram(data=df,
@@ -1061,10 +1084,7 @@ def plot_histograms(df, cols=None, labels=None,
         p.legend.location = "top_right"
         p.legend.title = "ID"
         p.legend.background_fill_color = "#f8f5f2"
-        p.border_fill_color = "#f8f5f2"
-        p.xgrid.grid_line_color = "#efe8e2"
-        p.ygrid.grid_line_color = "#efe8e2"
-        p.background_fill_color = "#f8f5f2"
+        load_plot_theme(p, theme="beige")
         p.title.text = f" with aggregate {cutoff_percentile}% mark"
         p.xaxis.axis_label = labels[i]
         p.xaxis.axis_label_text_font_size = "12pt"
@@ -1133,6 +1153,7 @@ def plot_ecdfs(df, cols=None, labels=None,
     assert ("ID" in df), \
             f"The column 'ID' is not in in the input dataframe."
     
+    # TODO: Refactor from here ------------------------------------------------
     all_cols = list(df.columns)
 
     banned_cols = []
@@ -1153,7 +1174,8 @@ def plot_ecdfs(df, cols=None, labels=None,
     
     if labels is None:
         labels = [col.replace("_", " ") for col in cols] 
-    
+    # TODO:-------------------------------------------------------------- to here
+
     plots = []
     for i, col in enumerate(cols):
         p = iqplot.ecdf(data=df,
@@ -1172,10 +1194,7 @@ def plot_ecdfs(df, cols=None, labels=None,
         p.legend.location = 'top_right'
         p.legend.title = "ID"
         p.legend.background_fill_color = "#f8f5f2"
-        p.border_fill_color = "#f8f5f2"
-        p.xgrid.grid_line_color = "#efe8e2"
-        p.ygrid.grid_line_color = "#efe8e2"
-        p.background_fill_color = "#f8f5f2"
+        load_plot_theme(p, theme="beige")
         p.title.text = f" with aggregate {cutoff_percentile}% mark"
         p.xaxis.axis_label = labels[i]
         p.xaxis.axis_label_text_font_size = "12pt"
