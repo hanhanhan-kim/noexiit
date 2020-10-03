@@ -74,8 +74,8 @@ def parse_dats(root, ball_radius, acq_mode, do_confirm=True):
 
     """
     Batch processes subdirectories, where each subdirectory is labelled 'fictrac'
-    and has a single FicTrac .dat file and a corresponding .log file. Returns a 
-    single concatenated dataframe. 
+    and MUST have a single FicTrac .dat file and a corresponding .log file. 
+    Returns a single concatenated dataframe. 
     
     The output dataframe is given proper headings, as informed by 
     the documentation on rjdmoore's FicTrac GitHub page. 
@@ -281,6 +281,62 @@ def read_csv_and_add_metadata(paths):
     return(dfs)
 
 
+def search_for_paths(basepath, group_members, glob_ending="*/fictrac"):
+
+    """
+    Search with a list of subdirectories, to get a list of paths, 
+    where each path ends in `glob_ending`. 
+
+    Parameters:
+    -----------
+    basepath: Longest common path shared by each glob search return. 
+    group_members: List of group members. Each element must be a substring
+        in the path to the `glob_ending` result. 
+    glob_ending: A Unix-style path ending. Supports '*' wildcards. 
+
+    Returns:
+    --------
+    A list of paths
+    """
+
+    # TODO: Fix--currently assumes that group_member IMMEDIATELY follows basepath, 
+    # as seen in the join() below. Need to make it more general. 
+    
+    new_paths = [str(path.absolute()) 
+                for group_member in group_members 
+                for path in Path(join(basepath, group_member)).rglob(glob_ending)]
+    
+    return sorted(new_paths)
+
+
+def parse_dats_by_group(basepath, group_members, 
+                        ball_radius, acq_mode, do_confirm):
+    
+    """
+    Parse `.dat` files by a group of manually specified group members. 
+    Wraps the `parse_dats()` function.
+
+    Parameters:
+    -----------
+    basepath: Longest common path shared by each element in `group_members`. 
+    group_members: List of group members. Each element must be a substring 
+        in the path to the FicTrac `.dat` file. 
+
+    Returns:
+    --------
+    A list of dataframes
+    """
+
+    # assert ("ID" in df), \
+    #     "The dataframe must have a column called `ID`"
+    # TODO: Checks sorting
+
+    paths = search_for_paths(basepath, group_members)
+    dfs = flatten_list([parse_dats(path, ball_radius, acq_mode, do_confirm) for path in paths])
+    
+    return dfs
+
+
 def add_metadata_to_dfs(paths, dfs):
 
     """
@@ -297,7 +353,9 @@ def add_metadata_to_dfs(paths, dfs):
     ---------
     A list of dataframes
     """
-    
+
+    # TODO: How to add a check for "date -> animal -> trial -> .dat" structure? 
+
     common_path = commonpath(paths)
     
     dfs_with_metadata = []
@@ -320,79 +378,32 @@ def add_metadata_to_dfs(paths, dfs):
     return(dfs_with_metadata)
 
 
-def regenerate_IDs (df):
+def regenerate_IDs(df, group_by=["date", "animal", "trial"]):
 
     """
-    Regenerate unique animal IDs. Useful for when a previous function sets IDs according to 
+    Regenerate unique animal IDs according to some groupby criteria. 
+    Useful for when a previous function sets IDs according to 
     some intermediate groupby structure. 
     
     Parameters:
     ------------
     df: dataframe
+    group_by: a list of columns in `df` with which to perform the groupby
     
     Returns:
     ---------
     A dataframe
     """
 
-    # TODO: check that ID, date, animal, and trial columsn are in the dataframe
+    # TODO: Check that elements of group_by are columns in the dataframe
     
     df = df.drop(columns=["ID"])
 
     # Assign unique group IDs:
-    df["ID"] = (df.groupby(["date", "animal", "trial"]).cumcount()==0).astype(int)
+    df["ID"] = (df.groupby(group_by).cumcount()==0).astype(int)
     df["ID"] = df["ID"].cumsum()
     
     return df
-
-
-def search_for_paths(basepath, search_dates):
-
-    """
-    """
-
-    # TODO: Fix--currently assumes that search_date immediately follows basepath, 
-    # as seen in the join() below. Need to make it more general. 
-    
-    new_paths = [str(path.absolute()) 
-                for search_date in search_dates 
-                for path in Path(join(basepath, search_date)).rglob("*/fictrac")]
-    
-    return new_paths
-
-
-# def parse_dat_by_group(basepath, group_members, 
-#                        nesting, ball_radius, acq_mode, do_confirm):
-    
-#     """
-#     Parse `.dat` files by a group of manually specified group members. 
-#     Wraps the `parse_dats()` function.
-
-#     Parameters:
-#     -----------
-#     basepath: Common path shared by each element in `group_members`. 
-#     group_members: List of group members. Each element must be a substring 
-#         in the path to the FicTrac `.dat` file. 
-
-#     Returns:
-#     --------
-#     A list of dataframes
-#     """
-
-#     # assert ("ID" in df), \
-#     #     "The dataframe must have a column called `ID`"
-
-#     dfs = [parse_dats(join(basepath, group_member), nesting, ball_radius, acq_mode, do_confirm) 
-#            for group_member in group_members] 
-
-#     all_dfs = []
-#     for df in dfs:
-#         new_dfs = unconcat(df) 
-#         all_dfs.extend(new_dfs)
-
-
-    
-#     return dfs
 
 
 def curate_by_date_animal(df, included):
@@ -410,10 +421,8 @@ def curate_by_date_animal(df, included):
     The curated dataframe and the number of animals after curation
     """
 
-    assert ("date" in df), \
-        "The dataframe must have a column called `date`"
-    assert ("animal" in df), \
-        "The dataframe must have a column called `animal`"
+    assert ("date" in df), "The dataframe must have a column called 'date'"
+    assert ("animal" in df), "The dataframe must have a column called 'animal'"
     
     # groupby has 3 keys:
     grouped = df.groupby(["date", "animal", "trial"])
@@ -487,10 +496,8 @@ def plot_fft(df, val_cols, time_col,
             else:
                 exit("Re-run this function with a 'time_col' whose units are secs.")
 
-    assert (time_col in df), \
-        f"The column, {time_col}, is not in the input dataframe."
-    assert ("ID" in df), \
-        f"The column 'ID' is not in in the input dataframe."
+    assert (time_col in df), f"The column, {time_col}, is not in the input dataframe."
+    assert ("ID" in df), "The column 'ID' is not in in the input dataframe."
     
     time = list(df[str(time_col)])
 
@@ -630,10 +637,10 @@ def filter(df, val_cols, order, cutoff_freq, framerate=None):
 
 
 def plot_filtered(df, val_cols, time_col, 
-                             order, cutoff_freq,
-                             val_labels=None, time_label=None,
-                             view_perc=100, 
-                             save_path_to=None, show_plots=True):
+                  order, cutoff_freq,
+                  val_labels=None, time_label=None,
+                  view_perc=100, 
+                  save_path_to=None, show_plots=True):
 
     """
     Apply a low-pass Butterworth filter on offline FicTrac data. 
