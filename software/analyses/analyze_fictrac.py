@@ -1021,6 +1021,35 @@ banned_substrings = ["integrat_x_posn",
                      "__"] 
 
 
+def ban_columns_with_substrings(df, substrings=banned_substrings):
+
+    """
+    From a dataframe, return only columns whose names do not contain specified substrings.
+
+    Parameters:
+    -----------
+    df: A dataframe. 
+    substrings: A list of substrings to ban from `df`'s column names.
+
+    Returns:
+    --------
+    A list of all of `df`'s column names that do not contain the substrings listed in `substrings`.
+    """
+    
+    all_cols = list(df.columns)
+    
+    banned_cols = []
+    for col in all_cols:
+        for substring in banned_substrings:
+            if substring in col:
+                banned_cols.append(col)
+                break
+
+    ok_cols = [col for col in all_cols if col not in banned_cols]
+
+    return ok_cols
+
+
 def plot_histograms(df, cols=None, labels=None, 
                     cutoff_percentile=95,
                     theme=None,
@@ -1036,7 +1065,7 @@ def plot_histograms(df, cols=None, labels=None,
     cols (list): List of strings specifying column names in `df`. If None, 
         uses default columns that specify real-world and 'lab' kinematic measurements. 
         See `banned_substrings`. 
-        Otherwise, will use both input arguments and the default columns. Default is None.
+        Otherwise, will use both input arguments AND the default columns. Default is None.
 
     labels (list): List of strings specifying the labels for the histograms' x-axes.
         Its order must correspond to 'cols'. 
@@ -1066,18 +1095,8 @@ def plot_histograms(df, cols=None, labels=None,
     assert ("ID" in df), \
             f"The column 'ID' is not in in the input dataframe."
     
-    # TODO: Refactor from here ------------------------------------------------
-    all_cols = list(df.columns)
-    
-    banned_cols = []
-    for col in all_cols:
-        for substring in banned_substrings:
-            if substring in col:
-                banned_cols.append(col)
-                break
+    ok_cols = ban_columns_with_substrings(df)
 
-    ok_cols = [col for col in all_cols if col not in banned_cols]
-    
     if cols is None:
         cols = ok_cols
     else:
@@ -1087,7 +1106,6 @@ def plot_histograms(df, cols=None, labels=None,
     
     if labels is None:
         labels = [col.replace("_", " ") for col in cols] 
-    # TODO:-------------------------------------------------------------- to here
 
     plots = []
     for i, col in enumerate(cols):
@@ -1150,7 +1168,8 @@ def plot_ecdfs(df, cols=None, labels=None,
 
     cols (list): List of strings specifying column names in 'df'. If None, 
         uses default columns that specify real-world and 'lab' kinematic measurements.
-        Otherwise, will use both input arguments and the default columns. Default is None.
+        See `banned_substrings`
+        Otherwise, will use both input arguments AND the default columns. Default is None.
 
     labels (list): List of strings specifying the labels for the ECDFs' x-axes.
         Its order must correspond to 'cols'. 
@@ -1180,28 +1199,17 @@ def plot_ecdfs(df, cols=None, labels=None,
     assert ("ID" in df), \
             f"The column 'ID' is not in in the input dataframe."
     
-    # TODO: Refactor from here ------------------------------------------------
-    all_cols = list(df.columns)
+    ok_cols = ban_columns_with_substrings(df)
 
-    banned_cols = []
-    for col in all_cols:
-        for substring in banned_substrings:
-            if substring in col:
-                banned_cols.append(col)
-                break
-
-    ok_cols = [col for col in all_cols if col not in banned_cols]
-    
     if cols is None:
         cols = ok_cols
     else:
         cols = ok_cols + cols 
         for col in cols:
-            assert (col in df), f"The column, {col}, is not in the input dataframe"
+            assert (col in df), f"The column, {col}, is not in the input dataframe."
     
     if labels is None:
         labels = [col.replace("_", " ") for col in cols] 
-    # TODO:-------------------------------------------------------------- to here
 
     plots = []
     for i, col in enumerate(cols):
