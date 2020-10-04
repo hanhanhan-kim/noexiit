@@ -479,10 +479,57 @@ def process_dats(basepath, group_members,
     return df
 
 
+# TODO: Move to a more general file like common.py
+# Themes for colouring plots:
+themes = {"beige":{"dark_hue":"#efe8e2", "light_hue":"#f8f5f2"}}
+
+
+# TODO: Move to a more general file like common.py
+def load_plot_theme(p, theme=None, has_legend=False):
+    
+    """
+    Load theme colours into a Bokeh plotting object. 
+
+    Parameters:
+    -----------
+    p: A Bokeh plotting object
+    
+    Returns:
+    --------
+    p with assigned plotting attributes
+    """
+    
+    assert (theme in themes or theme is None), \
+        f"{theme} is neither None nor a valid key in `themes`"
+
+    if theme is not None:
+
+        theme_colours = themes[theme]
+            
+        dark_hue = theme_colours["dark_hue"]
+        light_hue = theme_colours["light_hue"]
+
+        p.border_fill_color = light_hue
+        p.xgrid.grid_line_color = dark_hue
+        p.ygrid.grid_line_color = dark_hue
+        p.background_fill_color = light_hue 
+
+        if has_legend is True:
+            p.legend.background_fill_color = light_hue
+        else:
+            pass
+
+        return p
+    
+    else:
+        pass
+
+
 def plot_fft(df, val_cols, time_col, 
              is_evenly_sampled=False, window=np.hanning, pad=1, 
              cutoff_freq=None, 
              val_labels=None, time_label=None,
+             theme=None,
              save_path_to=None, show_plots=True):  
 
     """
@@ -507,6 +554,9 @@ def plot_fft(df, val_cols, time_col,
         be a formatted version of val_cols. Default is None.
 
     time_label (str): Label for the plot's time-axis.
+
+    theme (str or None): A pre-defined colour theme for plotting. If None,
+        does not apply a theme. Default is None.
 
     save_path_to (str): Absolute path to which to save the plots as .png files. 
         If None, will not save the plots. Default is None. 
@@ -576,11 +626,11 @@ def plot_fft(df, val_cols, time_col,
         p1.title.text = f"power spectrum of {val_labels[i]}"
         p1.title.text_font_size = "16pt"
         p1.yaxis.axis_label_text_font_size = "12pt"
-        load_plot_theme(p1, theme="beige")
+        load_plot_theme(p1, theme=theme)
 
         p2.yaxis.axis_label_text_font_size = "12pt"
         p2.xaxis.axis_label_text_font_size = "12pt"
-        load_plot_theme(p2, theme="beige")
+        load_plot_theme(p2, theme=theme)
 
         if cutoff_freq is not None:
             float(cutoff_freq)
@@ -666,50 +716,11 @@ def filter(df, val_cols, order, cutoff_freq, framerate=None):
     return df_with_filtered
 
 
-# TODO: Move to a more general file like common.py
-# Themes for colouring plots:
-themes = {"beige":{"dark_hue":"#efe8e2", "light_hue":"#f8f5f2"}}
-
-
-# TODO: Move to a more general file like common.py
-def load_plot_theme(p, theme, has_legend=False):
-    
-    """
-    Load theme colours into a Bokeh plotting object. 
-
-    Parameters:
-    -----------
-    p: A Bokeh plotting object
-    
-    Returns:
-    --------
-    p with assigned plotting attributes
-    """
-    
-    assert (theme in themes), f"{theme} is not a valid key in `themes`"
-        
-    theme_colours = themes[theme]
-        
-    dark_hue = theme_colours["dark_hue"]
-    light_hue = theme_colours["light_hue"]
-
-    p.border_fill_color = light_hue
-    p.xgrid.grid_line_color = dark_hue
-    p.ygrid.grid_line_color = dark_hue
-    p.background_fill_color = light_hue 
-
-    if has_legend is True:
-        p.legend.background_fill_color = light_hue
-    else:
-        pass
-
-    return p
-
-
 def plot_filtered(df, val_cols, time_col, 
                   order, cutoff_freq,
                   val_labels=None, time_label=None,
                   view_perc=100, 
+                  theme=None,
                   save_path_to=None, show_plots=True):
 
     """
@@ -735,10 +746,13 @@ def plot_filtered(df, val_cols, time_col,
 
     time_label (str): Label for the plot's time-axis. 
 
-    view_perc (float): Specifies how much of the data to plot as an initial \
-        percentage. Useful for assessing the effectieness of the filter over longer \
-        timecourses. Default is set to 1, i.e. plot the data over the entire \
+    view_perc (float): Specifies how much of the data to plot as an initial 
+        percentage. Useful for assessing the effectieness of the filter over longer 
+        timecourses. Default is set to 1, i.e. plot the data over the entire 
         timecourse. Must be a value between 0 and 1.
+
+    theme (str or None): A pre-defined colour theme for plotting. If None,
+        does not apply a theme. Default is None.
 
     save_path_to (str): Absolute path to which to save the plots as .png and .svg files. 
         If None, will not save the plots. Default is None. 
@@ -807,7 +821,7 @@ def plot_filtered(df, val_cols, time_col,
         p.yaxis.axis_label_text_font_size = "12pt"
         p.yaxis.axis_label_text_font_size = "12pt"
         p.xaxis.axis_label_text_font_size = "12pt"
-        load_plot_theme(p, theme="beige", has_legend=True) 
+        load_plot_theme(p, theme=theme, has_legend=True) 
 
         # Output:
         if save_path_to is not None:
@@ -835,6 +849,7 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
                     cmap_labels=None,
                     order=2, cutoff_freq=4, 
                     palette = cc.CET_L16, size=2.5, alpha=0.3, 
+                    theme=None,
                     show_start=False, 
                     save_path_to=None, show_plots=True):
     
@@ -878,6 +893,9 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
 
     alpha(float): The transparency of each datapoint specifying XY location.
         Must be between 0 and 1.
+
+    theme (str or None): A pre-defined colour theme for plotting. If None,
+        does not apply a theme. Default is None.
 
     show_start (bool): If True, will plot a marking to explicitly denote the start 
         site. Default is False. 
@@ -962,7 +980,7 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
         p.title.text_font_size = "14pt"
         p.xaxis.axis_label_text_font_size = '10pt'
         p.yaxis.axis_label_text_font_size = '10pt'
-        load_plot_theme(p, theme="beige")
+        load_plot_theme(p, theme=theme)
 
         # Output:
         if save_path_to is not None:
@@ -1005,6 +1023,7 @@ banned_substrings = ["integrat_x_posn",
 
 def plot_histograms(df, cols=None, labels=None, 
                     cutoff_percentile=95,
+                    theme=None,
                     save_path_to=None, show_plots=True): 
 
     """
@@ -1024,6 +1043,9 @@ def plot_histograms(df, cols=None, labels=None,
 
     cutoff_percentile (float): Specifies the percentile of the AGGREGATE population data. 
         Plots a line at this value. Default is 95th percentile. 
+
+    theme (str or None): A pre-defined colour theme for plotting. If None,
+        does not apply a theme. Default is None.
         
     save_path_to (str): Absolute path to which to save the plots as .png and .svg files. 
         If None, will not save the plots. Default is None. 
@@ -1085,7 +1107,7 @@ def plot_histograms(df, cols=None, labels=None,
         
         p.legend.location = "top_right"
         p.legend.title = "ID"
-        load_plot_theme(p, theme="beige", has_legend=True)
+        load_plot_theme(p, theme=theme, has_legend=True)
         p.title.text = f" with aggregate {cutoff_percentile}% mark"
         p.xaxis.axis_label = labels[i]
         p.xaxis.axis_label_text_font_size = "12pt"
@@ -1116,6 +1138,7 @@ def plot_histograms(df, cols=None, labels=None,
 
 def plot_ecdfs(df, cols=None, labels=None, 
                cutoff_percentile=95, 
+               theme=None,
                save_path_to=None, show_plots=True):
 
     """
@@ -1134,6 +1157,9 @@ def plot_ecdfs(df, cols=None, labels=None,
 
     cutoff_percentile (float): Specifies the percentile of the AGGREGATE population data. 
         Plots a line at this value. Default is 95th percentile. 
+
+    theme (str or None): A pre-defined colour theme for plotting. If None,
+        does not apply a theme. Default is None.
     
     save_path_to (str): Absolute path to which to save the plots as .png and .svg files. 
         If None, will not save the plots. Default is None. 
@@ -1194,7 +1220,7 @@ def plot_ecdfs(df, cols=None, labels=None,
         
         p.legend.location = 'top_right'
         p.legend.title = "ID"
-        load_plot_theme(p, theme="beige", has_legend=True)
+        load_plot_theme(p, theme=theme, has_legend=True)
         p.title.text = f" with aggregate {cutoff_percentile}% mark"
         p.xaxis.axis_label = labels[i]
         p.xaxis.axis_label_text_font_size = "12pt"

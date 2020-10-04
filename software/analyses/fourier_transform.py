@@ -111,7 +111,6 @@ def bokeh_freq_domain(freq, amp):
     
     # Frequency domain:
     p1 = figure(
-            background_fill_color="#efe8e2",
             title=title,
             width=1000,
             height=500,
@@ -123,7 +122,6 @@ def bokeh_freq_domain(freq, amp):
         color="darkgray"
     )
     p2 = figure(
-            background_fill_color="#efe8e2",
             width=1000,
             height=500,
             x_axis_label="frequency (Hz)",
