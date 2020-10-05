@@ -402,6 +402,7 @@ def regenerate_IDs(df, group_by=["date", "animal", "trial"]):
     # Assign unique group IDs:
     df["ID"] = (df.groupby(group_by).cumcount()==0).astype(int)
     df["ID"] = df["ID"].cumsum()
+    df["ID"] = df["ID"].apply(str)
     
     return df
 
