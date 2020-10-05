@@ -30,7 +30,7 @@ import scipy.signal as sps
 from bokeh.io import output_file, export_png, export_svgs, show
 from bokeh.transform import linear_cmap
 from bokeh.plotting import figure
-from bokeh.models import ColorBar, ColumnDataSource, Span
+from bokeh.models import ColorBar, ColumnDataSource, Span, BoxAnnotation
 from bokeh.layouts import gridplot
 import bokeh.palettes
 import colorcet as cc
@@ -496,7 +496,7 @@ def load_plot_theme(p, theme=None, has_legend=False):
     
     Returns:
     --------
-    p with assigned plotting attributes
+    `p` with coloured attributes. 
     """
     
     assert (theme in themes or theme is None), \
@@ -1092,8 +1092,7 @@ def plot_histograms(df, cols=None, labels=None,
     if save_path_to is None: will not save plots.
     """
 
-    assert ("ID" in df), \
-            f"The column 'ID' is not in in the input dataframe."
+    assert ("ID" in df), "The column 'ID' is not in in the input dataframe."
     
     ok_cols = ban_columns_with_substrings(df)
 
@@ -1196,8 +1195,7 @@ def plot_ecdfs(df, cols=None, labels=None,
     if save_path_to is None: will not save plots.
     """
 
-    assert ("ID" in df), \
-            f"The column 'ID' is not in in the input dataframe."
+    assert ("ID" in df), "The column 'ID' is not in in the input dataframe."
     
     ok_cols = ban_columns_with_substrings(df)
 
@@ -1256,6 +1254,194 @@ def plot_ecdfs(df, cols=None, labels=None,
 
     if show_plots is False:
         return plots
+
+
+def add_stimulus_annotation (p, style,
+                             start, end, top, bottom, 
+                             alpha, level="underlay"):
+
+    """
+    
+    Add a stimulus annotation to a Bokeh plotting object. 
+
+    Parameters:
+    -----------
+    p: A Bokeh plotting object
+    style (str): One of three stimulus annotation styles: 1) "horiz_bar", which
+        is a horizontal bar that denotes the duration of the stimulus, 
+        2) "background_box", which is an underlaid box that denotes the
+        duration of the stimulus, or 3) "double_bars" which is a pair of
+        vertical bars that denote the start and end of the stimulus. 
+    start (fl): Beginning of stimulus presentation in data coordinates.
+    end (fl): End of stimulus presentation in data coordinates.
+    top (fl): Applies only if `style`="horiz_bar". The top of the horizontal bar
+        in data coordinates.
+    bottom (fl): Applies only if `style`="horiz_bar". The bottom of the horizontal
+        bar in data coordinates. 
+    alpha (fl): The transparency of the stimulus annotation. Must be between 
+        0 and 1. 
+    level (str): The display level of the stimulus annotation, relative to the plot. 
+        Default is "underlay". If `style`="background_box", can only be "underlay".
+    
+    Returns:
+    --------
+    `p` with stimulus annotation. 
+
+    """
+
+    # TODO: Add None option to pass default colours, which an be overriden by arg
+
+    assert (style == "horiz_bar" or "background_box" or "double_bars"), \
+        f"{style} is not a valid entry for `style`. Please input either \
+        'horiz_bar', 'background_box', or 'double_bars'."
+
+    if style == "horiz_bar":
+        bar = BoxAnnotation(left=start, 
+                            right=end, 
+                            top=top,
+                            bottom=bottom,
+                            fill_alpha=alpha, 
+                            fill_color="#787878", 
+                            level=level)
+        p.add_layout(bar)
+
+    elif style == "background_box":
+        box = BoxAnnotation(left=start, 
+                            right=end, 
+                            fill_alpha=alpha, 
+                            fill_color="#B6A290", 
+                            level="underlay")
+        p.add_layout(box)
+
+    elif style == "double_bars":
+        line_colour = "#775a42"
+        start_line = Span(location=start, 
+                          dimension="height", 
+                          line_color=line_colour,
+                          line_dash="dotted",
+                          line_width=2) 
+        end_line = Span(location=end, 
+                        dimension="height",
+                        line_color=line_colour,
+                        line_dash="dotted",
+                        line_width=2)
+        p.add_layout(start_line)
+        p.add_layout(end_line) 
+
+    else:
+        print()
+
+    return p
+
+
+def aggregate_trace(df, group_by, method="mean", round=0):
+    
+    """
+    From a dataframe with time series data, round the data, do a groupby,
+    compute either the mean or the median, then reset the index. 
+
+    Parameters:
+    ------------
+    df: A Pandas dataframe.
+    group_by: A list of columns in `df` with which to perform the groupby. 
+    method: The method by which to aggregate the data. Must be either 
+        "mean" or "median". Is "mean" by default. 
+    round: The place value with which to round the data. 
+
+    Return:
+    -------
+    A dataframe of aggregate statistics. 
+    """
+
+    assert (method=="mean" or method=="median"), \
+        "The aggregation `method` must be 'mean' or 'median'."
+    
+    rounded = df.round(round)
+    grouped = rounded.groupby(group_by) 
+
+    if method=="mean":
+        mean_df = grouped.mean().reset_index()
+        return mean_df
+
+    elif method=="median":
+        median_df = grouped.median().reset_index()
+        return median_df
+
+
+def plot_aggregate_trace(df, group_by, val_col, time_col, 
+                         val_label, time_label, 
+                         palette, 
+                         aggregation_method="mean", 
+                         y_range=None,
+                         legend_labels=None, theme=None,
+                         mean_alpha=0.7, id_alpha=0.008, 
+                         line_width=5, round=0):
+
+    """
+    
+    # TODO: ADD DOCS
+    * N.B. Will ALWAYS make a legend. 
+    
+    """
+
+    assert ("ID" in df), "The column 'ID' is not in in the input dataframe."
+    assert ("trial" in df), "The column 'trial' is not in in the input dataframe."
+
+    # TODO: Add None option for args for val_label and time_label
+    # TODO: Add show option and save option
+
+    p = figure(width=1000,
+               height=400,
+               y_range=y_range,
+               x_axis_label=time_label,
+               y_axis_label=val_label)
+    
+    grouped = df.groupby(group_by)
+
+    for i, ((name,group), hue) in enumerate(zip(grouped, palette)):
+
+        # Make dataframes:
+        agg_df = aggregate_trace(group, 
+                                 ["trial", time_col], 
+                                 method=aggregation_method, 
+                                 round=round) 
+        grouped_by_id = group.groupby(["ID"]) 
+
+        assert len(palette)==len(grouped), \
+            f"The lengths of `palette`, and `df.groupby({grouped})` must be equal."
+        
+        if legend_labels==None:
+            legend_label = f"{name} | n={len(grouped_by_id)}"
+        else:
+            assert len(grouped)==len(legend_labels), \
+                f"The lengths of `legend_labels`, `palette`, `df.groupby({grouped})` \
+                must be equal."
+            legend_label =  legend_labels[i]
+
+        # Mean trace:
+        p.line(x=agg_df[time_col], y=agg_df[val_col], 
+               legend_label=legend_label, 
+               color=hue,
+               line_width=line_width,
+               alpha=mean_alpha)
+
+        # ID traces:
+        for _, id_group in grouped_by_id:
+
+            p.line(x=id_group[time_col], y=id_group[val_col], 
+                   color=hue,
+                   line_width=1, 
+                   alpha=id_alpha, 
+                   legend_label=legend_label,  
+                   level="underlay")
+
+    if theme==None:
+        pass
+    else:
+        load_plot_theme(p, theme=theme, has_legend=True)
+    
+    return p 
+    
 
 
 def main():
