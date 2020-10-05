@@ -1334,7 +1334,7 @@ def add_stimulus_annotation (p, style,
     return p
 
 
-def aggregate_trace(df, group_by, method="mean", round=0):
+def aggregate_trace(df, group_by, method="mean", round_to=0):
     
     """
     From a dataframe with time series data, round the data, do a groupby,
@@ -1346,7 +1346,7 @@ def aggregate_trace(df, group_by, method="mean", round=0):
     group_by: A list of columns in `df` with which to perform the groupby. 
     method: The method by which to aggregate the data. Must be either 
         "mean" or "median". Is "mean" by default. 
-    round: The place value with which to round the data. 
+    round_to: The place value with which to round the data. 
 
     Return:
     -------
@@ -1356,7 +1356,8 @@ def aggregate_trace(df, group_by, method="mean", round=0):
     assert (method=="mean" or method=="median"), \
         "The aggregation `method` must be 'mean' or 'median'."
     
-    rounded = df.round(round)
+    # TODO: Fix rounding to slicing a la np.linspace()
+    rounded = df.round(round_to)
     grouped = rounded.groupby(group_by) 
 
     if method=="mean":
@@ -1375,13 +1376,13 @@ def plot_aggregate_trace(df, group_by, val_col, time_col,
                          y_range=None,
                          legend_labels=None, theme=None,
                          mean_alpha=0.7, id_alpha=0.008, 
-                         line_width=5, round=0):
+                         line_width=5, round_to=0):
 
     """
     
     # TODO: ADD DOCS
     * N.B. Will ALWAYS make a legend. 
-    
+
     """
 
     assert ("ID" in df), "The column 'ID' is not in in the input dataframe."
@@ -1404,7 +1405,7 @@ def plot_aggregate_trace(df, group_by, val_col, time_col,
         agg_df = aggregate_trace(group, 
                                  ["trial", time_col], 
                                  method=aggregation_method, 
-                                 round=round) 
+                                 round_to=round_to) 
         grouped_by_id = group.groupby(["ID"]) 
 
         assert len(palette)==len(grouped), \
