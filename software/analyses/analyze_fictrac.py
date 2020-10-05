@@ -281,6 +281,7 @@ def read_csv_and_add_metadata(paths):
     return(dfs)
 
 
+# TODO: Move this fxn to something like common.py:
 def search_for_paths(basepath, group_members, glob_ending="*/fictrac"):
 
     """
@@ -340,14 +341,14 @@ def parse_dats_by_group(basepath, group_members,
 def add_metadata_to_dfs(paths, dfs):
 
     """
-    Adds metadata from each file's path to the FicTrac dataframe. Assumes that there exists 
+    Adds metadata from each file's path to the dataframe. Assumes that there exists 
     somewhere in the path, a directory structure that goes 'date -> animal -> trial', where
-    'trial' holds the `.dat` data. 
+    'trial' holds the data, e.g. `.dat` or `.csv`. 
     
     Parameters:
     -------------
     paths: list of paths
-    dfs: list of FicTrac dataframes
+    dfs: list of dataframes
 
     Returns:
     ---------
@@ -396,8 +397,6 @@ def regenerate_IDs(df, group_by=["date", "animal", "trial"]):
     """
 
     # TODO: Check that elements of group_by are columns in the dataframe
-    
-    df = df.drop(columns=["ID"])
 
     # Assign unique group IDs:
     df["ID"] = (df.groupby(group_by).cumcount()==0).astype(int)
