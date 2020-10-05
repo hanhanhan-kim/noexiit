@@ -24,7 +24,7 @@ from bokeh.layouts import gridplot
 import bokeh.palettes 
 import colorcet as cc
 
-from analyze_fictrac import unconcat_df
+from analyze_fictrac import unconcat
 
 
 def get_smaller_last_val(df_1, df_2, common_col):
