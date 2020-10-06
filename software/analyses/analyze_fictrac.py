@@ -193,7 +193,7 @@ def parse_dats(root, ball_radius, acq_mode, do_confirm=True):
     return dfs
 
 
-# TODO: Move this fxn to something like utilities.py or common.py
+# TODO: Move to a more general file:
 def unconcat(concat_df, col_name="ID"):
 
     """
@@ -223,7 +223,7 @@ def unconcat(concat_df, col_name="ID"):
     return(dfs_by_ID)
 
 
-# TODO: Move this fxn to something like utilities.py or common.py
+# TODO: Move to a more general file:
 def flatten_list(list_of_lists):
     
     """
@@ -244,7 +244,7 @@ def flatten_list(list_of_lists):
     return flat_list
 
 
-# TODO: Move this fxn to something like common.py
+# TODO: Move to a more general file:
 def read_csv_and_add_metadata(paths):
 
     """
@@ -281,7 +281,7 @@ def read_csv_and_add_metadata(paths):
     return(dfs)
 
 
-# TODO: Move this fxn to something like common.py:
+# TODO: Move this to a more general file:
 def search_for_paths(basepath, group_members, glob_ending="*/fictrac"):
 
     """
@@ -338,6 +338,7 @@ def parse_dats_by_group(basepath, group_members,
     return flatten_list(dfs)
 
 
+# TODO: Move to a more general file:
 def add_metadata_to_dfs(paths, dfs):
 
     """
@@ -379,6 +380,7 @@ def add_metadata_to_dfs(paths, dfs):
     return(dfs_with_metadata)
 
 
+# TODO: Move to a more general file:
 def regenerate_IDs(df, group_by=["date", "animal", "trial"]):
 
     """
@@ -406,6 +408,7 @@ def regenerate_IDs(df, group_by=["date", "animal", "trial"]):
     return df
 
 
+# TODO: Move to a more general file:
 def curate_by_date_animal(df, included):
 
     """
@@ -479,12 +482,99 @@ def process_dats(basepath, group_members,
     return df
 
 
-# TODO: Move to a more general file like common.py
+# TODO: Move to a more general file:
+def baseline_subtract(df, baseline_end, time_col, val_col):
+    
+    # TODO: Update val_col to val_cols for multiple vals:
+    
+    """
+    Computes a mean baseline value for a column in the dataframe 
+    and subtracts that value from the data.
+    
+    Parameters:
+    -----------
+    df: A dataframe
+    baseline_end (fl): The time at which the baseline period ends.
+    time_col:  
+    val_col:
+    
+    Returns:
+    --------
+    A dataframe
+    """
+    
+    # Compute a mean value as the baseline:
+    baseline = np.mean(df.loc[df[time_col] < baseline_end][val_col])
+
+    # Subtract baseline from val_col:
+    df[val_col] = df[val_col] - baseline
+    
+    return df
+
+
+# TODO: Move to a more general file:
+def compute_z_from_subseries(series, subseries):
+    
+    """
+    From timeseries data, compute the z-score based on a mu and sigma 
+    that are derived from a subset of the timeseries (a subseries), 
+    e.g. from a pre-stimulus period. 
+
+    Parameters:
+    -----------
+    
+    
+    Returns:
+    --------
+    A z-score for each datapoint in the entire timeseries.
+    """
+    
+    mu = np.mean(subseries)
+    sigma = np.std(subseries) 
+    
+    return ([(val - mu) / sigma for val in series])
+
+
+# TODO: Move to a more general file:
+def compute_z_from_subdf(df, val_col, time_col, 
+                         subseries_end, subseries_start=0):
+    """
+    From a timeseries dataframe, compute the z-score based on a mu 
+    and sigma that are derived from a subset of the timeseries (a 
+    sub-dataframe), e.g. from a pre-stimulus period. 
+
+    Parameters:
+    -----------
+
+    
+    Returns:
+    --------
+    A z-score for each datapoint in the entire timeseries dataframe.
+    """
+    
+    # Separate out the features:
+    x = df[val_col]
+
+    # Standardize the features:
+    start = df[time_col] > subseries_start
+    end = df[time_col] < subseries_end
+    
+    x_sub = df.loc[start & end][val_col]
+    x = compute_z_from_subseries(x, x_sub)
+
+    # Add the feature back to the dataframe:
+    # TODO: Remove (sth) before adding (z-score)
+    df[f"{val_col} (z-score)"] = x
+    
+    return df
+
+
+# TODO: Move to a more general file:
 # Themes for colouring plots:
 themes = {"beige":{"dark_hue":"#efe8e2", "light_hue":"#f8f5f2"}}
 
 
-# TODO: Move to a more general file like common.py
+# TODO: Move to a more general file:
 def load_plot_theme(p, theme=None, has_legend=False):
     
     """
@@ -663,6 +753,7 @@ def plot_fft(df, val_cols, time_col,
         return plots
 
 
+# TODO: Move to a more general file:
 def filter(df, val_cols, order, cutoff_freq, framerate=None):
 
     """
@@ -1021,6 +1112,7 @@ banned_substrings = ["integrat_x_posn",
                      "__"] 
 
 
+# TODO: Move to a more general file:
 def ban_columns_with_substrings(df, substrings=banned_substrings):
 
     """
@@ -1335,6 +1427,7 @@ def add_stimulus_annotation (p, style,
     return p
 
 
+# TODO: Move to a more general file:
 def aggregate_trace(df, group_by, method="mean", round_to=0, f_steps=1):
     
     """
