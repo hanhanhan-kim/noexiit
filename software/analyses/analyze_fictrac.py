@@ -574,8 +574,8 @@ def plot_fft(df, val_cols, time_col,
     if save_path_to is None: will not save plots.
     """
     
-    if ("sec" or "secs") not in time_col:
-        safe_secs = input(f"The substrings 'sec' or 'secs' was not detected in the 'time_col' variable, {time_col}. The units of the values in {time_col} MUST be in seconds. If the units are in seconds, please input 'y'. Otherwise input anything else to exit.")
+    if not ('sec' in time_col or '(s)' in time_col):
+        safe_secs = input(f"The substrings 'sec' or '(s)' was not detected in the 'time_col' variable, {time_col}. The units of the values in {time_col} MUST be in seconds. If the units are in seconds, please input 'y'. Otherwise input anything else to exit.")
         while True:
             if safe_secs.lower() == "y":
                 break
