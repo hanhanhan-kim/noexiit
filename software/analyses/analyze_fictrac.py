@@ -48,7 +48,7 @@ def get_datetime_from_logs(log, acq_mode="online"):
     Extract 't_sys' (ms) from the FicTrac .log files. 
     """
 
-    assert (acq_mode is "online"), \
+    assert (acq_mode == "online"), \
         "This function applies only to FicTrac data acquired in real-time"
     with open (log, "r") as f:
 
@@ -104,10 +104,10 @@ def parse_dats(root, ball_radius, acq_mode, do_confirm=True):
     A list of dataframes. 
     """
 
-    assert acq_mode is "offline" or "online", \
+    assert acq_mode == "offline" or "online", \
         "Please provide a valid acquisition mode: either 'offline' or 'online'."
 
-    if do_confirm is True:
+    if do_confirm == True:
         confirm = input(f"The ball_radius argument must be in mm. Confirm by inputting 'y'. Otherwise, hit any other key to quit.")
         while True:
             if confirm.lower() == "y":
@@ -146,7 +146,7 @@ def parse_dats(root, ball_radius, acq_mode, do_confirm=True):
                 "delta_timestamp",
                 "alt_timestamp" ]
 
-    if acq_mode is "online":
+    if acq_mode == "online":
         datetimes_from_logs = [get_datetime_from_logs(log) for log in logs]
 
     dfs = []
@@ -163,13 +163,13 @@ def parse_dats(root, ball_radius, acq_mode, do_confirm=True):
         df['seq_cntr'] = df['seq_cntr'].astype(int)
         
         # Compute times and framerate:         
-        if acq_mode is "online":
+        if acq_mode == "online":
             df["datetime"] = datetimes_from_logs[i]
             df["elapsed"] = df["datetime"][1:] - df["datetime"][0]
             df["secs_elapsed"] = df.elapsed.dt.total_seconds()
             df["framerate_hz"] = 1 / df["datetime"].diff().dt.total_seconds() 
 
-        if acq_mode is "offline":
+        if acq_mode == "offline":
             # Timestamp from offline acq seems to just be elapsed ms:
             df["secs_elapsed"] = df["timestamp"] / 1000
             df["framerate_hz"] = 1 / df["secs_elapsed"].diff()
@@ -514,7 +514,7 @@ def load_plot_theme(p, theme=None, has_legend=False):
         p.ygrid.grid_line_color = dark_hue
         p.background_fill_color = light_hue 
 
-        if has_legend is True:
+        if has_legend == True:
             p.legend.background_fill_color = light_hue
         else:
             pass
@@ -588,9 +588,9 @@ def plot_fft(df, val_cols, time_col,
     time = list(df[str(time_col)])
 
     # Format axes labels:
-    if time_label is None:
+    if time_label == None:
         time_label = time_col.replace("_", " ")
-    if val_labels is None:
+    if val_labels == None:
         val_labels = [val_col.replace("_", " ") for val_col in val_cols]
 
     plots = []
@@ -606,7 +606,7 @@ def plot_fft(df, val_cols, time_col,
         # Fourier-transform:
         f = spi.interp1d(time, val)
 
-        if is_evenly_sampled is False:
+        if is_evenly_sampled == False:
             time_interp = np.linspace(time[1], time[-1], len(time))
             val_interp = f(time_interp)
         else:
@@ -653,13 +653,13 @@ def plot_fft(df, val_cols, time_col,
             output_file(filename = filename + ".html", 
                         title=f"fictrac_freqs")
 
-        if show_plots is True:
+        if show_plots == True:
             show(p)
 
         # In case show_plots is False:
         plots.append(p)
 
-    if show_plots is False:
+    if show_plots == False:
         return plots
 
 
@@ -689,7 +689,7 @@ def filter(df, val_cols, order, cutoff_freq, framerate=None):
     Filtered columns are denoted with a "filtered_" prefix.
     """
         
-    if framerate is None:
+    if framerate == None:
         framerate = np.mean(df["framerate_hz"]) 
     
     all_filtered_vals = []
@@ -776,9 +776,9 @@ def plot_filtered(df, val_cols, time_col,
         "At least one column in the dataframe must begin with 'filtered_'"
     
     # Format axes labels:
-    if time_label is None:
+    if time_label == None:
         time_label = time_col.replace("_", " ")
-    if val_labels is None:
+    if val_labels == None:
         val_labels = [val_col.replace("_", " ") for val_col in val_cols]
     
     # View the first _% of the data:
@@ -832,7 +832,7 @@ def plot_filtered(df, val_cols, time_col,
             output_file(filename=filename + ".html", 
                         title=filename)
             
-        if show_plots is True:
+        if show_plots == True:
             # In case this script is run in Jupyter, change output_backend 
             # back to "canvas" for faster performance:
             p.output_backend = "canvas"
@@ -841,7 +841,7 @@ def plot_filtered(df, val_cols, time_col,
         # In case show_plots is False:
         plots.append(p)
 
-    if show_plots is False:
+    if show_plots == False:
         return plots
 
 
@@ -922,7 +922,7 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
     assert ("ID" in df), "The column 'ID' is not in in the input dataframe."
   
     # Format axes labels:
-    if cmap_labels is None:
+    if cmap_labels == None:
         cmap_labels = [cmap_col.replace("_", " ") for cmap_col in cmap_cols]
 
     plots = []
@@ -933,10 +933,10 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
         assert (len(df["X_mm"] == len(df["Y_mm"]))), \
             "X_mm and Y_mm are different lengths! They must be the same."
 
-        if respective is False:
+        if respective == False:
             # Normalize colourmap range to population:
             high = np.percentile(df[cmap_col], high_percentile)
-        elif respective is True:
+        elif respective == True:
             # Individual animal sets its own colourmap range:
             high = np.percentile(df[cmap_col], high_percentile)
         
@@ -959,7 +959,7 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
                     size=size,
                     alpha=alpha)
         
-        if show_start is True:
+        if show_start == True:
             # Other options include .cross, .circle_x, and .hex:
             p.circle(x=df["X_mm"][0], 
                         y=df["Y_mm"][0], 
@@ -991,7 +991,7 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
             output_file(filename=filename + ".html", 
                         title=filename)
             
-        if show_plots is True:
+        if show_plots == True:
             # In case this script is run in Jupyter, change output_backend 
             # back to "canvas" for faster performance:
             p.output_backend = "canvas"
@@ -1000,7 +1000,7 @@ def plot_trajectory(df, cmap_cols, low=0, high_percentile=95, respective=False,
         # In case show_plots is False:
         plots.append(p)
 
-    if show_plots is False:
+    if show_plots == False:
         return plots
 
 
@@ -1096,14 +1096,14 @@ def plot_histograms(df, cols=None, labels=None,
     
     ok_cols = ban_columns_with_substrings(df)
 
-    if cols is None:
+    if cols == None:
         cols = ok_cols
     else:
         cols = ok_cols + cols 
         for col in cols:
             assert (col in df), f"The column, {col}, is not in the input dataframe."
     
-    if labels is None:
+    if labels == None:
         labels = [col.replace("_", " ") for col in cols] 
 
     plots = []
@@ -1140,7 +1140,7 @@ def plot_histograms(df, cols=None, labels=None,
             output_file(filename=filename + ".html", 
                         title=filename)
         
-        if show_plots is True:
+        if show_plots == True:
             # In case this script is run in Jupyter, change output_backend 
             # back to "canvas" for faster performance:
             p.output_backend = "canvas"
@@ -1149,7 +1149,7 @@ def plot_histograms(df, cols=None, labels=None,
         # In case show_plots is False:
         plots.append(p)
 
-    if show_plots is False:
+    if show_plots == False:
         return plots
 
 
@@ -1199,14 +1199,14 @@ def plot_ecdfs(df, cols=None, labels=None,
     
     ok_cols = ban_columns_with_substrings(df)
 
-    if cols is None:
+    if cols == None:
         cols = ok_cols
     else:
         cols = ok_cols + cols 
         for col in cols:
             assert (col in df), f"The column, {col}, is not in the input dataframe."
     
-    if labels is None:
+    if labels == None:
         labels = [col.replace("_", " ") for col in cols] 
 
     plots = []
@@ -1243,7 +1243,7 @@ def plot_ecdfs(df, cols=None, labels=None,
             output_file(filename=filename + ".html", 
                         title=filename)
             
-        if show_plots is True:
+        if show_plots == True:
             # In case this script is run in Jupyter, change output_backend 
             # back to "canvas" for faster performance:
             p.output_backend = "canvas"
@@ -1252,7 +1252,7 @@ def plot_ecdfs(df, cols=None, labels=None,
         # In case show_plots is False:
         plots.append(p)
 
-    if show_plots is False:
+    if show_plots == False:
         return plots
 
 
@@ -1290,6 +1290,7 @@ def add_stimulus_annotation (p, style,
     """
 
     # TODO: Add None option to pass default colours, which an be overriden by arg
+    # TODO: "background_box" requires top and bottom as args, even though it doesn't use them; incorporate None
 
     assert (style == "horiz_bar" or "background_box" or "double_bars"), \
         f"{style} is not a valid entry for `style`. Please input either \
@@ -1522,29 +1523,6 @@ def main():
     #     help="If enabled, shows the plots. By default, does not show the plots.")
     # args = parser.parse_args()
 
-    # root = args.root
-    # nesting = args.nesting 
-    # acq_mode = args.acq_mode
-    # # TODO: acq_mode bug; won't accept as argparse arg
-    # acq_mode = "online"
-    # ball_radius = args.ball_radius # mm
-
-    # val_cols = args.val_cols
-    # val_labels = args.val_labels
-    # time_col = args.time_col
-    # time_label = args.time_label
-    # cmap_col = args.cmap_col
-    # cmap_label = args.cmap_label 
-    # cutoff_freq = args.cutoff_freq
-    # framerate = args.framerate 
-    # order = args.order
-    # view_perc = args.view_percent
-    # percentile_max_clamp = args.percentile_max_clamp
-    # alpha_cmap = args.alpha_cmap
-
-    # no_save = args.no_save
-    # show_plots = args.show 
-    
     # TODO: Write docs for script arguments, maybe in a README.md
     # TODO: Don't hardcode .yaml file name, pass it in as an argument instead.
     # TODO: Specify default .yaml values, for key-value pairs that are unspecified:
@@ -1554,10 +1532,8 @@ def main():
         # print(params)
 
     root = params["root"]
-    # nesting = params["nesting"]
     acq_mode = params["acq_mode"]
-    # TODO: FIX! acq_mode requires hardcoding:
-    # acq_mode = params["acq_mode"]
+    acq_mode = params["acq_mode"]
     acq_mode = "offline"
     ball_radius = params["ball_radius"]
 
@@ -1577,8 +1553,7 @@ def main():
     cmap_labels = params["cmap_labels"]
     alpha_cmap = params["alpha_cmap"]
     percentile_max_clamp = params["percentile_max_clamp"]
-    # TODO: FIX! respective requires hardcoding:
-    # respective = params["respective"]
+    respective = params["respective"]
     respective = False
 
     no_save = params["no_save"]
@@ -1601,7 +1576,7 @@ def main():
             rmtree(save_path_to)
         mkdir(save_path_to)
 
-        if no_save is True:
+        if no_save == True:
             save_path_to = None
 
         # Plot FFT power spectrum:
