@@ -216,8 +216,8 @@ def main(stepper):
             # Convert timedelta to elapsed seconds:
             print(f"Elapsed time (s): {time_delta.total_seconds()}     ", 
                   f"Calendar time: {now}     ", 
-                  f"Stepper output (degs): {stepper.get_position()}     ", 
-                  f"Servo output (degs): {stepper.get_servo_angle()}     ",
+                  f"Stepper position (deg): {stepper.get_position()}     ", 
+                  f"Servo position (deg): {stepper.get_servo_angle()}     ",
                   f"PID (V): {sniff()}")
 
         # Join the stepper thread back to the main:
@@ -248,8 +248,8 @@ def main(stepper):
         # Save outputs to a csv:
         df = pd.DataFrame({"Elapsed time (s)": elapsed_times,
                            "Calendar time": cal_times,
-                           "Stepper output (degs)": stepper_posns,
-                           "Servo output (degs)": servo_posns,
+                           "Stepper position (deg)": stepper_posns,
+                           "Servo position (deg)": servo_posns,
                            "PID (V)": PID_volts})
         df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.csv', index=False)
 
