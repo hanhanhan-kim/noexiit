@@ -297,7 +297,7 @@ def main():
 
     # SAVE DATA:
     #---------------------------------------------------------------------------------------------------------
-    df = pd.DataFrame({"Elapsed time": elapsed_times,
+    df = pd.DataFrame({"Elapsed time (s)": elapsed_times,
                        "Calendar time": cal_times,
                        "Yaw delta (deg)": yaw_deltas,
                        "Yaw filtered delta (deg)": yaw_delta_filts,
