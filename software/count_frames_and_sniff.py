@@ -54,8 +54,7 @@ def main():
         now = datetime.datetime.fromtimestamp(time.time())
         PID_volt = device.getAIN(0)
         counter_0_cmd = u3.Counter0(Reset=False)
-        count = device.getFeedback(counter_0_cmd)[0] - 1 # 0-index
-
+        count = device.getFeedback(counter_0_cmd)[0] 
         print(f"time: {now}, PID: {PID_volt}, count: {count}")
 
         # Save:
