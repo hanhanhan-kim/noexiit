@@ -35,6 +35,7 @@ def main():
     connect_sleep_dt = 2.0
     trig.set_freq(100)   # frequency (Hz)
     trig.set_width(10)
+    trig.start()
     cam_timer = threading.Timer(duration_secs + connect_sleep_dt, trig.stop)
     cam_timer.start()
 
@@ -63,7 +64,6 @@ def main():
         counts.append(count)
 
     device.close()
-
 
     # Save to file and plot:
     df = pd.DataFrame({"time": times, 
