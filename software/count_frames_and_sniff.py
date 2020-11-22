@@ -36,6 +36,8 @@ def main():
     trig.set_freq(100)   # frequency (Hz)
     trig.set_width(10)
     trig.start()
+    
+    # End the camera trigger after a set timer:
     cam_timer = threading.Timer(duration_secs + connect_sleep_dt, trig.stop)
     cam_timer.start()
 
