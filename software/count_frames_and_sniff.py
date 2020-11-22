@@ -26,7 +26,7 @@ def main():
     
     duration_secs = args.duration
 
-    times = []
+    cal_times = []
     PID_volts = []
     counts = []
 
@@ -48,33 +48,32 @@ def main():
     device = u3.U3()
     device.configIO(EnableCounter0=True)
 
-    # For naming output file:
-    t_start = datetime.datetime.now().strftime("%m%d%Y_%H%M%S")
-
+    t_start = datetime.datetime.now()
     t_end = time.time() + duration_secs
     while time.time() <= t_end:
 
-        now = datetime.datetime.fromtimestamp(time.time())
+        now = datetime.datetime.now()
         PID_volt = device.getAIN(0)
         counter_0_cmd = u3.Counter0(Reset=False)
         count = device.getFeedback(counter_0_cmd)[0] 
         print(f"time: {now}, PID: {PID_volt}, count: {count}")
 
         # Save:
-        times.append(now)
+        cal_times.append(now)
         PID_volts.append(PID_volt)
         counts.append(count)
 
     device.close()
 
     # Save to file and plot:
-    df = pd.DataFrame({"time": times, 
-                       "PID_volts": PID_volt,
-                       "count": count})
+    df = pd.DataFrame({"Calendar time": cal_times,
+                       "PID (V)": PID_volt,
+                       "Count": count})
 
+    t_start  = t_start.strftime("%m%d%Y_%H%M%S")
     df.to_csv(f"PID_volts_{t_start}.csv", index=False)
     
-    plt.plot(times, PID_volts)
+    plt.plot(cal_times, PID_volts)
     plt.show()
 
 
