@@ -67,7 +67,7 @@ def main():
 
     # Save to file and plot:
     df = pd.DataFrame({"Calendar time": cal_times,
-                       "PID (V)": PID_volt,
+                       "PID (V)": PID_volts,
                        "Count": counts})
 
     t_start  = t_start.strftime("%m%d%Y_%H%M%S")
