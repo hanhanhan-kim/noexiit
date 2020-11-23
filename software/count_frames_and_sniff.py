@@ -30,22 +30,25 @@ def main():
     PID_volts = []
     counts = []
 
-    # Start camera trigger first, and put it in its own thread:
-    trig = CameraTrigger("/dev/ttyUSB0")
-    connect_sleep_dt = 2.0
-    trig.set_freq(100)   # frequency (Hz)
-    trig.set_width(10)
-    trig.start()
-    
-    # End the camera trigger after a set timer:
-    cam_timer = threading.Timer(duration_secs + connect_sleep_dt, trig.stop)
-    cam_timer.start()
-
-    # trig.start() only starts recording after a 2.0 s delay, so factor that:
-    time.sleep(connect_sleep_dt)
-
     # Set up DAQ:
     device = u3.U3()
+
+    # Set up cam trigger:
+    trig = CameraTrigger("/dev/ttyUSB0")
+    trig.set_freq(100)   # frequency (Hz)
+    trig.set_width(10)
+
+    # Initializing the CameraTrigger takes 2.0 secs:
+    time.sleep(2.0)
+
+    # Set up a timer in its own thread, to end the cam trigger:
+    cam_timer = threading.Timer(duration_secs, trig.stop)
+
+    # Start the trigger, and its timer to stop it:
+    trig.start()
+    cam_timer.start()
+
+    # Start the DAQ counter:
     device.configIO(EnableCounter0=True)
 
     t_start = datetime.datetime.now()
