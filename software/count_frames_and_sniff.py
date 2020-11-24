@@ -35,7 +35,7 @@ def main():
 
     # Set up cam trigger:
     trig = CameraTrigger("/dev/ttyUSB0")
-    trig.set_freq(100)   # frequency (Hz)
+    trig.set_freq(100) # frequency (Hz)
     trig.set_width(10)
 
     # Initializing the CameraTrigger takes 2.0 secs:
@@ -44,12 +44,14 @@ def main():
     # Set up a timer in its own thread, to end the cam trigger:
     cam_timer = threading.Timer(duration_secs, trig.stop)
 
+    # Start the DAQ counter:
+    u3.Counter0(Reset=True)
+    device.configIO(EnableCounter0=True)
+    print(f"First count, pre-trigger: {device.getFeedback(u3.Counter0(Reset=False))[0]}")
+
     # Start the trigger, and its timer to stop it:
     trig.start()
     cam_timer.start()
-
-    # Start the DAQ counter:
-    device.configIO(EnableCounter0=True)
 
     t_start = datetime.datetime.now()
     t_end = time.time() + duration_secs
