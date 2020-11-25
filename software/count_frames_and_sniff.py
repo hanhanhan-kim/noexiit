@@ -24,7 +24,7 @@ def main():
         help="Duration (s) of the PID acquisition.")
     args = parser.parse_args()
     
-    duration_secs = args.duration
+    duration = args.duration
 
     cal_times = []
     PID_volts = []
@@ -42,7 +42,7 @@ def main():
     time.sleep(2.0)
 
     # Set up a timer in its own thread, to end the cam trigger:
-    cam_timer = threading.Timer(duration_secs, trig.stop)
+    cam_timer = threading.Timer(duration, trig.stop)
 
     # Start the DAQ counter:
     u3.Counter0(Reset=True)
@@ -54,7 +54,7 @@ def main():
     cam_timer.start()
 
     t_start = datetime.datetime.now()
-    t_end = time.time() + duration_secs
+    t_end = time.time() + duration
     while time.time() <= t_end:
 
         now = datetime.datetime.now()
