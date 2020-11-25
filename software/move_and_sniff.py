@@ -120,22 +120,22 @@ def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
     time.sleep(pre_exp_time)
 
 
-def sniff(AIN_int=0):
+# def sniff(AIN_int=0):
 
-    """
-    Get PID readings from the `AIN_int` AIN on the LabJack U3 DAQ.
+#     """
+#     Get PID readings from the `AIN_int` AIN on the LabJack U3 DAQ.
 
-    Parameters:
-    -----------
-    AIN_int (int): The analog input (AIN) channel the U3 reads from. 
-        Will be 0 or 1. Default is 0. 
-    """
+#     Parameters:
+#     -----------
+#     AIN_int (int): The analog input (AIN) channel the U3 reads from. 
+#         Will be 0 or 1. Default is 0. 
+#     """
 
-    device = u3.U3()
-    PID_volt = device.getAIN(AIN_int)
-    device.close()
+#     device = u3.U3()
+#     PID_volt = device.getAIN(AIN_int)
+#     device.close()
 
-    return PID_volt
+#     return PID_volt
 
 
 def main(stepper):
@@ -176,7 +176,6 @@ def main(stepper):
         with open ("calib_servo.noexiit", "r") as f:
             max_ext = f.read().rstrip('\n')
         ext_angle = float(max_ext)
-    
 
 
     # Home:
@@ -184,44 +183,53 @@ def main(stepper):
 
     # Proceed with experimental conditions once the home is set to 0:
     if stepper.get_position() == 0:
-        
-        # Run move function in a separate thread:
-        stepper_th = threading.Thread(target=pt_to_pt_and_poke, 
-                                      args=(stepper, posns, ext_angle, poke_speed, 
-                                            ext_wait_time, retr_wait_time))
-        stepper_th.start()
-        
-        # Save data for plotting and csv:
-        elapsed_times = []
+
         cal_times = []
+        elapsed_times = []
+        PID_volts = []
         stepper_posns = []
         servo_posns = []
-        PID_volts = []
+        
+        # Set up DAQ:
+        device = u3.U3()
+
+        # Make motor thread:
+        motors_thread = threading.Thread(target=pt_to_pt_and_poke, 
+                                         args=(stepper, posns, ext_angle, poke_speed,
+                                               ext_wait_time, retr_wait_time))
+        
+        # Start motors:
+        motors_thread.start()
+
+        # Get data while motors are active::
         t_start = datetime.datetime.now()
-
-        # Print and save motor parameters while move function thread is alive:
-        while stepper_th.is_alive() is True:
-
-            now = datetime.datetime.now()
-            # Subtracting two datetimes gives a timedelta:
-            time_delta = now - t_start
+        while motors_thread.is_alive() == True:
             
-            # Save to list:
-            elapsed_times.append(time_delta.total_seconds())
+            now = datetime.datetime.now()
+            elapsed_time = (now - t_start).total_seconds() # get timedelta obj
+
+            PID_volt = device.getAIN(0)
+            stepper_posn = stepper.get_position()
+            servo_posn = stepper.get_servo_angle()
+
+            print(f"Calendar time: {now}\n", 
+                  f"Elapsed time (s): {elapsed_time}\n", 
+                  f"PID (V): {PID_volt}\n",
+                  f"Stepper position (deg): {stepper_posn}\n", 
+                  f"Servo position (deg): {servo_posn}\n\n") 
+
+            # Save:
             cal_times.append(now)
-            stepper_posns.append(stepper.get_position())
-            servo_posns.append(stepper.get_servo_angle())
-            PID_volts.append(sniff())
+            elapsed_times.append(elapsed_time)
+            PID_volts.append(PID_volt)
+            stepper_posns.append(stepper_posn)
+            servo_posns.append(servo_posn)
 
-            # Convert timedelta to elapsed seconds:
-            print(f"Elapsed time (s): {time_delta.total_seconds()}     ", 
-                  f"Calendar time: {now}     ", 
-                  f"Stepper position (deg): {stepper.get_position()}     ", 
-                  f"Servo position (deg): {stepper.get_servo_angle()}     ",
-                  f"PID (V): {sniff()}")
+        # Close DAQ: 
+        device.close()
 
-        # Join the stepper thread back to the main:
-        stepper_th.join()
+        # Join the motors thread back to the main:
+        motors_thread.join()
 
         # Save the stepper settings and servo extension angle: 
         stepper.print_params()
@@ -246,15 +254,15 @@ def main(stepper):
             print("max extension angle: %f" %ext_angle, file =f)
 
         # Save outputs to a csv:
-        df = pd.DataFrame({"Elapsed time (s)": elapsed_times,
-                           "Calendar time": cal_times,
+        df = pd.DataFrame({"Calendar time": cal_times,
+                           "Elapsed time (s)": elapsed_times,
+                           "PID (V)": PID_volts,
                            "Stepper position (deg)": stepper_posns,
-                           "Servo position (deg)": servo_posns,
-                           "PID (V)": PID_volts})
+                           "Servo position (deg)": servo_posns})
+
         df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.csv', index=False)
 
-        # Plot and save results:
-        # Motors:
+        # Plot motor commands:
         plt.subplot(2, 1, 1)
         plt.plot(elapsed_times, stepper_posns,
                  label="stepper position (degs)")
@@ -264,7 +272,8 @@ def main(stepper):
         plt.ylabel("motor position (degs)")
         plt.legend()
         plt.grid(True)
-        # PID readings:
+
+        # Plot PID readings:
         plt.subplot(2, 1, 2)
         plt.plot(elapsed_times, PID_volts)
         plt.xlabel("time (s)")
@@ -276,15 +285,13 @@ def main(stepper):
 
 if __name__ == "__main__":
 
-    # Set up Autostep motors:
-    # change as necessary: 
+    # Set up Autostep motors change as necessary: 
     motor_port = '/dev/ttyACM0' 
     stepper = Autostep(motor_port)
     stepper.set_step_mode('STEP_FS_128') 
     stepper.set_fullstep_per_rev(200)
     stepper.set_kval_params({'accel':30, 'decel':30, 'run':30, 'hold':30})
-    # deg/s and deg/s2:
-    stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) 
+    stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) # deg/s and deg/s2
     stepper.set_move_mode_to_jog()
     stepper.set_gear_ratio(1)
     stepper.enable()
