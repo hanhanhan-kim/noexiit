@@ -158,7 +158,7 @@ def main():
         trig.start()
         cam_timer.start()
 
-        # Print motor parameters while move function thread is alive:
+        # Get data while motors are active:
         t_start = datetime.datetime.now()
         while motors_thread.is_alive() == True:
             
