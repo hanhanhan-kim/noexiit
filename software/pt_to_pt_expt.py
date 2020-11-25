@@ -25,32 +25,31 @@ import matplotlib.pyplot as plt
 
 from start_trigger import start_trigger
 from init_BIAS import init_BIAS
-from move_and_sniff import home, pt_to_pt_and_poke, sniff
+from move_and_sniff import home, pt_to_pt_and_poke
 
 def main():
 
-    # SET UP PARAMS:
-    #----------------------------------------------------------------------------------------
-    # Set up autostep motors:
-    # change as necessary:
+    # SET UP PARAMETERS-----------------------------------------------------------------------------------------
+
+    # Set up autostep motors, change as necessary:
     motor_port = '/dev/ttyACM0' 
     stepper = Autostep(motor_port)
     stepper.set_step_mode('STEP_FS_128') 
     stepper.set_fullstep_per_rev(200)
     stepper.set_kval_params({'accel':30, 'decel':30, 'run':30, 'hold':30})
-    # deg/s and deg/s2
-    stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) 
+    stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) # deg/s and deg/s2
     stepper.set_move_mode_to_jog()
     stepper.set_gear_ratio(1)
     stepper.enable() 
 
-    # Set BIAS params:
+    # Specify BIAS params:
     cam_ports = ['5010', '5020', '5030', '5040', '5050']
     config_path = '/home/platyusa/Videos/bias_behaviour_300hz_1000us.json'
 
-    # Set external cam trigger params:
+    # Specify external cam trigger params:
     trig_port = "/dev/ttyUSB0"
 
+    # TODO: Bit unclear; duration arg goes to cam timer, but script runs only while motors are active, even if "duration" is longer ... assert that duration must be longer than time to execute motor program
     # Set up user arguments:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("duration", type=int,
@@ -87,8 +86,10 @@ def main():
         "The poke_speed must be 10 or greater."
 
     if ext_angle is None:
+
         with open ("calib_servo.noexiit", "r") as f:
             max_ext = f.read().rstrip('\n')
+            
         ext_angle = float(max_ext)
     
     # Stop the stepper when script is killed:
@@ -96,9 +97,10 @@ def main():
         stepper.run(0.0)
     atexit.register(stop_stepper)
 
-    # EXECUTE:
-    #----------------------------------------------------------------------------------------
+    # EXECUTE--------------------------------------------------------------------------------------------------
+
     # Initialize BIAS, if desired:
+    # TODO: Make this less shitty, default to N
     while True:
         proceed = input("Initialize BIAS? That is, connect cams, load jsons, and start capture? Input y or n: \n")
         if proceed == "y":
@@ -119,54 +121,80 @@ def main():
     # Proceed with experimental conditions once the home is set to 0:
     if stepper.get_position() == 0:
 
-        # Start external cam trigger in its own thread:
-        trig_th = threading.Thread(target=start_trigger, 
-                                   args=(duration, trig_port))
-        trig_th.start()
-
-        # Start move function in its own thread:
-        stepper_th = threading.Thread(target=pt_to_pt_and_poke, 
-                                      args=(stepper, posns, ext_angle, poke_speed,
-                                            ext_wait_time, retr_wait_time))
-        stepper_th.start()
-        
-        # Save data for plotting and csv:
-        elapsed_times = []
         cal_times = []
+        elapsed_times = []
+        counts = []
+        PID_volts = []
         stepper_posns = []
         servo_posns = []
-        PID_volts = []
-        t_start = datetime.datetime.now()
+
+        # Set up DAQ:
+        device = u3.U3()
+
+        # Make motor thread:
+        motors_thread = threading.Thread(target=pt_to_pt_and_poke, 
+                                         args=(stepper, posns, ext_angle, poke_speed,
+                                               ext_wait_time, retr_wait_time))
+        
+        # Set up cam trigger:
+        trig = CameraTrigger(trig_port)
+        trig.set_freq(100) # frequency (Hz)
+        trig.set_width(10)
+
+        # Initializing the camera trigger takes 2.0 secs:
+        time.sleep(2.0)
+
+        # Make a thread to stop the cam trigger after some time:
+        cam_timer = threading.Timer(duration, trig.stop)
+
+        # START the DAQ counter:
+        u3.Counter0(Reset=True)
+        device.configIO(EnableCounter0=True) 
+        print(f"First count is pre-trigger and should be 0: {device.getFeedback(u3.Counter0(Reset=False))[0]}")
+        time.sleep(2.0) # Give time to show the print message
+
+        # START the motors, the trigger, and the trigger-stopping timer:
+        motors_thread.start()
+        trig.start()
+        cam_timer.start()
 
         # Print motor parameters while move function thread is alive:
-        while stepper_th.is_alive() is True:
+        t_start = datetime.datetime.now()
+        while motors_thread.is_alive() == True:
             
             now = datetime.datetime.now()
-            # Subtracting two datetimes gives a timedelta:
-            time_delta = now - t_start
-            
-            # Save to list:
-            elapsed_times.append(time_delta.total_seconds())
+            elapsed_time = (now - t_start).total_seconds() # get timedelta obj
+
+            counter_0_cmd = u3.Counter0(Reset=False)
+            count = device.getFeedback(counter_0_cmd)[0] 
+
+            PID_volt = device.getAIN(0)
+            stepper_posn = stepper.get_position()
+            servo_posn = stepper.get_servo_angle()
+
+            print(f"Calendar time: {now}\n", 
+                  f"Elapsed time (s): {elapsed_time}\n", 
+                  f"Count (frame): {count}\n",
+                  f"PID (V): {PID_volt}\n",
+                  f"Stepper position (deg): {stepper_posn}\n", 
+                  f"Servo position (deg): {servo_posn}\n\n") 
+
+            # Save:
             cal_times.append(now)
-            stepper_posns.append(stepper.get_position())
-            servo_posns.append(stepper.get_servo_angle())
-            PID_volts.append(sniff())
+            elapsed_times.append(elapsed_time)
+            counts.append(count)
+            PID_volts.append(PID_volt)
+            stepper_posns.append(stepper_posn)
+            servo_posns.append(servo_posn)
 
-            # Convert timedelta to elapsed seconds:
-            print(f"Elapsed time (s): {time_delta.total_seconds()}     ", 
-                  f"Calendar time: {now}     ", 
-                  f"Stepper position (deg): {stepper.get_position()}     ", 
-                  f"Servo position (deg): {stepper.get_servo_angle()}     ",
-                  f"PID (V): {sniff()}")
+        # Close DAQ: 
+        device.close()
 
-        # Join the stepper thread back to the main:
-        stepper_th.join()
+        # Join the motors thread back to the main:
+        motors_thread.join()
 
-        # Join the trigger thread back to the main:
-        trig_th.join()
+        # SAVE DATA---------------------------------------------------------------------------------------------
 
-        # SAVE DATA:
-        #----------------------------------------------------------------------------------------
         # Save the stepper settings and servo extension angle: 
         stepper.print_params()
         with open(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_settings.txt", "a") as f:
@@ -191,14 +219,16 @@ def main():
             print("max extension angle: %f" %ext_angle, file =f)
 
         # Save outputs to a csv:
-        df = pd.DataFrame({"Elapsed time (s)": elapsed_times,
-                           "Calendar time": cal_times,
+        df = pd.DataFrame({"Calendar time": cal_times,
+                           "Elapsed time (s)": elapsed_times,
+                           "Count (frame)": counts,
+                           "PID (V)": PID_volts,
                            "Stepper position (deg)": stepper_posns,
-                           "Servo position (deg)": servo_posns,
-                           "PID (V)": PID_volts})
+                           "Servo position (deg)": servo_posns})
+
         df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.csv', index=False)
 
-        # Plot and save outputs:
+        # Plot motor commands:
         plt.subplot(2, 1, 1)
         plt.plot(elapsed_times, stepper_posns,
                  label="stepper position (degs)")
@@ -208,7 +238,8 @@ def main():
         plt.ylabel("motor position (degs)")
         plt.legend()
         plt.grid(True)
-        # PID readings:
+
+        # Plot PID readings:
         plt.subplot(2, 1, 2)
         plt.plot(elapsed_times, PID_volts)
         plt.xlabel("time (s)")
