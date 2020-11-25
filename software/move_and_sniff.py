@@ -120,25 +120,18 @@ def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
     time.sleep(pre_exp_time)
 
 
-# def sniff(AIN_int=0):
+def main():
 
-#     """
-#     Get PID readings from the `AIN_int` AIN on the LabJack U3 DAQ.
-
-#     Parameters:
-#     -----------
-#     AIN_int (int): The analog input (AIN) channel the U3 reads from. 
-#         Will be 0 or 1. Default is 0. 
-#     """
-
-#     device = u3.U3()
-#     PID_volt = device.getAIN(AIN_int)
-#     device.close()
-
-#     return PID_volt
-
-
-def main(stepper):
+    # Set up Autostep motors, change as necessary: 
+    motor_port = '/dev/ttyACM0' 
+    stepper = Autostep(motor_port)
+    stepper.set_step_mode('STEP_FS_128') 
+    stepper.set_fullstep_per_rev(200)
+    stepper.set_kval_params({'accel':30, 'decel':30, 'run':30, 'hold':30})
+    stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) # deg/s and deg/s2
+    stepper.set_move_mode_to_jog()
+    stepper.set_gear_ratio(1)
+    stepper.enable()
     
     # Set up arguments:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -176,6 +169,11 @@ def main(stepper):
         with open ("calib_servo.noexiit", "r") as f:
             max_ext = f.read().rstrip('\n')
         ext_angle = float(max_ext)
+
+    # Stop the stepper when script is killed:
+    def stop_stepper():
+        stepper.run(0.0)
+    atexit.register(stop_stepper)
 
 
     # Home:
@@ -284,21 +282,4 @@ def main(stepper):
 
 
 if __name__ == "__main__":
-
-    # Set up Autostep motors change as necessary: 
-    motor_port = '/dev/ttyACM0' 
-    stepper = Autostep(motor_port)
-    stepper.set_step_mode('STEP_FS_128') 
-    stepper.set_fullstep_per_rev(200)
-    stepper.set_kval_params({'accel':30, 'decel':30, 'run':30, 'hold':30})
-    stepper.set_jog_mode_params({'speed':60, 'accel':100, 'decel':1000}) # deg/s and deg/s2
-    stepper.set_move_mode_to_jog()
-    stepper.set_gear_ratio(1)
-    stepper.enable()
-
-    # Stop the stepper when script is killed:
-    def stop_stepper():
-        stepper.run(0.0)
-    atexit.register(stop_stepper)
-
-    main(stepper)
+    main()
