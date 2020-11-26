@@ -150,10 +150,9 @@ def main():
         cam_timer = threading.Timer(duration, trig.stop)
 
         # START the DAQ counter:
-        u3.Counter0(Reset=True)
         device.configIO(EnableCounter0=True) 
         print(f"First count is pre-trigger and should be 0: {device.getFeedback(u3.Counter0(Reset=False))[0]}")
-        time.sleep(2.0) # Give time to show the print message
+        u3.Counter0(Reset=True)
 
         # START the motors, the trigger, and the trigger-stopping timer:
         motors_thread.start()
