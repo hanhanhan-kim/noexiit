@@ -130,9 +130,6 @@ def main():
         stepper_posns = []
         servo_posns = []
 
-        # Set up DAQ:
-        device = u3.U3()
-
         # Make motor thread:
         motors_thread = threading.Thread(target=pt_to_pt_and_poke, 
                                          args=(stepper, posns, ext_angle, poke_speed,
@@ -149,25 +146,24 @@ def main():
         # Make a thread to stop the cam trigger after some time:
         cam_timer = threading.Timer(duration, trig.stop)
 
-        # START the DAQ counter:
-        device.configIO(EnableCounter0=True) 
-        print(f"First count is pre-trigger and should be 0: {device.getFeedback(u3.Counter0(Reset=False))[0]}")
-        u3.Counter0(Reset=True)
+        device = u3.U3()
+        # START the DAQ counter, 1st count pre-trigger is 0:
+        device.configIO(EnableCounter0=True)
 
         # START the motors, the trigger, and the trigger-stopping timer:
         motors_thread.start()
         trig.start()
         cam_timer.start()
 
-        # Get data while motors are active:
+        # Get data while cam trigger is active:
         t_start = datetime.datetime.now()
-        while cam_timer.is_alive() == True: # TODO: change to while cam_timer is alive?
+        while cam_timer.is_alive() == True: 
             
             now = datetime.datetime.now()
             elapsed_time = (now - t_start).total_seconds() # get timedelta obj
 
             counter_0_cmd = u3.Counter0(Reset=False)
-            count = device.getFeedback(counter_0_cmd)[0] 
+            count = device.getFeedback(counter_0_cmd)[0] # 1st count post-trigger is 1
 
             PID_volt = device.getAIN(0)
             stepper_posn = stepper.get_position()
@@ -198,7 +194,7 @@ def main():
 
         # Save outputs to a csv:
         df = pd.DataFrame({ "Calendar time": cal_times,
-                            "Elapsed time (s)": elapsed_times,
+                            "Elapsed time (s)": elapsed_times - elapsed_times[0],
                             "Count (frame)": counts,
                             "PID (V)": PID_volts,
                             "Stepper position (deg)": stepper_posns,
