@@ -22,8 +22,9 @@ import argparse
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import u3
 
-from start_trigger import start_trigger
+from camera_trigger import CameraTrigger
 from init_BIAS import init_BIAS
 from move_and_sniff import home, pt_to_pt_and_poke
 
@@ -49,7 +50,7 @@ def main():
     # Specify external cam trigger params:
     trig_port = "/dev/ttyUSB0"
 
-    # TODO: Bit unclear; duration arg goes to cam timer, but script runs only while motors are active, even if "duration" is longer ... assert that duration must be longer than time to execute motor program
+    # TODO: Recall that the duration should match BIAS duration ... ask Will about timing/ordering of trigger duration vs. BIAS duration
     # Set up user arguments:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("duration", type=int,
@@ -101,11 +102,12 @@ def main():
 
     # Initialize BIAS, if desired:
     # TODO: Make this less shitty, default to N
+    # Remember
     while True:
         proceed = input("Initialize BIAS? That is, connect cams, load jsons, and start capture? Input y or n: \n")
         if proceed == "y":
             init_BIAS(cam_ports = cam_ports,
-                    config_path = config_path)
+                      config_path = config_path)
             break
         elif proceed == "n":
             print("Skipping BIAS initialization ...")
@@ -160,7 +162,7 @@ def main():
 
         # Get data while motors are active:
         t_start = datetime.datetime.now()
-        while motors_thread.is_alive() == True:
+        while cam_timer.is_alive() == True: # TODO: change to while cam_timer is alive?
             
             now = datetime.datetime.now()
             elapsed_time = (now - t_start).total_seconds() # get timedelta obj
@@ -195,36 +197,13 @@ def main():
 
         # SAVE DATA---------------------------------------------------------------------------------------------
 
-        # Save the stepper settings and servo extension angle: 
-        stepper.print_params()
-        with open(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_settings.txt", "a") as f:
-
-            print("autostep parameters", file=f)
-            print("--------------------------", file=f)
-            print('fullstep/rev:  {0}\n'.format(stepper.get_fullstep_per_rev()) +
-            'step mode:     {0}\n'.format(stepper.get_step_mode()) +
-            'oc threshold:  {0}'.format(stepper.get_oc_threshold()), file=f)
-            print('jog mode:', file=f)
-            for k,v in stepper.get_jog_mode_params().items():
-                print('  {0}: {1} {2}'.format(k,v,Autostep.MoveModeUnits[k]), file=f)
-            print('max mode:', file=f)
-            for k, v in stepper.get_max_mode_params().items():
-                print('  {0}: {1} {2}'.format(k,v,Autostep.MoveModeUnits[k]), file=f)
-            print('kvals (0-255): ', file=f)
-            for k,v in stepper.get_kval_params().items():
-                print('  {0:<6} {1}'.format(k+':',v), file=f)
-            # print("\n".join("{}\t{}".format(k, v) for k, v in stepper.get_params().items()), file=f)
-            print("\nlinear servo parameters", file=f)
-            print("--------------------------", file=f)
-            print("max extension angle: %f" %ext_angle, file =f)
-
         # Save outputs to a csv:
-        df = pd.DataFrame({"Calendar time": cal_times,
-                           "Elapsed time (s)": elapsed_times,
-                           "Count (frame)": counts,
-                           "PID (V)": PID_volts,
-                           "Stepper position (deg)": stepper_posns,
-                           "Servo position (deg)": servo_posns})
+        df = pd.DataFrame({ "Calendar time": cal_times,
+                            "Elapsed time (s)": elapsed_times,
+                            "Count (frame)": counts,
+                            "PID (V)": PID_volts,
+                            "Stepper position (deg)": stepper_posns,
+                            "Servo position (deg)": servo_posns})
 
         df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.csv', index=False)
 
@@ -247,6 +226,29 @@ def main():
         plt.grid(True)
         plt.savefig(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.png')
         plt.show()
+
+        # Save the stepper settings and servo extension angle: 
+        stepper.print_params()
+        with open(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_settings.txt", "a") as f:
+
+            print("autostep parameters", file=f)
+            print("--------------------------", file=f)
+            print('fullstep/rev:  {0}\n'.format(stepper.get_fullstep_per_rev()) +
+            'step mode:     {0}\n'.format(stepper.get_step_mode()) +
+            'oc threshold:  {0}'.format(stepper.get_oc_threshold()), file=f)
+            print('jog mode:', file=f)
+            for k,v in stepper.get_jog_mode_params().items():
+                print('  {0}: {1} {2}'.format(k,v,Autostep.MoveModeUnits[k]), file=f)
+            print('max mode:', file=f)
+            for k, v in stepper.get_max_mode_params().items():
+                print('  {0}: {1} {2}'.format(k,v,Autostep.MoveModeUnits[k]), file=f)
+            print('kvals (0-255): ', file=f)
+            for k,v in stepper.get_kval_params().items():
+                print('  {0:<6} {1}'.format(k+':',v), file=f)
+            # print("\n".join("{}\t{}".format(k, v) for k, v in stepper.get_params().items()), file=f)
+            print("\nlinear servo parameters", file=f)
+            print("--------------------------", file=f)
+            print("max extension angle: %f" %ext_angle, file =f)
 
 
 if __name__ == "__main__":
