@@ -130,6 +130,9 @@ def main():
         stepper_posns = []
         servo_posns = []
 
+        # Set up DAQ:
+        device = u3.U3()
+
         # Make motor thread:
         motors_thread = threading.Thread(target=pt_to_pt_and_poke, 
                                          args=(stepper, posns, ext_angle, poke_speed,
@@ -139,6 +142,7 @@ def main():
         trig = CameraTrigger(trig_port)
         trig.set_freq(100) # frequency (Hz)
         trig.set_width(10)
+        trig.stop() # trig tends to continue running from last time
 
         # Initializing the camera trigger takes 2.0 secs:
         time.sleep(2.0)
@@ -146,9 +150,12 @@ def main():
         # Make a thread to stop the cam trigger after some time:
         cam_timer = threading.Timer(duration, trig.stop)
 
-        device = u3.U3()
+        
         # START the DAQ counter, 1st count pre-trigger is 0:
+        u3.Counter0(Reset=True)
         device.configIO(EnableCounter0=True)
+        print(f"First count is pre-trigger and is 0: {device.getFeedback(u3.Counter0(Reset=False))[0]}")
+        time.sleep(2.0) # give time to see above print
 
         # START the motors, the trigger, and the trigger-stopping timer:
         motors_thread.start()
