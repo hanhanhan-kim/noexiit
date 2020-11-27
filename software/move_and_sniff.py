@@ -229,6 +229,25 @@ def main():
         # Join the motors thread back to the main:
         motors_thread.join()
 
+        # Plot motor commands:
+        plt.subplot(2, 1, 1)
+        plt.plot(elapsed_times, stepper_posns,
+                 label="stepper position (degs)")
+        plt.plot(elapsed_times, servo_posns,
+                 label="servo position (degs)")
+        plt.xlabel("time (s)")
+        plt.ylabel("motor position (degs)")
+        plt.legend()
+        plt.grid(True)
+
+        # Plot PID readings:
+        plt.subplot(2, 1, 2)
+        plt.plot(elapsed_times, PID_volts)
+        plt.xlabel("time (s)")
+        plt.ylabel("PID reading (V)")
+        plt.grid(True)
+        plt.show()
+
         # Save the stepper settings and servo extension angle: 
         stepper.print_params()
         with open(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_settings.txt", "a") as f:
@@ -250,35 +269,6 @@ def main():
             print("\nlinear servo parameters", file=f)
             print("--------------------------", file=f)
             print("max extension angle: %f" %ext_angle, file =f)
-
-        # Save outputs to a csv:
-        df = pd.DataFrame({"Calendar time": cal_times,
-                           "Elapsed time (s)": elapsed_times,
-                           "PID (V)": PID_volts,
-                           "Stepper position (deg)": stepper_posns,
-                           "Servo position (deg)": servo_posns})
-
-        df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.csv', index=False)
-
-        # Plot motor commands:
-        plt.subplot(2, 1, 1)
-        plt.plot(elapsed_times, stepper_posns,
-                 label="stepper position (degs)")
-        plt.plot(elapsed_times, servo_posns,
-                 label="servo position (degs)")
-        plt.xlabel("time (s)")
-        plt.ylabel("motor position (degs)")
-        plt.legend()
-        plt.grid(True)
-
-        # Plot PID readings:
-        plt.subplot(2, 1, 2)
-        plt.plot(elapsed_times, PID_volts)
-        plt.xlabel("time (s)")
-        plt.ylabel("PID reading (V)")
-        plt.grid(True)
-        plt.savefig(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.png')
-        plt.show()
 
 
 if __name__ == "__main__":
