@@ -199,9 +199,8 @@ def main():
 
         # SAVE DATA---------------------------------------------------------------------------------------------
 
-        # Save outputs to a csv:
+        # Save outputs, except elapsed times, to a csv:
         df = pd.DataFrame({ "Calendar time": cal_times,
-                            "Elapsed time (s)": elapsed_times - elapsed_times[0],
                             "Count (frame)": counts,
                             "PID (V)": PID_volts,
                             "Stepper position (deg)": stepper_posns,
