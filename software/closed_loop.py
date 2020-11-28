@@ -7,21 +7,25 @@ import time
 import datetime
 import atexit
 import argparse
+import threading
 
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.interpolate import interp1d
+import u3
 
+from camera_trigger import CameraTrigger
 from autostep import Autostep
 from butter_filter import ButterFilter
 
 
 def main():
-    # SET UP PARAMS:
-    #---------------------------------------------------------------------------------------------------------
-    port = '/dev/ttyACM0'
-    dev = Autostep(port)
+
+    # SET UP PARAMATERS-----------------------------------------------------------------------------------------
+    
+    motor_port = '/dev/ttyACM0'
+    dev = Autostep(motor_port)
     dev.set_step_mode('STEP_FS_64') 
     dev.set_fullstep_per_rev(200)
     dev.set_gear_ratio(1.0)
@@ -31,13 +35,15 @@ def main():
     # Change to jog for debugging: 
     dev.set_move_mode_to_max() 
     dev.enable()
-
     dev.run(0.0)  
 
     # Stop the stepper when script is killed:
     def stop_stepper():
         dev.run(0.0)
     atexit.register(stop_stepper)
+
+    # Specify external cam trigger params:
+    trig_port = "/dev/ttyUSB0"
 
     # Set connection parameters:
     HOST = '127.0.0.1'  # The server's hostname or IP address
@@ -58,19 +64,20 @@ def main():
     # Show stepper motor parameters:
     dev.print_params()
     
-    # EXECUTE:
-    #---------------------------------------------------------------------------------------------------------
+    # EXECUTE---------------------------------------------------------------------------------------------------
     t_start = datetime.datetime.now()
     
     # Open the connection (FicTrac must be waiting for socket connection)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        
         sock.connect((HOST, PORT))
         
-        # Initialize:
         data = ""
-        elapsed_times = []
         cal_times = []
-        yaw_deltas = []
+        elapsed_times = []
+        delta_tses = []
+        counts = []
+        PID_volts = []
         yaw_vels = []
         yaw_delta_filts = []
         yaw_vel_filts = []
@@ -78,19 +85,44 @@ def main():
         stepper_posns = []
         servo_posns = []
 
+        # Set up DAQ:
+        device = u3.U3()
+
         # Map the range of my linear servo, 0 to 27 mm, to 0 to 180:
         servo_map = interp1d([-27,27],[-180,180])
         servo_posn = 0
 
         # Define filter;
         freq_cutoff = 5 # in Hz
-        n = 2 # order of the filter
+        n = 2 # filter order
         sampling_rate = 100 # in Hz, in this case, the camera FPS
         filt = ButterFilter(freq_cutoff, n, sampling_rate)
 
+        # Set up cam trigger:
+        trig = CameraTrigger(trig_port)
+        trig.set_freq(100) # frequency (Hz)
+        trig.set_width(10)
+        trig.stop() # trig tends to continue running from last time
+
+        # Initializing the camera trigger takes 2.0 secs:
+        time.sleep(2.0)
+
+        # Make a thread to stop the cam trigger after some time:
+        cam_timer = threading.Timer(duration, trig.stop)
+
+        # START the DAQ counter, 1st count pre-trigger is 0:
+        u3.Counter0(Reset=True)
+        device.configIO(EnableCounter0=True)
+        print(f"First count is pre-trigger and is 0: {device.getFeedback(u3.Counter0(Reset=False))[0]}")
+        time.sleep(2.0) # give time to see above print
+
+        # START the trigger, and the trigger-stopping timer:
+        trig.start()
+        cam_timer.start()
+
         # Keep receiving data until FicTrac closes:
-        done = False
-        while not done:
+        while cam_timer.is_alive():
+
             # Receive one data frame:
             new_data = sock.recv(1024) # read at most 1024 bytes, BLOCK if no data to be read
             if not new_data:
@@ -159,71 +191,54 @@ def main():
                         
             # Move!
             gain = 1
-            stepper_pos = dev.run_with_feedback(-1 * gain * yaw_vel_filt, servo_posn)
+            stepper_posn = dev.run_with_feedback(-1 * gain * yaw_vel_filt, servo_posn)
 
             # Get times:
             now = datetime.datetime.now()
-            time_delta = now - t_start
-            elapsed_time = time_delta.total_seconds()
+            elapsed_time = (now - t_start).total_seconds() # get timedelta obj
 
-            print(f"Elapsed time (s): {elapsed_time}")
-            print(f"Calendar time: {now}")
-            print(f"time delta bw frames (s): {delta_ts}")
-            print(f"yaw delta (deg): {yaw_delta}")
-            print(f"filtered yaw delta (deg): {yaw_delta_filt}")
-            print(f"yaw velocity (deg/s): {yaw_vel}")
-            print(f"filtered yaw velocity (deg/s): {yaw_vel_filt}")
-            print(f"servo position (deg): {servo_posn}")
-            print("\n")
-    
-            # Check if we are done:
-            if elapsed_time >= duration:
-                done = True
+            # Get info from DAQ:
+            counter_0_cmd = u3.Counter0(Reset=False)
+            count = device.getFeedback(counter_0_cmd)[0] # 1st count post-trigger is 1
+            PID_volt = device.getAIN(0)
             
-            # Save to list:
-            elapsed_times.append(elapsed_time) # s
+            print(f"Calendar time: {now}\n", 
+                  f"Elapsed time (s): {elapsed_time}\n", 
+                  f"Time delta bw frames (s): {delta_ts}\n",
+                  f"Count (frame): {count}\n",
+                  f"PID (V): {PID_volt}\n",
+                  f"Filtered yaw velocity (deg/s): {yaw_vel_filt}\n",
+                  f"Stepper position (deg): {stepper_posn}\n", 
+                  f"Servo position (deg): {servo_posn}\n\n") 
+            
+            # Save:
             cal_times.append(now)
-            yaw_deltas.append(yaw_delta) # deg
-            yaw_delta_filts.append(yaw_delta_filt) # deg
+            elapsed_times.append(elapsed_time) # s
+            delta_tses = delta_tses.append(delta_ts)
+            counts.append(count)
+            PID_volts.append(PID_volt)
             yaw_vels.append(yaw_vel) # deg/s
             yaw_vel_filts.append(yaw_vel_filt) # deg/s
             headings.append(heading) # rad
-            
-            stepper_posns.append(stepper_pos) # deg
-            stepper_posn_deltas = list(np.diff(stepper_posns)) # deg
-
+            stepper_posns.append(stepper_posn) # deg
             servo_posns.append(servo_posn) # deg
-            
-            # Add None object to beginning of list, so its length matches with times:
-            stepper_posn_deltas.insert(0, None) 
+    
+    stepper_posn_vels = [list(np.diff(stepper_posns)) / delta_ts for delta_ts in delta_tses] # deg/s
+    stepper_posn_vels.insert(0, None) # Add None to beginning of list, so its length matches with times
+
+    # Close DAQ: 
+    device.close()
 
     # Stop stepper:
     dev.run(0.0)
     
-    # PLOT RESULTS:
-    #---------------------------------------------------------------------------------------------------------
-    # # Raw:
-    # plt.subplot(3, 1, 1)
-    # plt.plot(elapsed_times, yaw_deltas, '.b', label="raw")
-    # plt.plot(elapsed_times, yaw_delta_filts, label="filtered")
-    # # plt.xlabel("time (s)")
-    # plt.ylabel("yaw delta (deg)")
-    # plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
-    # plt.grid(True)
-
-    # Filtered:
-    plt.subplot(3, 1, 1)
-    plt.plot(elapsed_times, yaw_vels, '.b', label="raw")
-    plt.plot(elapsed_times, yaw_vel_filts, label="filtered")
-    # plt.xlabel("time (s)")
-    plt.ylabel("yaw vel (deg/s)")
-    plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
-    plt.grid(True)
+    # PLOT RESULTS----------------------------------------------------------------------------------------------
     
     # Stepper:
     plt.subplot(3, 1, 2)
-    plt.plot(elapsed_times, yaw_delta_filts, '.b', label="filtered yaw delta (deg)")
-    plt.plot(elapsed_times, stepper_posn_deltas, 'r', label="stepper position delta (deg)")
+    plt.plot(elapsed_times, yaw_vels, label="raw yaw velocity (deg/s")
+    plt.plot(elapsed_times, yaw_vel_filts, '.b', label="filtered yaw velocity (deg/s)")
+    plt.plot(elapsed_times, stepper_posn_vels, 'r', label="stepper position velocity (deg/s)")
     plt.xlabel("time (s)")
     plt.ylabel("yaw delta (deg)")
     plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
@@ -241,20 +256,6 @@ def main():
 
     plt.show()
 
-    # SAVE DATA:
-    #---------------------------------------------------------------------------------------------------------
-    df = pd.DataFrame({"Elapsed time": elapsed_times,
-                       "Calendar time": cal_times,
-                       "Yaw delta (deg)": yaw_deltas,
-                       "Yaw filtered delta (deg)": yaw_delta_filts,
-                       "Yaw velocity (deg)": yaw_vels,
-                       "Yaw filtered velocity (deg)": yaw_vel_filts,
-                       "Stepper position (deg)": stepper_posns,
-                       "Stepper delta (deg)": stepper_posn_deltas,
-                       "Servo position (deg)": servo_posns})
-    
-    df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_loop.csv", index=False)
-    
 
 if __name__ == '__main__':
     main()
