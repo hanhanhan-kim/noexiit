@@ -234,12 +234,20 @@ def main():
     
     # PLOT RESULTS----------------------------------------------------------------------------------------------
     
+    # PID:
+    plt.subplot(3, 1, 1)
+    plt.plot(elapsed_times, PID_volts)
+    # plt.xlabel("time (s)")
+    plt.ylabel("PID reading (V)")
+    plt.grid(True)
+    plt.show()
+
     # Stepper:
     plt.subplot(3, 1, 2)
     plt.plot(elapsed_times, yaw_vels, label="raw yaw velocity (deg/s")
     plt.plot(elapsed_times, yaw_vel_filts, '.b', label="filtered yaw velocity (deg/s)")
     plt.plot(elapsed_times, stepper_posn_vels, 'r', label="stepper position velocity (deg/s)")
-    plt.xlabel("time (s)")
+    # plt.xlabel("time (s)")
     plt.ylabel("yaw delta (deg)")
     plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
     plt.grid(True)
