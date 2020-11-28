@@ -11,7 +11,6 @@ import threading
 import argparse
 
 from command_BIAS import command_BIAS
-from start_trigger import start_trigger
 
 
 def init_BIAS(cam_ports, config_path, backoff_time=1.0):
@@ -126,22 +125,14 @@ def main():
         help="Absolute path to the .json configuration file. Include the \
             name of the .json file. \
             E.g. `/home/platyusa/Videos/bias_test_ext_trig.json`")
-    parser.add_argument("duration", type=float,
-        help="Duration (s) of the triggered video recordings.")
     
     args = parser.parse_args()
 
     config_path = args.config_path
-    duration = args.duration
     cam_ports = ['5010', '5020', '5030', '5040', '5050']
 
     init_BIAS(cam_ports = cam_ports, 
               config_path = config_path)
-
-    # Execute external trigger in its own thread:
-    trig_th = threading.Thread(target = start_trigger(duration=duration))
-    trig_th.start()
-    trig_th.join()
 
 
 if __name__ == "__main__":
