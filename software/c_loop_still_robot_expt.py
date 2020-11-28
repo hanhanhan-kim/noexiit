@@ -1,5 +1,19 @@
 #!/usr/bin/env python3
 
+"""
+Move the tethered stimulus at 1) an angular velocity opposite in direction, 
+but equal in magnitude, to the animal on the ball (stepper motor), and 2) 
+to some distance away or towards the animal on the ball, given the tethered 
+stimulus' angular position (linear servo). The idea is to mimic a stationary 
+stimulus in a flat planar world. The animal turning right and away from a
+stimulus in front of it, in the planar world, is equivalent to the stimulus 
+turning left and retracting away from the animal, in the on-a-ball world.
+
+This experiment demonstrates the closed-loop capabilities of NOEXIIT. 
+
+It assumes an ATMega328P-based camera trigger. 
+"""
+
 from __future__ import print_function
 
 import socket
@@ -18,6 +32,7 @@ import u3
 from camera_trigger import CameraTrigger
 from autostep import Autostep
 from butter_filter import ButterFilter
+from move_and_sniff import home
 
 
 def main():
@@ -65,7 +80,12 @@ def main():
     dev.print_params()
     
     # EXECUTE---------------------------------------------------------------------------------------------------
-    t_start = datetime.datetime.now()
+    
+    # TODO: use absolute positions to do closed loop
+    home(dev)
+
+    # Start experiment
+    print("Begin data acquisition...")
     
     # Open the connection (FicTrac must be waiting for socket connection)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -79,7 +99,6 @@ def main():
         counts = []
         PID_volts = []
         yaw_vels = []
-        yaw_delta_filts = []
         yaw_vel_filts = []
         headings = []
         stepper_posns = []
@@ -120,7 +139,9 @@ def main():
         trig.start()
         cam_timer.start()
 
-        # Keep receiving data until FicTrac closes:
+        t_start = datetime.datetime.now()
+
+        # Keep receiving data until cam timer ends:
         while cam_timer.is_alive():
 
             # Receive one data frame:
@@ -169,13 +190,9 @@ def main():
                 print("delta_ts is 0")
                 continue
 
-            # Compute yaw velocity:
-            yaw_delta = np.rad2deg(dr_lab[2]) # deg
-            yaw_vel = yaw_delta / delta_ts # deg/s            
-
-            # Apply filter:
-            yaw_delta_filt = filt.update(yaw_delta)
-            yaw_vel_filt = yaw_delta_filt / delta_ts
+            # Compute and filter yaw velocity:
+            yaw_vel = np.rad2deg(dr_lab[2]) / delta_ts # deg/s    
+            yaw_vel_filt = filt.update(yaw_vel)     
 
             # TODO: Add filters to servo inputs?
             # TODO: Add an explicit gain term for servo?
@@ -184,14 +201,16 @@ def main():
             servo_delta = speed * np.cos(heading) # mm/frame; use heading or direction as theta?           
             servo_posn = servo_posn + servo_map(servo_delta) # degs
 
+            # Global servo limits to prevent crashes:
+            servo_max = 180
             if servo_posn < 0:
                 servo_posn = 0
-            elif servo_posn > 180:
-                servo_posn = 180
+            elif servo_posn > servo_max:
+                servo_posn = servo_max
                         
             # Move!
-            gain = 1
-            stepper_posn = dev.run_with_feedback(-1 * gain * yaw_vel_filt, servo_posn)
+            k_stepper = 1
+            stepper_posn = dev.run_with_feedback(-1 * k_stepper * yaw_vel_filt, servo_posn)
 
             # Get times:
             now = datetime.datetime.now()
@@ -263,6 +282,18 @@ def main():
     plt.legend()
 
     plt.show()
+
+    # SAVE DATA------------------------------------------------------------------------------------------
+    df = pd.DataFrame({"Calendar time": cal_times,
+                       "Yaw velocity (deg)": yaw_vels,
+                       "Yaw filtered velocity (deg/s)": yaw_vel_filts,
+                       "Stepper position (deg)": stepper_posns,
+                       "Stepper velocity (deg/s)": stepper_posn_vels,
+                       "Servo position (deg)": servo_posns,
+                       "PID (V)": PID_volts
+                       })
+    
+    df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_loop.csv", index=False)
 
 
 if __name__ == '__main__':
