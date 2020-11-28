@@ -85,24 +85,20 @@ def main():
 
     # Connect cameras:
     for port in cam_ports:
-        command_BIAS(
-            port = port,
-            cmd = "connect", 
-            success_msg = f"Camera on port {port} connected", 
-            fail_msg = f"Port {port} not connected"
-        )
+        command_BIAS(port = port,
+                     cmd = "connect", 
+                     success_msg = f"Camera on port {port} connected", 
+                     fail_msg = f"Port {port} not connected")
         time.sleep(backoff_time)
 
     # Load json configuration file:
     for port in cam_ports:
 
         # First check if the target json is already loaded:
-        current_json = command_BIAS(
-            port = port,
-            cmd = "get-configuration",
-            success_msg = f"Got config json on port {port}",
-            fail_msg = f"Could not get config json on port {port}"
-        ).get("value")
+        current_json = command_BIAS(port = port,
+                                    cmd = "get-configuration",
+                                    success_msg = f"Got config json on port {port}",
+                                    fail_msg = f"Could not get config json on port {port}").get("value")
         
         time.sleep(backoff_time)
 
@@ -114,12 +110,10 @@ def main():
 
         else:
             print(f"Current json on port {port} is not the target json. Loading target json ...")
-            command_BIAS(
-                port = port,
-                cmd = f"load-configuration={config_path}",
-                success_msg = f"Loaded configuration json on port {port}",
-                fail_msg = f"Could not load configuration json on port {port}"
-            )
+            command_BIAS(port = port,
+                         cmd = f"load-configuration={config_path}",
+                         success_msg = f"Loaded configuration json on port {port}",
+                         fail_msg = f"Could not load configuration json on port {port}")
             time.sleep(backoff_time)
 
     time.sleep(3.0)
@@ -141,12 +135,10 @@ def main():
     for port in cam_ports:
 
         # First check if camera is already capturing:
-        status_dict = command_BIAS(
-            port = port,
-            cmd = "get-status",
-            success_msg = f"Got status on port {port}",
-            fail_msg = f"Could not get status on port {port}"
-        )
+        status_dict = command_BIAS(port = port,
+                                   cmd = "get-status",
+                                   success_msg = f"Got status on port {port}",
+                                   fail_msg = f"Could not get status on port {port}")
         time.sleep(backoff_time)
 
         is_capturing = status_dict.get("value").get("capturing")
@@ -156,12 +148,10 @@ def main():
             continue
         
         elif is_capturing is False:
-            command_BIAS(
-                port = port,
-                cmd = "start-capture",
-                success_msg = f"Started acquisition on port {port}",
-                fail_msg = f"Could not start acquisition on port {port}"
-            )
+            command_BIAS(port = port,
+                         cmd = "start-capture",
+                         success_msg = f"Started acquisition on port {port}",
+                         fail_msg = f"Could not start acquisition on port {port}")
 
     # Config json specifies an external trigger. 
     # Config json stops acquisition with a timer.
