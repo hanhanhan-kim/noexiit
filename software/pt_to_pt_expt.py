@@ -137,6 +137,10 @@ def main():
                                          args=(stepper, posns, ext_angle, poke_speed,
                                                ext_wait_time, retr_wait_time))
         
+        # Move to first stepper position prior to data acquisition:
+        stepper.move_to(posns[0])
+        stepper.busy_wait()
+        
         # Set up cam trigger:
         trig = CameraTrigger(trig_port)
         trig.set_freq(100) # frequency (Hz)
@@ -148,7 +152,6 @@ def main():
 
         # Make a thread to stop the cam trigger after some time:
         cam_timer = threading.Timer(duration, trig.stop)
-
         
         # START the DAQ counter, 1st count pre-trigger is 0:
         u3.Counter0(Reset=True)

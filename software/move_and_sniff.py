@@ -194,6 +194,10 @@ def main():
         motors_thread = threading.Thread(target=pt_to_pt_and_poke, 
                                          args=(stepper, posns, ext_angle, poke_speed,
                                                ext_wait_time, retr_wait_time))
+
+        # Move to first stepper position prior to data acquisition:
+        stepper.move_to(posns[0])
+        stepper.busy_wait()
         
         # Start motors:
         motors_thread.start()
