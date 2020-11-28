@@ -164,7 +164,7 @@ def main():
 
         # Get data while cam trigger is active:
         t_start = datetime.datetime.now()
-        while cam_timer.is_alive() == True: 
+        while cam_timer.is_alive(): 
             
             now = datetime.datetime.now()
             elapsed_time = (now - t_start).total_seconds() # get timedelta obj
