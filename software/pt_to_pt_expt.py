@@ -10,7 +10,6 @@ Collect ongoing motor position data as well as photoionization detector data.
 In addition, activate an ATMega328P-based camera trigger.
 """
 
-from __future__ import print_function
 from autostep import Autostep
 import datetime
 import time

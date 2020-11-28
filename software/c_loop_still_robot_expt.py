@@ -14,8 +14,6 @@ This experiment demonstrates the closed-loop capabilities of NOEXIIT.
 It assumes an ATMega328P-based camera trigger. 
 """
 
-from __future__ import print_function
-
 import socket
 import time
 import datetime

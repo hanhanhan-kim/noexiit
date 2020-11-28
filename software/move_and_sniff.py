@@ -9,7 +9,6 @@ for the same fixed duration.
 Collect ongoing motor position data as well as photoionization detector data.
 """
 
-from __future__ import print_function
 from autostep import Autostep
 import time
 import datetime
