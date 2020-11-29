@@ -46,7 +46,7 @@ def main():
     dev.set_max_mode_params({'speed': 1000,  'accel': 30000, 'decel': 30000})
     
     # Change to jog for debugging: 
-    dev.set_move_mode_to_max() 
+    dev.set_move_mode_to_jog() 
     dev.enable()
     dev.run(0.0)  
 
@@ -100,13 +100,14 @@ def main():
         yaw_vel_filts = []
         headings = []
         stepper_posns = []
+        stepper_posn_vels = []
         servo_posns = []
 
         # Set up DAQ:
         device = u3.U3()
 
         # Map the range of my linear servo, 0 to 27 mm, to 0 to 180:
-        servo_map = interp1d([-27,27],[-180,180])
+        servo_map = interp1d([-27,27],[-180,180], fill_value="extrapolate")
         servo_posn = 0
 
         # Define filter;
@@ -231,7 +232,7 @@ def main():
             # Save:
             cal_times.append(now)
             elapsed_times.append(elapsed_time) # s
-            delta_tses = delta_tses.append(delta_ts)
+            delta_tses.append(delta_ts)
             counts.append(count)
             PID_volts.append(PID_volt)
             yaw_vels.append(yaw_vel) # deg/s
@@ -239,9 +240,11 @@ def main():
             headings.append(heading) # rad
             stepper_posns.append(stepper_posn) # deg
             servo_posns.append(servo_posn) # deg
-    
-    stepper_posn_vels = [list(np.diff(stepper_posns)) / delta_ts for delta_ts in delta_tses] # deg/s
-    stepper_posn_vels.insert(0, None) # Add None to beginning of list, so its length matches with times
+
+            if len(np.diff(stepper_posns)) == 0:
+                stepper_posn_vels.append(None)
+            else:
+                stepper_posn_vels.append(np.diff(stepper_posns)[-1] / delta_ts) # deg/s
 
     # Close DAQ: 
     device.close()
@@ -257,7 +260,6 @@ def main():
     # plt.xlabel("time (s)")
     plt.ylabel("PID reading (V)")
     plt.grid(True)
-    plt.show()
 
     # Stepper:
     plt.subplot(3, 1, 2)
@@ -286,7 +288,7 @@ def main():
                        "Yaw velocity (deg)": yaw_vels,
                        "Yaw filtered velocity (deg/s)": yaw_vel_filts,
                        "Stepper position (deg)": stepper_posns,
-                       "Stepper velocity (deg/s)": stepper_posn_vels,
+                    #    "Stepper velocity (deg/s)": stepper_posn_vels,
                        "Servo position (deg)": servo_posns,
                        "PID (V)": PID_volts
                        })
