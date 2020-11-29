@@ -81,10 +81,33 @@ def main():
     
     # TODO: use absolute positions to do closed loop
     home(dev)
-
-    # Start experiment
-    print("Begin data acquisition...")
     
+    # Set up DAQ:
+    device = u3.U3()
+
+    # Map the range of my linear servo, 0 to 27 mm, to 0 to 180:
+    servo_map = interp1d([-27,27],[-180,180], fill_value="extrapolate")
+    servo_posn = 0
+
+    # Define filter;
+    freq_cutoff = 5 # in Hz
+    n = 2 # filter order
+    sampling_rate = 100 # in Hz, in this case, the camera FPS
+    filt = ButterFilter(freq_cutoff, n, sampling_rate)
+
+    # Set up cam trigger:
+    trig = CameraTrigger(trig_port)
+    trig.set_freq(100) # frequency (Hz)
+    trig.set_width(10)
+    trig.stop() # trig tends to continue running from last time
+
+    # Initializing the camera trigger takes 2.0 secs:
+    print("Starting up camera trigger (takes 2 secs) ...")
+    time.sleep(2.0)
+
+    # Make a thread to stop the cam trigger after some time:
+    cam_timer = threading.Timer(duration, trig.stop)
+
     # Open the connection (FicTrac must be waiting for socket connection)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         
@@ -103,36 +126,11 @@ def main():
         stepper_posn_vels = []
         servo_posns = []
 
-        # Set up DAQ:
-        device = u3.U3()
-
-        # Map the range of my linear servo, 0 to 27 mm, to 0 to 180:
-        servo_map = interp1d([-27,27],[-180,180], fill_value="extrapolate")
-        servo_posn = 0
-
-        # Define filter;
-        freq_cutoff = 5 # in Hz
-        n = 2 # filter order
-        sampling_rate = 100 # in Hz, in this case, the camera FPS
-        filt = ButterFilter(freq_cutoff, n, sampling_rate)
-
-        # Set up cam trigger:
-        trig = CameraTrigger(trig_port)
-        trig.set_freq(100) # frequency (Hz)
-        trig.set_width(10)
-        trig.stop() # trig tends to continue running from last time
-
-        # Initializing the camera trigger takes 2.0 secs:
-        time.sleep(2.0)
-
-        # Make a thread to stop the cam trigger after some time:
-        cam_timer = threading.Timer(duration, trig.stop)
-
         # START the DAQ counter, 1st count pre-trigger is 0:
         u3.Counter0(Reset=True)
         device.configIO(EnableCounter0=True)
         print(f"First count is pre-trigger and is 0: {device.getFeedback(u3.Counter0(Reset=False))[0]}")
-        time.sleep(2.0) # give time to see above print
+        # time.sleep(2.0) # give time to see above print
 
         # START the trigger, and the trigger-stopping timer:
         trig.start()
@@ -257,7 +255,6 @@ def main():
     # PID:
     plt.subplot(3, 1, 1)
     plt.plot(elapsed_times, PID_volts)
-    # plt.xlabel("time (s)")
     plt.ylabel("PID reading (V)")
     plt.grid(True)
 
@@ -266,7 +263,6 @@ def main():
     plt.plot(elapsed_times, yaw_vels, label="raw yaw velocity (deg/s")
     plt.plot(elapsed_times, yaw_vel_filts, '.b', label="filtered yaw velocity (deg/s)")
     plt.plot(elapsed_times, stepper_posn_vels, 'r', label="stepper position velocity (deg/s)")
-    # plt.xlabel("time (s)")
     plt.ylabel("yaw delta (deg)")
     plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
     plt.grid(True)
@@ -288,7 +284,7 @@ def main():
                        "Yaw velocity (deg)": yaw_vels,
                        "Yaw filtered velocity (deg/s)": yaw_vel_filts,
                        "Stepper position (deg)": stepper_posns,
-                    #    "Stepper velocity (deg/s)": stepper_posn_vels,
+                       "Stepper velocity (deg/s)": stepper_posn_vels,
                        "Servo position (deg)": servo_posns,
                        "PID (V)": PID_volts
                        })
