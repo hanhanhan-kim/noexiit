@@ -199,7 +199,7 @@ def main():
             # TODO: Add an explicit gain term for servo?
 
             # Compute servo position from animal speed and heading:
-            servo_delta = speed * np.cos(heading) # mm/frame; use heading or direction as theta?           
+            servo_delta = speed * np.cos(heading) # mm/frame        
             servo_posn = servo_posn + servo_map(servo_delta) # degs
 
             # Global servo limits to prevent crashes:
@@ -211,7 +211,7 @@ def main():
                         
             # Move!
             k_stepper = 1
-            stepper_posn = dev.run_with_feedback(-1 * k_stepper * yaw_vel_filt, servo_posn)
+            stepper_posn = dev.run_with_feedback(-1 * k_stepper * yaw_vel_filt, servo_posn) # TODO: try with filter off?
 
             # Get times:
             now = datetime.datetime.now()
