@@ -46,7 +46,7 @@ def main():
     dev.set_max_mode_params({'speed': 1000,  'accel': 30000, 'decel': 30000})
     
     # Change to jog for debugging: 
-    dev.set_move_mode_to_jog() 
+    dev.set_move_mode_to_max() 
     dev.enable()
     dev.run(0.0)  
 
@@ -116,14 +116,13 @@ def main():
         data = ""
         cal_times = []
         elapsed_times = []
-        delta_tses = []
         counts = []
         PID_volts = []
         yaw_vels = []
         yaw_vel_filts = []
         headings = []
         stepper_posns = []
-        stepper_posn_vels = []
+        stepper_posn_deltas = []
         servo_posns = []
 
         # START the DAQ counter, 1st count pre-trigger is 0:
@@ -165,7 +164,7 @@ def main():
             
             # Extract FicTrac variables:
             # See https://github.com/rjdmoore/fictrac/blob/master/doc/data_header.txt
-            # cnt = int(toks[1])
+            cnt = int(toks[1])
             # dr_cam = [float(toks[2]), float(toks[3]), float(toks[4])]
             # err = float(toks[5])
             dr_lab = [float(toks[6]), float(toks[7]), float(toks[8])]
@@ -185,6 +184,11 @@ def main():
             
             if delta_ts == 0:
                 print("delta_ts is 0")
+                continue
+            
+            # Prevent big speed jump on start-up bc delta_ts is weirdly small at start:
+            if cnt < 2:
+                print("FicTrac count is less than 2")
                 continue
 
             # Compute and filter yaw velocity:
@@ -221,16 +225,17 @@ def main():
             print(f"Calendar time: {now}\n", 
                   f"Elapsed time (s): {elapsed_time}\n", 
                   f"Time delta bw frames (s): {delta_ts}\n",
-                  f"Count (frame): {count}\n",
+                  f"DAQ count (frame): {count}\n",
+                  f"FicTrac count (for debugging only): {count}\n",
                   f"PID (V): {PID_volt}\n",
                   f"Filtered yaw velocity (deg/s): {yaw_vel_filt}\n",
-                  f"Stepper position (deg): {stepper_posn}\n", 
+                  f"Heading (deg, wrapped): {np.rad2deg(heading) % 360}\n",
+                  f"Stepper position (deg, wrapped): {stepper_posn % 360}\n", 
                   f"Servo position (deg): {servo_posn}\n\n") 
             
             # Save:
             cal_times.append(now)
             elapsed_times.append(elapsed_time) # s
-            delta_tses.append(delta_ts)
             counts.append(count)
             PID_volts.append(PID_volt)
             yaw_vels.append(yaw_vel) # deg/s
@@ -240,9 +245,12 @@ def main():
             servo_posns.append(servo_posn) # deg
 
             if len(np.diff(stepper_posns)) == 0:
-                stepper_posn_vels.append(None)
+                stepper_posn_deltas.append(None)
             else:
-                stepper_posn_vels.append(np.diff(stepper_posns)[-1] / delta_ts) # deg/s
+                stepper_posn_deltas.append(np.diff(stepper_posns)[-1]) # deg
+
+    # stepper_posn_deltas = list(np.diff(stepper_posns)) # deg
+    # stepper_posn_deltas.insert(0, None) # Add None object to beginning of list, so its length matches with times:
 
     # Close DAQ: 
     device.close()
@@ -258,12 +266,28 @@ def main():
     plt.ylabel("PID reading (V)")
     plt.grid(True)
 
-    # Stepper:
+    # # Stepper:
+    # time_diffs = list(np.diff(elapsed_times))
+    # time_diffs.insert(0, None) 
+    # stepper_posn_vels = [stepper_posn_delta / time_diff for stepper_posn_delta, time_diff in zip(stepper_posn_deltas, time_diffs) if stepper_posn_delta != None and time_diff != None]
+    # plt.subplot(3, 1, 2)
+    # plt.plot(elapsed_times, yaw_vels, label="raw yaw velocity (deg/s")
+    # plt.plot(elapsed_times, yaw_vel_filts, '.b', label="filtered yaw velocity (deg/s)")
+    # plt.plot(elapsed_times, stepper_posn_vels, 'r', label="stepper position velocity (deg/s)")
+    # plt.ylabel("yaw delta (deg)")
+    # plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
+    # plt.grid(True)
+    # plt.legend()
+
+    # Angular position (these should overlay):
+    wrapped_headings = [np.rad2deg(heading) % 360 for heading in headings]
+    wrapped_stepper_posns = [stepper_posn % 360 for stepper_posn in stepper_posns]
+    headings_minus_stepper_posns = (np.array(wrapped_stepper_posns) - np.array(wrapped_headings)) % 360
     plt.subplot(3, 1, 2)
-    plt.plot(elapsed_times, yaw_vels, label="raw yaw velocity (deg/s")
-    plt.plot(elapsed_times, yaw_vel_filts, '.b', label="filtered yaw velocity (deg/s)")
-    plt.plot(elapsed_times, stepper_posn_vels, 'r', label="stepper position velocity (deg/s)")
-    plt.ylabel("yaw delta (deg)")
+    plt.plot(elapsed_times, wrapped_headings, ".b", label="animal heading")
+    plt.plot(elapsed_times, wrapped_stepper_posns, ".r", label="stepper position")
+    plt.plot(elapsed_times, headings_minus_stepper_posns, ".m", label="animal heading - stepper position") 
+    plt.ylabel("angular position (deg, wrapped)")
     plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
     plt.grid(True)
     plt.legend()
@@ -284,7 +308,7 @@ def main():
                        "Yaw velocity (deg)": yaw_vels,
                        "Yaw filtered velocity (deg/s)": yaw_vel_filts,
                        "Stepper position (deg)": stepper_posns,
-                       "Stepper velocity (deg/s)": stepper_posn_vels,
+                       "Heading (deg)": [np.rad2deg(heading) for heading in headings],
                        "Servo position (deg)": servo_posns,
                        "PID (V)": PID_volts
                        })
