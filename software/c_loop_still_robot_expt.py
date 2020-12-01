@@ -133,8 +133,8 @@ def main():
         last_heading = 0 
         crossings = 0
 
-        # Error correction gain term for preventing drift:
-        k_p = 2
+        # Error correction gain term for preventing drift; must be < 0 bc I do a *-1 in my loop:
+        k_p = -2
         
         # Experimental gain term for modifying the significance of the animal's turns; usually 1:
         k_stepper = 1
@@ -241,7 +241,7 @@ def main():
             print(f"error: {error}")
 
             # Move with the corrected velocity!
-            stepper_posn = dev.run_with_feedback(-1 * k_stepper * yaw_vel_filt, servo_posn) 
+            stepper_posn = dev.run_with_feedback(-1 * k_stepper * corrected_vel, servo_posn) 
 
             # Get times:
             now = datetime.datetime.now()
@@ -311,16 +311,11 @@ def main():
     # plt.legend()
 
     # Angular position (these should overlay):
-    unwrapped_headings = [heading % 360 for heading in headings]
-    unwrapped_stepper_posns = [stepper_posn % 360 for stepper_posn in stepper_posns]
-    headings_minus_stepper_posns = (np.array(unwrapped_stepper_posns) - np.array(unwrapped_headings)) % 360
-
     plt.subplot(3, 1, 1)
     plt.plot(elapsed_times, headings, "b", label="animal heading")
     plt.plot(elapsed_times, stepper_posns, "r", label="stepper position")
-    # plt.plot(elapsed_times, headings_minus_stepper_posns, ".m", label="animal heading - stepper position") 
     plt.ylabel("angular position (deg, wrapped)")
-    plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz  | Corrected velocity not yet added to feedback")
+    plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz  | Corrected velocity added to feedback")
     plt.grid(True)
     plt.legend()
 
@@ -340,6 +335,7 @@ def main():
     # plt.grid(True)
     # plt.legend()
 
+    # Uncorrected vs corrected yaw velocities:
     plt.subplot(3, 1, 3)
     plt.plot(elapsed_times, yaw_vel_filts, 'g', label="uncorrected yaw velocity")
     plt.plot(elapsed_times, corrected_vels, 'c', label="corrected yaw velocity")
