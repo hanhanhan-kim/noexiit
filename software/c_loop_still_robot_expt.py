@@ -133,8 +133,8 @@ def main():
         last_heading = 0 
         crossings = 0
 
-        # Error correction gain term for preventing drift; must be < 0 bc I do a *-1 in my loop:
-        k_p = -2
+        # Error correction gain term for preventing drift; MUST be < 0 bc I do a *-1 in my loop:
+        k_p = -6
         
         # Experimental gain term for modifying the significance of the animal's turns; usually 1:
         k_stepper = 1
