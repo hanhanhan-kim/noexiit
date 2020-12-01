@@ -125,6 +125,20 @@ def main():
         stepper_posn_deltas = []
         servo_posns = []
 
+        errors = []
+        corrected_vels = []
+
+        # Initialize a value; home() sets the position to 0 when reed switch is hit, so 0 makes sense:
+        stepper_posn = 0 
+        last_heading = 0 
+        crossings = 0
+
+        # Error correction gain term for preventing drift:
+        k_p = 2
+        
+        # Experimental gain term for modifying the significance of the animal's turns; usually 1:
+        k_stepper = 1
+
         # START the DAQ counter, 1st count pre-trigger is 0:
         u3.Counter0(Reset=True)
         device.configIO(EnableCounter0=True)
@@ -136,7 +150,7 @@ def main():
         cam_timer.start()
 
         t_start = datetime.datetime.now()
-
+        
         # Keep receiving data until cam timer ends:
         while cam_timer.is_alive():
 
@@ -189,16 +203,12 @@ def main():
             # Prevent big speed jump on start-up bc delta_ts is weirdly small at start:
             if cnt < 2:
                 print("FicTrac count is less than 2")
-                continue
-
-            # Compute and filter yaw velocity:
-            yaw_vel = np.rad2deg(dr_lab[2]) / delta_ts # deg/s    
-            yaw_vel_filt = filt.update(yaw_vel)     
+                continue    
 
             # TODO: Add filters to servo inputs?
             # TODO: Add an explicit gain term for servo?
 
-            # Compute servo position from animal speed and heading:
+            # Compute servo position from animal speed and heading, which is 0 to 2pi:
             servo_delta = speed * np.cos(heading) # mm/frame        
             servo_posn = servo_posn + servo_map(servo_delta) # degs
 
@@ -208,10 +218,33 @@ def main():
                 servo_posn = 0
             elif servo_posn > servo_max:
                 servo_posn = servo_max
-                        
-            # Move!
-            k_stepper = 1
-            stepper_posn = dev.run_with_feedback(-1 * k_stepper * yaw_vel_filt, servo_posn) # TODO: try with filter off?
+            
+            # Compute and filter yaw velocity:
+            yaw_vel = np.rad2deg(dr_lab[2]) / delta_ts # deg/s    
+            yaw_vel_filt = filt.update(yaw_vel) 
+
+            # Get cummulative heading:
+            heading = np.rad2deg(heading) + crossings * 360
+            if (350 < last_heading % 360 < 360) and (10 > heading % 360 > 0):
+                if last_heading % 360 > heading % 360:
+                    heading += 360
+                    crossings += 1
+            if (10 > last_heading % 360 > 0) and (350 < heading % 360 < 360):
+                if last_heading % 360 < heading % 360:
+                    heading -= 360
+                    crossings -= 1
+            if last_heading % 360 == heading % 360:
+                pass
+            
+            # Correct for drift:
+            proj_stepper_posn = stepper_posn + yaw_vel_filt * delta_ts # linear extrapolation from last vals
+            error = heading - proj_stepper_posn
+            corrected_vel = yaw_vel_filt + (k_p * error)
+
+            print(f"error: {error}")
+
+            # Move with the corrected velocity!
+            stepper_posn = dev.run_with_feedback(-1 * k_stepper * yaw_vel_filt, servo_posn) 
 
             # Get times:
             now = datetime.datetime.now()
@@ -229,6 +262,7 @@ def main():
                   f"FicTrac count (for debugging only): {count}\n",
                   f"PID (V): {PID_volt}\n",
                   f"Filtered yaw velocity (deg/s): {yaw_vel_filt}\n",
+                  f"Corrected yaw velocity (deg/s): {corrected_vel}\n",
                   f"Heading (deg, wrapped): {np.rad2deg(heading) % 360}\n",
                   f"Stepper position (deg, wrapped): {stepper_posn % 360}\n", 
                   f"Servo position (deg): {servo_posn}\n\n") 
@@ -242,6 +276,8 @@ def main():
             yaw_vel_filts.append(yaw_vel_filt) # deg/s
             headings.append(heading) # rad
             stepper_posns.append(stepper_posn) # deg
+            corrected_vels.append(corrected_vel) # deg/s
+            errors.append(error) # deg
             servo_posns.append(servo_posn) # deg
 
             if len(np.diff(stepper_posns)) == 0:
@@ -249,8 +285,7 @@ def main():
             else:
                 stepper_posn_deltas.append(np.diff(stepper_posns)[-1]) # deg
 
-    # stepper_posn_deltas = list(np.diff(stepper_posns)) # deg
-    # stepper_posn_deltas.insert(0, None) # Add None object to beginning of list, so its length matches with times:
+            last_heading = heading
 
     # Close DAQ: 
     device.close()
@@ -261,10 +296,11 @@ def main():
     # PLOT RESULTS----------------------------------------------------------------------------------------------
     
     # PID:
-    plt.subplot(3, 1, 1)
-    plt.plot(elapsed_times, PID_volts)
-    plt.ylabel("PID reading (V)")
-    plt.grid(True)
+    # TODO: Make the PID its own plot to show, and not a subplot
+    # plt.subplot(3, 1, 1)
+    # plt.plot(elapsed_times, PID_volts)
+    # plt.ylabel("PID reading (V)")
+    # plt.grid(True)
 
     # # Stepper:
     # time_diffs = list(np.diff(elapsed_times))
@@ -280,24 +316,41 @@ def main():
     # plt.legend()
 
     # Angular position (these should overlay):
-    wrapped_headings = [np.rad2deg(heading) % 360 for heading in headings]
-    wrapped_stepper_posns = [stepper_posn % 360 for stepper_posn in stepper_posns]
-    headings_minus_stepper_posns = (np.array(wrapped_stepper_posns) - np.array(wrapped_headings)) % 360
-    plt.subplot(3, 1, 2)
-    plt.plot(elapsed_times, wrapped_headings, ".b", label="animal heading")
-    plt.plot(elapsed_times, wrapped_stepper_posns, ".r", label="stepper position")
-    plt.plot(elapsed_times, headings_minus_stepper_posns, ".m", label="animal heading - stepper position") 
+    unwrapped_headings = [heading % 360 for heading in headings]
+    unwrapped_stepper_posns = [stepper_posn % 360 for stepper_posn in stepper_posns]
+    headings_minus_stepper_posns = (np.array(unwrapped_stepper_posns) - np.array(unwrapped_headings)) % 360
+
+    plt.subplot(3, 1, 1)
+    plt.plot(elapsed_times, headings, "b", label="animal heading")
+    plt.plot(elapsed_times, stepper_posns, "r", label="stepper position")
+    # plt.plot(elapsed_times, headings_minus_stepper_posns, ".m", label="animal heading - stepper position") 
     plt.ylabel("angular position (deg, wrapped)")
-    plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
+    plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz  | Corrected velocity not yet added to feedback")
     plt.grid(True)
     plt.legend()
 
+    # Error:
+    plt.subplot(3, 1, 2)
+    plt.title("error = animal heading - stepper position")
+    plt.plot(elapsed_times, errors, ".m")
+    plt.ylabel("error (degs)")
+    plt.grid(True)
+
     # Servo:
+    # plt.subplot(3, 1, 3)
+    # plt.plot(elapsed_times, servo_posns, 'g', label="servo position (deg)")
+    # plt.xlabel("time (s)")
+    # plt.ylabel("servo position (deg)")
+    # plt.title(f"servo position commands (deg)")
+    # plt.grid(True)
+    # plt.legend()
+
     plt.subplot(3, 1, 3)
-    plt.plot(elapsed_times, servo_posns, 'g', label="servo position (deg)")
+    plt.plot(elapsed_times, yaw_vel_filts, 'g', label="uncorrected yaw velocity")
+    plt.plot(elapsed_times, corrected_vels, 'c', label="corrected yaw velocity")
     plt.xlabel("time (s)")
-    plt.ylabel("servo position (deg)")
-    plt.title(f"servo position commands (deg)")
+    plt.ylabel("yaw velocity (deg/s)")
+    plt.title(f"proportional gain:{k_p}")
     plt.grid(True)
     plt.legend()
 
@@ -305,10 +358,12 @@ def main():
 
     # SAVE DATA------------------------------------------------------------------------------------------
     df = pd.DataFrame({"Calendar time": cal_times,
+                       "DAQ counts": counts,
                        "Yaw velocity (deg)": yaw_vels,
                        "Yaw filtered velocity (deg/s)": yaw_vel_filts,
+                       "Heading (deg)": headings,
                        "Stepper position (deg)": stepper_posns,
-                       "Heading (deg)": [np.rad2deg(heading) for heading in headings],
+                       "Yaw corrected velocity (deg/s)": corrected_vels,
                        "Servo position (deg)": servo_posns,
                        "PID (V)": PID_volts
                        })
