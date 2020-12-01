@@ -224,17 +224,14 @@ def main():
             yaw_vel_filt = filt.update(yaw_vel) 
 
             # Get cummulative heading:
-            heading = np.rad2deg(heading) + crossings * 360
-            if (350 < last_heading % 360 < 360) and (10 > heading % 360 > 0):
-                if last_heading % 360 > heading % 360:
-                    heading += 360
-                    crossings += 1
-            if (10 > last_heading % 360 > 0) and (350 < heading % 360 < 360):
-                if last_heading % 360 < heading % 360:
-                    heading -= 360
-                    crossings -= 1
-            if last_heading % 360 == heading % 360:
-                pass
+            heading = np.rad2deg(heading)
+            diff = heading - last_heading
+
+            if np.abs(diff) > 180: # some cutoff that defines discontinuity
+                crossings -= np.sign(diff)
+
+            last_heading = heading
+            heading = heading + 360 * crossings
             
             # Correct for drift:
             proj_stepper_posn = stepper_posn + yaw_vel_filt * delta_ts # linear extrapolation from last vals
@@ -284,8 +281,6 @@ def main():
                 stepper_posn_deltas.append(None)
             else:
                 stepper_posn_deltas.append(np.diff(stepper_posns)[-1]) # deg
-
-            last_heading = heading
 
     # Close DAQ: 
     device.close()
