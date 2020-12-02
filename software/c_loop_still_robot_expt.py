@@ -201,12 +201,12 @@ def main():
                 continue
             
             # Prevent big speed jump on start-up bc delta_ts is weirdly small at start:
+            # TODO: Is this still worth doing?
             if cnt < 2:
                 print("FicTrac count is less than 2")
                 continue    
 
-            # TODO: Add filters to servo inputs?
-            # TODO: Add an explicit gain term for servo?
+            # TODO: Add filters to servo inputs? Add an explicit gain term for servo?
 
             # Compute servo position from animal speed and heading, which is 0 to 2pi:
             servo_delta = speed * np.cos(heading) # mm/frame        
@@ -256,7 +256,7 @@ def main():
                   f"Elapsed time (s): {elapsed_time}\n", 
                   f"Time delta bw frames (s): {delta_ts}\n",
                   f"DAQ count (frame): {count}\n",
-                  f"FicTrac count (for debugging only): {count}\n",
+                  f"FicTrac count (frame): {cnt}\n",
                   f"PID (V): {PID_volt}\n",
                   f"Filtered yaw velocity (deg/s): {yaw_vel_filt}\n",
                   f"Corrected yaw velocity (deg/s): {corrected_vel}\n",
@@ -349,7 +349,8 @@ def main():
 
     # SAVE DATA------------------------------------------------------------------------------------------
     df = pd.DataFrame({"Calendar time": cal_times,
-                       "DAQ counts": counts,
+                       "DAQ count (frame)": counts,
+                       "FicTrac count (frame)": cnt,
                        "Yaw velocity (deg)": yaw_vels,
                        "Yaw filtered velocity (deg/s)": yaw_vel_filts,
                        "Heading (deg)": headings,
