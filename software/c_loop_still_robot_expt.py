@@ -256,7 +256,7 @@ def main():
             print(f"Calendar time: {now}\n", 
                   f"Elapsed time (s): {elapsed_time}\n", 
                   f"Time delta bw frames (s): {delta_ts}\n",
-                  f"DAQ count (frame): {count}\n",
+                  f"DAQ count (frame): {daq_count}\n",
                   f"FicTrac count (frame): {ftrac_count}\n",
                   f"PID (V): {PID_volt}\n",
                   f"Filtered yaw velocity (deg/s): {yaw_vel_filt}\n",
