@@ -116,7 +116,8 @@ def main():
         data = ""
         cal_times = []
         elapsed_times = []
-        counts = []
+        daq_counts = []
+        ftrac_counts = []
         PID_volts = []
         yaw_vels = []
         yaw_vel_filts = []
@@ -178,7 +179,7 @@ def main():
             
             # Extract FicTrac variables:
             # See https://github.com/rjdmoore/fictrac/blob/master/doc/data_header.txt
-            cnt = int(toks[1])
+            ftrac_count = int(toks[1])
             # dr_cam = [float(toks[2]), float(toks[3]), float(toks[4])]
             # err = float(toks[5])
             dr_lab = [float(toks[6]), float(toks[7]), float(toks[8])]
@@ -202,7 +203,7 @@ def main():
             
             # Prevent big speed jump on start-up bc delta_ts is weirdly small at start:
             # TODO: Is this still worth doing?
-            if cnt < 2:
+            if ftrac_count < 2:
                 print("FicTrac count is less than 2")
                 continue    
 
@@ -249,14 +250,14 @@ def main():
 
             # Get info from DAQ:
             counter_0_cmd = u3.Counter0(Reset=False)
-            count = device.getFeedback(counter_0_cmd)[0] # 1st count post-trigger is 1
+            daq_count = device.getFeedback(counter_0_cmd)[0] # 1st count post-trigger is 1
             PID_volt = device.getAIN(0)
             
             print(f"Calendar time: {now}\n", 
                   f"Elapsed time (s): {elapsed_time}\n", 
                   f"Time delta bw frames (s): {delta_ts}\n",
                   f"DAQ count (frame): {count}\n",
-                  f"FicTrac count (frame): {cnt}\n",
+                  f"FicTrac count (frame): {ftrac_count}\n",
                   f"PID (V): {PID_volt}\n",
                   f"Filtered yaw velocity (deg/s): {yaw_vel_filt}\n",
                   f"Corrected yaw velocity (deg/s): {corrected_vel}\n",
@@ -267,7 +268,8 @@ def main():
             # Save:
             cal_times.append(now)
             elapsed_times.append(elapsed_time) # s
-            counts.append(count)
+            daq_counts.append(daq_count)
+            ftrac_counts.append(ftrac_count)
             PID_volts.append(PID_volt)
             yaw_vels.append(yaw_vel) # deg/s
             yaw_vel_filts.append(yaw_vel_filt) # deg/s
@@ -349,8 +351,8 @@ def main():
 
     # SAVE DATA------------------------------------------------------------------------------------------
     df = pd.DataFrame({"Calendar time": cal_times,
-                       "DAQ count (frame)": counts,
-                       "FicTrac count (frame)": cnt,
+                       "DAQ count (frame)": daq_counts,
+                       "FicTrac count (frame)": ftrac_counts,
                        "Yaw velocity (deg)": yaw_vels,
                        "Yaw filtered velocity (deg/s)": yaw_vel_filts,
                        "Heading (deg)": headings,
