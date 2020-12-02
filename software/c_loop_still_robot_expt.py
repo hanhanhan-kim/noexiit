@@ -202,7 +202,6 @@ def main():
                 continue
             
             # Prevent big speed jump on start-up bc delta_ts is weirdly small at start:
-            # TODO: Is this still worth doing?
             if ftrac_count < 2:
                 print("FicTrac count is less than 2")
                 continue    
@@ -239,8 +238,6 @@ def main():
             error = heading - proj_stepper_posn
             corrected_vel = yaw_vel_filt + (k_p * error)
 
-            print(f"error: {error}")
-
             # Move with the corrected velocity!
             stepper_posn = dev.run_with_feedback(-1 * k_stepper * corrected_vel, servo_posn) 
 
@@ -261,8 +258,9 @@ def main():
                   f"PID (V): {PID_volt}\n",
                   f"Filtered yaw velocity (deg/s): {yaw_vel_filt}\n",
                   f"Corrected yaw velocity (deg/s): {corrected_vel}\n",
-                  f"Heading (deg, wrapped): {np.rad2deg(heading) % 360}\n",
-                  f"Stepper position (deg, wrapped): {stepper_posn % 360}\n", 
+                  f"Heading (deg): {heading}\n",
+                  f"Stepper position (deg): {stepper_posn}\n",
+                  f"Error (deg) = heading - stepper position: {error}\n",
                   f"Servo position (deg): {servo_posn}\n\n") 
             
             # Save:
@@ -279,6 +277,7 @@ def main():
             errors.append(error) # deg
             servo_posns.append(servo_posn) # deg
 
+            # TODO: Delete this?
             if len(np.diff(stepper_posns)) == 0:
                 stepper_posn_deltas.append(None)
             else:
@@ -291,59 +290,61 @@ def main():
     dev.run(0.0)
     
     # PLOT RESULTS----------------------------------------------------------------------------------------------
-    
-    # PID:
-    # TODO: Make the PID its own plot to show, and not a subplot
-    # plt.subplot(3, 1, 1)
-    # plt.plot(elapsed_times, PID_volts)
-    # plt.ylabel("PID reading (V)")
-    # plt.grid(True)
 
-    # # Stepper:
-    # time_diffs = list(np.diff(elapsed_times))
-    # time_diffs.insert(0, None) 
-    # stepper_posn_vels = [stepper_posn_delta / time_diff for stepper_posn_delta, time_diff in zip(stepper_posn_deltas, time_diffs) if stepper_posn_delta != None and time_diff != None]
-    # plt.subplot(3, 1, 2)
-    # plt.plot(elapsed_times, yaw_vels, label="raw yaw velocity (deg/s")
-    # plt.plot(elapsed_times, yaw_vel_filts, '.b', label="filtered yaw velocity (deg/s)")
-    # plt.plot(elapsed_times, stepper_posn_vels, 'r', label="stepper position velocity (deg/s)")
-    # plt.ylabel("yaw delta (deg)")
-    # plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
-    # plt.grid(True)
-    # plt.legend()
+    # 1. Closed loop feedback assessment:
 
     # Angular position (these should overlay):
     plt.subplot(3, 1, 1)
-    plt.plot(elapsed_times, headings, "b", label="animal heading")
-    plt.plot(elapsed_times, stepper_posns, "r", label="stepper position")
-    plt.ylabel("angular position (deg, wrapped)")
-    plt.title(f"frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz  | Corrected velocity added to feedback")
+    plt.plot(elapsed_times, headings, "b", label="animal heading", markersize=5)
+    plt.plot(elapsed_times, stepper_posns, "r", label="stepper position", markersize=5)
+    plt.ylabel("angular position (deg)")
+    plt.title(f"Corrected velocity added to feedback")
     plt.grid(True)
     plt.legend()
 
     # Error:
     plt.subplot(3, 1, 2)
     plt.title("error = animal heading - stepper position")
-    plt.plot(elapsed_times, errors, ".m")
+    plt.plot(elapsed_times, errors, "m", markersize=5)
     plt.ylabel("error (degs)")
     plt.grid(True)
 
-    # Servo:
-    # plt.subplot(3, 1, 3)
-    # plt.plot(elapsed_times, servo_posns, 'g', label="servo position (deg)")
-    # plt.xlabel("time (s)")
-    # plt.ylabel("servo position (deg)")
-    # plt.title(f"servo position commands (deg)")
-    # plt.grid(True)
-    # plt.legend()
-
     # Uncorrected vs corrected yaw velocities:
     plt.subplot(3, 1, 3)
-    plt.plot(elapsed_times, yaw_vel_filts, 'g', label="uncorrected yaw velocity")
-    plt.plot(elapsed_times, corrected_vels, 'c', label="corrected yaw velocity")
+    plt.plot(elapsed_times, yaw_vels, 'palegreen', markersize=1, label="input raw yaw velocity")
+    plt.plot(elapsed_times, yaw_vel_filts, 'g', label="input filtered yaw velocity")
+    plt.plot(elapsed_times, corrected_vels, 'c', label="output yaw velocity")
     plt.xlabel("time (s)")
     plt.ylabel("yaw velocity (deg/s)")
-    plt.title(f"proportional gain:{k_p}")
+    plt.title(f"feedback correction added with proportional gain of {k_p} | frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
+    plt.grid(True)
+    plt.legend()
+
+    plt.show()
+
+    # 2. PID readings and motor commands:
+
+    # PID:
+    plt.subplot(3, 1, 1)
+    plt.plot(elapsed_times, PID_volts)
+    plt.ylabel("PID reading (V)")
+    plt.grid(True)
+
+    # Stepper (wrapped angular heading):
+    plt.subplot(3, 1, 2)
+    plt.plot(elapsed_times, [heading % 360 for heading in headings], "b", label="animal heading")
+    plt.plot(elapsed_times, [stepper_posn % 360 for stepper_posn in stepper_posns], "r", label="stepper position")
+    plt.ylabel("angular position (deg, wrapped)")
+    plt.title(f"Corrected velocity added to feedback")
+    plt.grid(True)
+    plt.legend()
+
+    # Servo:
+    plt.subplot(3, 1, 3)
+    plt.plot(elapsed_times, servo_posns, 'g', label="servo position (deg)")
+    plt.xlabel("time (s)")
+    plt.ylabel("servo position (deg)")
+    plt.title(f"servo position commands (deg)")
     plt.grid(True)
     plt.legend()
 
@@ -351,13 +352,14 @@ def main():
 
     # SAVE DATA------------------------------------------------------------------------------------------
     df = pd.DataFrame({"Calendar time": cal_times,
-                       "DAQ count (frame)": daq_counts,
-                       "FicTrac count (frame)": ftrac_counts,
+                       "DAQ counts": daq_counts,
+                       "FicTrac counts": ftrac_counts,
                        "Yaw velocity (deg)": yaw_vels,
                        "Yaw filtered velocity (deg/s)": yaw_vel_filts,
                        "Heading (deg)": headings,
                        "Stepper position (deg)": stepper_posns,
                        "Yaw corrected velocity (deg/s)": corrected_vels,
+                       "k_p for feedback correction": k_p,
                        "Servo position (deg)": servo_posns,
                        "PID (V)": PID_volts
                        })
