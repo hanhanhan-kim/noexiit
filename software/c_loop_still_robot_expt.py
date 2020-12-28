@@ -139,9 +139,9 @@ def main():
         # Error correction gain terms for preventing drift
         # MUST be < 0 bc I do a *-1 in my loop
         # These values work well for FicTrac vAOV of 1.79
-        k_p = -0
-        k_d = -0
-        k_i = -0
+        k_p = -5
+        k_d = -3
+        k_i = 0
         
         # Experimental gain term for modifying the significance of the animal's turns; usually 1:
         k_stepper = 1
@@ -331,7 +331,7 @@ def main():
     plt.plot(elapsed_times, corrected_vels, 'c', label="output yaw velocity")
     plt.xlabel("time (s)")
     plt.ylabel("yaw velocity (deg/s)")
-    plt.title(f"feedback correction added with $K_P = $ {k_p}, $K_I = $ {k_i}, and $K_D = $ {k_d} | frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
+    plt.title(f"feedback correction added with $K_P = $ {k_p}, $K_I = $ {k_i}, $K_D = $ {k_d} | frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
     plt.grid(True)
     plt.legend()
 
@@ -374,7 +374,9 @@ def main():
                        "Heading (deg)": headings,
                        "Stepper position (deg)": stepper_posns,
                        "Yaw corrected velocity (deg/s)": corrected_vels,
-                       "k_p for feedback correction": k_p,
+                       "k_p for stepper feedback": k_p,
+                       "k_i for stepper feedback": k_i,
+                       "k_d for stepper feedback": k_d,
                        "Servo position (deg)": servo_posns,
                        "PID (V)": PID_volts
                        })
