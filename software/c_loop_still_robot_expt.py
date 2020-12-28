@@ -134,10 +134,14 @@ def main():
         last_heading = 0 
         crossings = 0
         old_error = 0
+        cum_error = 0
 
-        # Error correction gain terms for preventing drift; MUST be < 0 bc I do a *-1 in my loop:
-        k_p = -6
-        k_d = -3
+        # Error correction gain terms for preventing drift
+        # MUST be < 0 bc I do a *-1 in my loop
+        # These values work well for FicTrac vAOV of 1.79
+        k_p = -0
+        k_d = -0
+        k_i = -0
         
         # Experimental gain term for modifying the significance of the animal's turns; usually 1:
         k_stepper = 1
@@ -243,8 +247,7 @@ def main():
             # D control:
             corrected_vel += old_error * k_d
             # I control:
-
-            old_error = error
+            corrected_vel += np.sum(cum_error) * k_i
 
             # Move with the corrected velocity!
             stepper_posn = dev.run_with_feedback(-1 * k_stepper * corrected_vel, servo_posn) 
@@ -285,6 +288,10 @@ def main():
             errors.append(error) # deg
             servo_posns.append(servo_posn) # deg
 
+            # For D and I control:
+            old_error = error
+            cum_error = np.sum(errors)
+
             # TODO: Delete this?
             if len(np.diff(stepper_posns)) == 0:
                 stepper_posn_deltas.append(None)
@@ -324,7 +331,7 @@ def main():
     plt.plot(elapsed_times, corrected_vels, 'c', label="output yaw velocity")
     plt.xlabel("time (s)")
     plt.ylabel("yaw velocity (deg/s)")
-    plt.title(f"feedback correction added with $K_P = $ {k_p} and $K_D = $ {k_d} | frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
+    plt.title(f"feedback correction added with $K_P = $ {k_p}, $K_I = $ {k_i}, and $K_D = $ {k_d} | frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
     plt.grid(True)
     plt.legend()
 
