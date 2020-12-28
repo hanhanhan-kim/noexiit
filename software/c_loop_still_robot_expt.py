@@ -129,13 +129,15 @@ def main():
         errors = []
         corrected_vels = []
 
-        # Initialize a value; home() sets the position to 0 when reed switch is hit, so 0 makes sense:
-        stepper_posn = 0 
+        # Initialize values
+        stepper_posn = 0 # home() sets the position to 0 when reed switch is hit, so 0 makes sense
         last_heading = 0 
         crossings = 0
+        old_error = 0
 
-        # Error correction gain term for preventing drift; MUST be < 0 bc I do a *-1 in my loop:
+        # Error correction gain terms for preventing drift; MUST be < 0 bc I do a *-1 in my loop:
         k_p = -6
+        k_d = -3
         
         # Experimental gain term for modifying the significance of the animal's turns; usually 1:
         k_stepper = 1
@@ -236,7 +238,13 @@ def main():
             # Correct for drift:
             proj_stepper_posn = stepper_posn + yaw_vel_filt * delta_ts # linear extrapolation from last vals
             error = heading - proj_stepper_posn
+            # P control:
             corrected_vel = yaw_vel_filt + (k_p * error)
+            # D control:
+            corrected_vel += old_error * k_d
+            # I control:
+
+            old_error = error
 
             # Move with the corrected velocity!
             stepper_posn = dev.run_with_feedback(-1 * k_stepper * corrected_vel, servo_posn) 
@@ -316,7 +324,7 @@ def main():
     plt.plot(elapsed_times, corrected_vels, 'c', label="output yaw velocity")
     plt.xlabel("time (s)")
     plt.ylabel("yaw velocity (deg/s)")
-    plt.title(f"feedback correction added with proportional gain of {k_p} | frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
+    plt.title(f"feedback correction added with $K_P = $ {k_p} and $K_D = $ {k_d} | frequency cutoff = {freq_cutoff} Hz, filter order = {n}, sampling rate = {sampling_rate} Hz")
     plt.grid(True)
     plt.legend()
 
