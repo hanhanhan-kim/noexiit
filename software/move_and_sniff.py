@@ -253,7 +253,7 @@ def main():
 
         # Save the stepper settings and servo extension angle: 
         stepper.print_params()
-        with open(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_settings.txt", "a") as f:
+        with open("motor_settings_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".txt", "a") as f:
             print("autostep parameters", file=f)
             print("--------------------------", file=f)
             print('fullstep/rev:  {0}\n'.format(stepper.get_fullstep_per_rev()) +

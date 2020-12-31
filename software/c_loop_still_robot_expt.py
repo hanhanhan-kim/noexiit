@@ -381,7 +381,7 @@ def main():
                        "PID (V)": PID_volts
                        })
     
-    df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_loop.csv", index=False)
+    df.to_csv("c_loop_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".csv", index=False)
 
 
 if __name__ == '__main__':

@@ -208,7 +208,7 @@ def main():
                             "Stepper position (deg)": stepper_posns,
                             "Servo position (deg)": servo_posns})
 
-        df.to_csv(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.csv', index=False)
+        df.to_csv("o_loop_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".csv", index=False)
 
         # Plot motor commands:
         plt.subplot(2, 1, 1)
@@ -227,12 +227,12 @@ def main():
         plt.xlabel("time (s)")
         plt.ylabel("PID reading (V)")
         plt.grid(True)
-        plt.savefig(t_start.strftime("%m%d%Y_%H%M%S") + '_motor_commands.png')
+        plt.savefig("o_loop_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".png")
         plt.show()
 
         # Save the stepper settings and servo extension angle: 
         stepper.print_params()
-        with open(t_start.strftime("%m%d%Y_%H%M%S") + "_motor_settings.txt", "a") as f:
+        with open("motor_settings_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".txt", "a") as f:
 
             print("autostep parameters", file=f)
             print("--------------------------", file=f)
