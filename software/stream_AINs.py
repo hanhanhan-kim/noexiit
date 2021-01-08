@@ -75,7 +75,7 @@ def get_channel_name(device, channel_index):
     elif channel_index <= 7:
         return f"FIO{channel_index}"
     else:
-        raise ValueError(f"channel index of {channel index} is not a valid input on device {device_name}.")
+        raise ValueError(f"channel index of {channel_index} is not a valid input on device {device_name}.")
 
     # TODO also support at least the other U3 variants ('U3-LV' at least, maybe
     # also whatever 'U3B' is (see setting of deviceName in u3.py)
@@ -195,8 +195,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
 
     d.streamConfig(NumChannels=len(input_channels), PChannels=input_channels,
         NChannels=n_channels, Resolution=resolution_index,
-        ScanFrequency=scan_frequency
-    )
+        ScanFrequency=scan_frequency)
 
     # Both of these device attributes are set in the above `d.streamConfig` call.
 
@@ -374,7 +373,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         # shutdown of the stream takes longer in some cases? how to
         # test? maybe measure a reference square wave ~2-4x slower than
         # sample rate?
-
+        
         print(f"runTime - actual_duration_s: {runTime - actual_duration_s}")
         print(f"The experiment took {runTime} seconds.")
         print(f"Actual Scan Rate = {scan_frequency} Hz")
@@ -386,8 +385,8 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         # TODO test again now that break doesn't wait for one un-used yield
         # of the stream object
         
-        print(f"Timed Scan Rate = {scanTotal} scans / {runTime} seconds = {float(scanTotal / runTime)} Hz")
-        print(f"Timed Sample Rate = {sampleTotal} samples / {runTime} seconds = {float(sampleTotal)/runTime)} Hz")
+        print(f"Timed Scan Rate = {scanTotal} scans / {runTime} seconds = {float(scanTotal)/runTime} Hz")
+        print(f"Timed Sample Rate = {sampleTotal} samples / {runTime} seconds = {float(sampleTotal)/runTime} Hz")
 
     # The atexit handlers will run after the labjack node that calls this
     # function exits. Letting SIGTERM (or maybe even un-handled SIGINT?) kill
