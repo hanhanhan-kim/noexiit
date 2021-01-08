@@ -384,8 +384,8 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         # TODO test again now that break doesn't wait for one un-used yield
         # of the stream object
         
-        print(f"Timed Scan Rate = {scanTotal} scans / {runTime} seconds = {float(scanTotal / runTime)} Hz"
-        print(f"Timed Sample Rate = {sampleTotal} samples / {runTime} seconds = {float(sampleTotal)/runTime)} Hz"
+        print(f"Timed Scan Rate = {scanTotal} scans / {runTime} seconds = {float(scanTotal / runTime)} Hz")
+        print(f"Timed Sample Rate = {sampleTotal} samples / {runTime} seconds = {float(sampleTotal)/runTime)} Hz")
 
     # The atexit handlers will run after the labjack node that calls this
     # function exits. Letting SIGTERM (or maybe even un-handled SIGINT?) kill
