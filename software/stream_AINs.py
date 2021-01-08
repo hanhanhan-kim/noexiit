@@ -66,16 +66,9 @@ def get_channel_name(device, channel_index):
     if device_name != "U3-HV":
         raise NotImplementedError('only U3-HV currently supported')
 
-    ############################################################################
-    # U3-HV
-    ############################################################################
-    # TODO are these labels the same on all versions of the U3-HV board?
-    # (maybe check device.versionInfo (== 18 for me) if not?)
-    # (or device.hardwareVersion (== '1.30' for me))
     if device.hardwareVersion != '1.30':
-        warnings.warn("get_channel_name only tested for U3-HV with "
-            "hardwareVersion=='1.30'. labels on board may be wrong."
-        )
+        warnings.warn("get_channel_name only tested for U3-HV with \
+                      hardwareVersion=='1.30'. Labels on board may be wrong.")
 
     if channel_index <= 3:
         return f"AIN{channel_index}"
@@ -83,15 +76,14 @@ def get_channel_name(device, channel_index):
         return f"FIO{channel_index}"
     else:
         raise ValueError(f"channel index of {channel index} is not a valid input on device {device_name}.")
-    ############################################################################
 
     # TODO also support at least the other U3 variants ('U3-LV' at least, maybe
     # also whatever 'U3B' is (see setting of deviceName in u3.py)
 
 
 def stream_to_csv(csv_path, duration_s=None, input_channels=None,
-    resolution_index=0, input_channel_names=None, time_col=True,
-    overwrite=False, verbose=False):
+    resolution_index=0, input_channel_names=None, do_times=True,
+    get_counts=True, do_overwrite=False, is_verbose=False):
 
     # TODO implement callbacks that can be passed into this fn, then pass stuff to
     # publish data from ROS wrapper of this script? or should i just relax the
@@ -128,15 +120,18 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         corresponding column in the CSV. If not passed, the labels of the
         channels on the LabJack hardware will be used.
 
-    time_col (bool): If `True` (the default), a column 'time_s' will be added to
+    do_times (bool): If `True` (the default), a column 'time_s' will be added to
         CSV with time in seconds from beginning of streaming. Not using absolute
         times because the offset between streaming start / stop and when those
         calls are made seems to be hard to predict or measure.
 
-    overwrite (bool): If `False` (default), will raise `IOError` if `csv_path`
-        already exists. Otherwise, will overwrite the file.
+    get_counts (bool): If `True` (default), a column `DAQ count` will be added that
+        records the digital counts on the FIO4 channel. 
 
-    verbose (bool): If `True`, will print more output. Defaults to `False`.
+    do_overwrite (bool): If `False` (default), will raise `IOError` if `csv_path`
+        already exists. Otherwise, will do_overwrite the file.
+
+    is_verbose (bool): If `True`, will print more output. Defaults to `False`.
     """
 
     # TODO also allow use of FIO<4-7> inputs? configure as inputs, etc.
@@ -181,7 +176,11 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
 
     d.configIO(FIOAnalog=3)
 
-    if verbose:
+    if get_counts: # DAQ counter
+        u3.Counter0(Reset=True)
+        d.configIO(EnableCounter0=True)
+
+    if is_verbose:
         print("Configuring U3 stream")
 
     # https://labjack.com/support/datasheets/u3/hardware-description/ain/channel_numbers
@@ -214,7 +213,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     # Time it takes to sample all the requested input channels:
     all_channel_sample_dt = 1 / scan_frequency
 
-    if verbose:
+    if is_verbose:
         print("samples_per_request:", samples_per_request)
         print("samples_per_request / len(input_channels):", samples_per_request / len(input_channels))
         print("n_requests:", n_requests)
@@ -238,7 +237,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
 
     channel2column_names = dict(zip(channel_names, column_names))
 
-    if time_col:
+    if do_times:
 
         column_names = ["time_s"] + column_names
 
@@ -252,12 +251,12 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         assert (len(request_times) == int(samples_per_request / len(input_channels)))
         last_time_s = 0.0
 
-    if verbose:
+    if is_verbose:
         print("column_names:", column_names)
         print("channel2column_names:", channel2column_names)
 
-    if not overwrite and os.path.exists(csv_path):
-        raise IOError(f"csv_path={csv_path} already exists and overwrite is set to False!")
+    if not do_overwrite and os.path.exists(csv_path):
+        raise IOError(f"csv_path={csv_path} already exists and `do_overwrite` is set to False!")
 
     # Can't use the 3rd party `future` library `open` to add the `newline`
     # argument for python2, because then `writeheader()` (and probably other
@@ -294,9 +293,9 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     d.streamStart()
     atexit.register(d.streamStop)
 
-    if verbose:
+    if is_verbose:
         start = datetime.now()
-        print("Start time is %s" % start)
+        print(f"Start time is {start}")
 
     missed = 0
     request_count = 0
@@ -327,13 +326,16 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
 
             row_data_lists = [r[s] for s in channel_names]
 
-            if time_col:
-                row_data_lists = [list(request_times + last_time_s)] + row_data_lists
+            if do_times:
+                row_data_lists += [list(request_times + last_time_s)] 
                 last_time_s += request_s
 
-            row_dicts = [dict(zip(column_names, row))
-                for row in zip(*tuple(row_data_lists))
-            ]
+            if get_counts:
+                counter_0_cmd = u3.Counter0(Reset=False)
+                count = d.getFeedback(counter_0_cmd)[0] 
+                row_data_lists += list(count)
+
+            row_dicts = [dict(zip(column_names, row)) for row in zip(*tuple(row_data_lists))]
             csv_writer.writerows(row_dicts)
 
             request_count += 1
@@ -349,7 +351,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
             # TODO should i be warning / erring in this case?
             print(f"No data ; {datetime.now()}")
 
-    if verbose:
+    if is_verbose:
 
         stop = datetime.now()
         sampleTotal = packet_count * d.streamSamplesPerPacket
@@ -402,5 +404,5 @@ if __name__ == '__main__':
                   duration_s=duration_s,
                   input_channels=input_channels, 
                   input_channel_names=input_channel_names,
-                  overwrite=True, 
-                  verbose=True)
+                  do_overwrite=True, 
+                  is_verbose=True)

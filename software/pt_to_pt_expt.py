@@ -203,7 +203,7 @@ def main():
 
         # Save outputs, except elapsed times, to a csv:
         df = pd.DataFrame({ "Calendar time": cal_times,
-                            "Count (frame)": counts,
+                            "DAQ count": counts,
                             "PID (V)": PID_volts,
                             "Stepper position (deg)": stepper_posns,
                             "Servo position (deg)": servo_posns})

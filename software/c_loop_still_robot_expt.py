@@ -367,8 +367,8 @@ def main():
 
     # SAVE DATA------------------------------------------------------------------------------------------
     df = pd.DataFrame({"Calendar time": cal_times,
-                       "DAQ counts": daq_counts,
-                       "FicTrac counts": ftrac_counts,
+                       "DAQ count": daq_counts,
+                       "FicTrac count": ftrac_counts,
                        "Yaw velocity (deg)": yaw_vels,
                        "Yaw filtered velocity (deg/s)": yaw_vel_filts,
                        "Heading (deg)": headings,

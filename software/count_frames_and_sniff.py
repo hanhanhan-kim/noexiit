@@ -75,7 +75,7 @@ def main():
     # Save to file and plot:
     df = pd.DataFrame({"Calendar time": cal_times,
                        "PID (V)": PID_volts,
-                       "Count": counts})
+                       "DAQ count": counts})
 
     t_start  = t_start.strftime("%m%d%Y_%H%M%S")
     df.to_csv(f"PID_volts_{t_start}.csv", index=False)
