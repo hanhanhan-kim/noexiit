@@ -233,6 +233,8 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         column_names = channel_names
     else:
         column_names = [input_channel_names[i] for i in input_channels]
+    if get_counts:
+        column_names += ["DAQ count"]
 
     channel2column_names = dict(zip(channel_names, column_names))
 
@@ -332,7 +334,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
             if get_counts:
                 counter_0_cmd = u3.Counter0(Reset=False)
                 count = d.getFeedback(counter_0_cmd)[0] 
-                row_data_lists += list(count)
+                row_data_lists += [[count] * len(request_times)]
 
             row_dicts = [dict(zip(column_names, row)) for row in zip(*tuple(row_data_lists))]
             csv_writer.writerows(row_dicts)
@@ -356,8 +358,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         sampleTotal = packet_count * d.streamSamplesPerPacket
         scanTotal = sampleTotal / len(input_channels)
 
-        print(f"{request_count} requests with {float(packet_count) / request_count} packets per request \
-            with {d.streamSamplesPerPacket} samples per packet = {sampleTotal} samples total.")
+        print(f"{request_count} requests with {float(packet_count) / request_count} packets per request with {d.streamSamplesPerPacket} samples per packet = {sampleTotal} samples total.")
         print(f"{missed} samples were lost due to errors.")
 
         sampleTotal -= missed
