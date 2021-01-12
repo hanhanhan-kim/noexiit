@@ -103,7 +103,7 @@ def get_channel_name(device, channel_index):
 
 def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     resolution_index=0, input_channel_names=None, do_times=True,
-    get_counts=True, external_trigger=None, do_overwrite=False, is_verbose=False):
+    external_trigger=None, do_overwrite=False, is_verbose=False):
 
     # TODO implement callbacks that can be passed into this fn, then pass stuff to
     # publish data from ROS wrapper of this script? or should i just relax the
@@ -144,9 +144,6 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         CSV with time in seconds from beginning of streaming. Not using absolute
         times because the offset between streaming start / stop and when those
         calls are made seems to be hard to predict or measure.
-
-    get_counts (bool): If `True` (default), a column `DAQ count` will be added that
-        records the digital counts on the FIO4 channel. 
 
     external_trigger (dict or None): If passed, must be a dictionary with the following
         key-value pairs: 
@@ -219,9 +216,12 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     # Set the FIO0 and FIO1 to Analog (d3 = b00000011)
     d.configIO(FIOAnalog=3)
 
-    if get_counts: 
-        u3.Counter0(Reset=True)
+    if 210 or 211 or 240 or 241 in special_channels.keys(): 
         d.configIO(EnableCounter0=True)
+    if 210 or 240 in special_channels.keys():
+        u3.Counter0(Reset=True)
+    if 211 or 241 in special_channels.keys():
+        u3.Counter1(Reset=True)
 
     if is_verbose:
         print("Configuring U3 stream ...")
@@ -229,9 +229,11 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     # See https://labjack.com/support/datasheets/u3/hardware-description/ain/channel_numbers
     n_channels = []
     for input_channel in input_channels:
+
         if input_channel in special_channels.keys():
             # 32 means to ignore the (-) channel:
             n_channels.append(32)
+
         else:
             # 31 means to not ignore the (-) channel
             n_channels.append(31)
@@ -288,8 +290,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         request_times = np.arange(start=all_channel_sample_dt,
                                   stop=(request_s + all_channel_sample_dt),
                                   step=all_channel_sample_dt)
-        # TODO: This assertion doesn't hold if using the special channels:
-
+        
         # Use of the special channels requires at least 1 use of channel 224:
         if 224 not in input_channels:
             assert (len(request_times) == int(samples_per_request / len(input_channels)))

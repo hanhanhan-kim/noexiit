@@ -31,7 +31,6 @@ def main():
                 duration_s=duration,
                 input_channels=[0, 210, 224], 
                 input_channel_names={0: "PID", 210: "DAQ count", 224: "TC_Capture"},
-                get_counts=True,
                 external_trigger={"port":"/dev/ttyUSB0", "freq":100, "width":10},
                 do_overwrite=True, 
                 is_verbose=False)
