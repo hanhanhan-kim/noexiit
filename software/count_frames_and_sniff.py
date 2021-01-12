@@ -40,6 +40,7 @@ def main():
     trig.stop() # trig tends to continue running from last time
 
     # Initializing the CameraTrigger takes 2.0 secs:
+    print("Initializing the external trigger ...")
     time.sleep(2.0)
 
     # Set up a timer in its own thread, to end the cam trigger:
@@ -49,7 +50,7 @@ def main():
     u3.Counter0(Reset=True)
     device.configIO(EnableCounter0=True)
     print(f"First count is pre-trigger and is 0: {device.getFeedback(u3.Counter0(Reset=False))[0]}")
-    time.sleep(2.0) # give time to see above print
+    time.sleep(1.0) # give time to see above print
 
     # Start the trigger, and its timer to stop it:
     trig.start()
