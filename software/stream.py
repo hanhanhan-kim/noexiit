@@ -13,7 +13,7 @@ import sys
 import time
 import os
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 import warnings
 import atexit
 import signal
@@ -104,7 +104,7 @@ def get_channel_name(device, channel_index):
 
 
 def stream_to_csv(csv_path, duration_s=None, input_channels=None,
-    resolution_index=0, input_channel_names=None, do_times=True,
+    resolution_index=0, input_channel_names=None, times=True,
     external_trigger=None, do_overwrite=False, is_verbose=False):
 
     # TODO implement callbacks that can be passed into this fn, then pass stuff to
@@ -142,10 +142,13 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         corresponding column in the CSV. If not passed, the labels of the
         channels on the LabJack hardware will be used.
 
-    do_times (bool): If `True` (the default), a column 'time_s' will be added to
-        CSV with time in seconds from beginning of streaming. Not using absolute
-        times because the offset between streaming start / stop and when those
-        calls are made seems to be hard to predict or measure.
+    times (str): Accepts either "elapsed" (default) or "absolute". If "elapsed", 
+        a column, "time (s)", will be added to the .csv with time in seconds from 
+        beginning of streaming. If "absolute", a column, "datetime" will be added 
+        to the .csv with time as a string from a datetime object. N.B. Understand 
+        that the offset between streaming start /s top and when those calls are 
+        made are hard to predict or measure, and so using elapsed times is often 
+        recommended. 
 
     external_trigger (dict or None): If passed, must be a dictionary with the following
         key-value pairs: 
@@ -281,29 +284,34 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
 
     channel2column_names = dict(zip(channel_names, column_names))
 
-    if do_times:
+    if times == "absolute":
 
-        column_names += ["time_s"]
+        column_names += ["datetime"]
 
-        # Starting from 0 within each request. Time offset will be added to this
-        # before they are written to CSV rows along with measured data.
-        # If we start at 0 and use the same step, the stop will be
-        # request_s - all_channel_sample_dt.
-        request_times = np.arange(start=all_channel_sample_dt,
-                                  stop=(request_s + all_channel_sample_dt),
-                                  step=all_channel_sample_dt)
+    elif times == "elapsed":
+
+        column_names += ["elapsed time (s)"]
+
+    # Starting from 0 within each request. Time offset will be added to this
+    # before they are written to CSV rows along with measured data.
+    # If we start at 0 and use the same step, the stop will be
+    # request_s - all_channel_sample_dt.
+    request_times = np.arange(start=all_channel_sample_dt,
+                                stop=(request_s + all_channel_sample_dt),
+                                step=all_channel_sample_dt)
+    
+    # TODO: FIX THIS ASSERTION!
+    # assert (len(request_times) == int(samples_per_request / len(input_channels)))
         
-        # TODO: FIX THIS ASSERTION!
-        # assert (len(request_times) == int(samples_per_request / len(input_channels)))
-            
-        print(f"len(request_times): {len(request_times)}\n")
-        print(f"samples_per_request: {samples_per_request}")
-        print(f"len(input_channels): {len(input_channels)}\n")
-        print(f"int(samples_per_request) / len(input_channels): {int(samples_per_request) / len(input_channels)}\n")
-        print(f"request_s: {request_s}")
-        print(f"all_channel_sample_dt: {all_channel_sample_dt}\n")
+    print(f"len(request_times): {len(request_times)}\n")
+    print(f"samples_per_request: {samples_per_request}")
+    print(f"len(input_channels): {len(input_channels)}\n")
+    print(f"int(samples_per_request) / len(input_channels): {int(samples_per_request) / len(input_channels)}\n")
+    print(f"request_s: {request_s}")
+    print(f"all_channel_sample_dt: {all_channel_sample_dt}\n")
 
-        last_time_s = 0.0
+    last_time_s = 0.0
+    t_start = datetime.now()
 
     if is_verbose:
         print("column_names:", column_names)
@@ -385,9 +393,16 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
 
             row_data_lists = [r[s] for s in channel_names]
 
-            if do_times:
-                row_data_lists += [list(request_times + last_time_s)] 
-                last_time_s += request_s
+            if times == "absolute":
+                
+                increment_by = list(request_times + last_time_s)
+                datetimes = [t_start + timedelta(0, t) for t in increment_by] 
+                row_data_lists.append(datetimes)  
+
+            elif times == "elapsed":
+                row_data_lists += [list(request_times + last_time_s)]            
+                
+            last_time_s += request_s
 
             row_dicts = [dict(zip(column_names, row)) for row in zip(*tuple(row_data_lists))]
             csv_writer.writerows(row_dicts)
@@ -458,5 +473,6 @@ if __name__ == '__main__':
                   duration_s=duration_s,
                   input_channels=input_channels, 
                   input_channel_names=input_channel_names,
+                  times="elapsed",
                   do_overwrite=True, 
                   is_verbose=True)
