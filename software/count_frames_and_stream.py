@@ -20,14 +20,20 @@ from stream import stream_to_csv
 def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("duration", type=float,
-        help="Duration (s) of the PID acquisition.")
+    parser.add_argument("duration",
+        help="Duration (s) of the PID acquisition. If None, will stream until exited (ctrl+c).")
     parser.add_argument("port",
         help="Path to the ATMega328P trigger's port, e.g. /dev/ttyUSB0")
     args = parser.parse_args()
     
     duration = args.duration
     port = args.port
+
+    # TODO: Script doesn't exit cleanly when duration is None:
+    if duration.lower() == "none":
+        duration = None
+    else:
+        duration = float(duration)
 
     # Start the DAQ stream and cam trigger:
     stream_to_csv("stream.csv", 
