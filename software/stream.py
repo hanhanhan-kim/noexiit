@@ -26,6 +26,8 @@ from LabJackPython import Device
 import u3
 from camera_trigger import CameraTrigger
 
+# TODO: Script not killable if stream_to_csv() is called from not main()!
+
 
 # From table 3.2-1 with resolutions and cognate max stream scan frequencies.
 # Maximum scan frequencies are in samples/s (shared across all channels).
@@ -291,9 +293,15 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
                                   stop=(request_s + all_channel_sample_dt),
                                   step=all_channel_sample_dt)
         
-        # Use of the special channels requires at least 1 use of channel 224:
-        if 224 not in input_channels:
-            assert (len(request_times) == int(samples_per_request / len(input_channels)))
+        # TODO: FIX THIS ASSERTION!
+        # assert (len(request_times) == int(samples_per_request / len(input_channels)))
+            
+        print(f"len(request_times): {len(request_times)}\n")
+        print(f"samples_per_request: {samples_per_request}")
+        print(f"len(input_channels): {len(input_channels)}\n")
+        print(f"int(samples_per_request) / len(input_channels): {int(samples_per_request) / len(input_channels)}\n")
+        print(f"request_s: {request_s}")
+        print(f"all_channel_sample_dt: {all_channel_sample_dt}\n")
 
         last_time_s = 0.0
 
