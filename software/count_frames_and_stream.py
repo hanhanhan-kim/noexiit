@@ -24,20 +24,17 @@ def main():
         help="Duration (s) of the PID acquisition.")
     parser.add_argument("port",
         help="Path to the ATMega328P trigger's port, e.g. /dev/ttyUSB0")
-    parser.add_argument("frequency",
-        help="Frequency (Hz) of the trigger, e.g. frame rate.")
     args = parser.parse_args()
     
     duration = args.duration
     port = args.port
-    frequency = args.frequency
 
     # Start the DAQ stream and cam trigger:
     stream_to_csv("stream.csv", 
                 duration_s=duration,
                 input_channels=[0, 210, 224], 
-                input_channel_names={0: "PID", 210: "DAQ count", 224: "TC_Capture"},
-                external_trigger={"port":port, "freq":frequency, "width":10},
+                input_channel_names={0: "PID (V)", 210: "DAQ count", 224: "TC_Capture"},
+                external_trigger={"port":port, "freq":100, "width":10},
                 do_overwrite=True, 
                 is_verbose=False)
 
