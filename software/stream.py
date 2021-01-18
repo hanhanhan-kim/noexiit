@@ -459,17 +459,6 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
 
 if __name__ == '__main__':
 
-    # duration_s = 3.0
-    # input_channels = [0, 1]
-    # input_channel_names = ["PID", "Valve control"]
-    # stream_to_csv("test.csv", 
-    #               duration_s=duration_s,
-    #               input_channels=input_channels, 
-    #               input_channel_names=input_channel_names,
-    #               times="elapsed",
-    #               do_overwrite=True, 
-    #               is_verbose=True)
-
     stream_to_csv("test.csv", 
                 duration_s=3.0,
                 input_channels=[0, 1], 
