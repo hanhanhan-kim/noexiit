@@ -26,8 +26,6 @@ from LabJackPython import Device
 import u3
 from camera_trigger import CameraTrigger
 
-# TODO: Script not killable if stream_to_csv() is called from not main()!
-
 
 # From table 3.2-1 with resolutions and cognate max stream scan frequencies.
 # Maximum scan frequencies are in samples/s (shared across all channels).
@@ -55,6 +53,7 @@ special_channels = {193: "AIN193", # EIO_FIO
                     231: "AIN231", # Timer1 with reset
                     240: "AIN240", # Counter0 with reset
                     241: "AIN241"} # Counter1 with reset
+
 
 def get_channel_name(device, channel_index):
 
@@ -299,21 +298,11 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     request_times = np.arange(start=all_channel_sample_dt,
                                 stop=(request_s + all_channel_sample_dt),
                                 step=all_channel_sample_dt)
-    # if special:
-    #     request_times = np.arange(start=all_channel_sample_dt,
-    #                                 stop=request_s,
-    #                                 step=all_channel_sample_dt)
-    
-    # TODO: FIX THIS ASSERTION!
-    # assert (len(request_times) == int(samples_per_request / len(input_channels)))
+                                
+    # TODO: This assertion only holds for non-counter/timer cases ... figure out correct assertion otherwise 
+    if 224 in input_channels:
+        assert (len(request_times) == int(samples_per_request / len(input_channels)))
         
-    print(f"len(request_times): {len(request_times)}\n")
-    print(f"samples_per_request: {samples_per_request}")
-    print(f"len(input_channels): {len(input_channels)}\n")
-    print(f"int(samples_per_request) / len(input_channels): {int(samples_per_request) / len(input_channels)}\n")
-    print(f"request_s: {request_s}")
-    print(f"all_channel_sample_dt: {all_channel_sample_dt}\n")
-
     last_time_s = 0.0
     t_start = datetime.now()
 
@@ -467,8 +456,6 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     # this process would not have the handlers run.  Not calling `sys.exit`
     # here, because that prints something to ROS output.
 
-    import ipdb; ipdb.set_trace()
-
 
 if __name__ == '__main__':
 
@@ -485,8 +472,7 @@ if __name__ == '__main__':
 
     stream_to_csv("test.csv", 
                 duration_s=3.0,
-                input_channels=[0, 210, 224], 
-                input_channel_names={0: "PID (V)", 210: "DAQ count", 224: "TC_Capture"},
-                external_trigger={"port":"/dev/ttyUSB0", "freq":100, "width":10},
+                input_channels=[0, 1], 
+                input_channel_names={0: "PID (V)", 1: "valve control"},
                 do_overwrite=True, 
                 is_verbose=True)
