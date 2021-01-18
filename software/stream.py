@@ -104,7 +104,7 @@ def get_channel_name(device, channel_index):
 
 
 def stream_to_csv(csv_path, duration_s=None, input_channels=None,
-    resolution_index=0, input_channel_names=None, times=True,
+    resolution_index=0, input_channel_names=None, times="elapsed",
     external_trigger=None, do_overwrite=False, is_verbose=False):
 
     # TODO implement callbacks that can be passed into this fn, then pass stuff to
@@ -285,12 +285,12 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     channel2column_names = dict(zip(channel_names, column_names))
 
     if times == "absolute":
-
         column_names += ["datetime"]
-
     elif times == "elapsed":
-
         column_names += ["elapsed time (s)"]
+    else:
+        raise ValueError("`time` value not valid. Please input either 'absolute' or 'elapsed'.")
+        
 
     # Starting from 0 within each request. Time offset will be added to this
     # before they are written to CSV rows along with measured data.
@@ -299,6 +299,10 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     request_times = np.arange(start=all_channel_sample_dt,
                                 stop=(request_s + all_channel_sample_dt),
                                 step=all_channel_sample_dt)
+    # if special:
+    #     request_times = np.arange(start=all_channel_sample_dt,
+    #                                 stop=request_s,
+    #                                 step=all_channel_sample_dt)
     
     # TODO: FIX THIS ASSERTION!
     # assert (len(request_times) == int(samples_per_request / len(input_channels)))
@@ -463,16 +467,26 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     # this process would not have the handlers run.  Not calling `sys.exit`
     # here, because that prints something to ROS output.
 
+    import ipdb; ipdb.set_trace()
+
 
 if __name__ == '__main__':
 
-    duration_s = 10.0
-    input_channels = [0, 1]
-    input_channel_names = ["PID", "Valve control"]
+    # duration_s = 3.0
+    # input_channels = [0, 1]
+    # input_channel_names = ["PID", "Valve control"]
+    # stream_to_csv("test.csv", 
+    #               duration_s=duration_s,
+    #               input_channels=input_channels, 
+    #               input_channel_names=input_channel_names,
+    #               times="elapsed",
+    #               do_overwrite=True, 
+    #               is_verbose=True)
+
     stream_to_csv("test.csv", 
-                  duration_s=duration_s,
-                  input_channels=input_channels, 
-                  input_channel_names=input_channel_names,
-                  times="elapsed",
-                  do_overwrite=True, 
-                  is_verbose=True)
+                duration_s=3.0,
+                input_channels=[0, 210, 224], 
+                input_channel_names={0: "PID (V)", 210: "DAQ count", 224: "TC_Capture"},
+                external_trigger={"port":"/dev/ttyUSB0", "freq":100, "width":10},
+                do_overwrite=True, 
+                is_verbose=True)

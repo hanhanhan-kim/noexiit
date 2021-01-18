@@ -40,6 +40,7 @@ def main():
                 duration_s=duration,
                 input_channels=[0, 210, 224], 
                 input_channel_names={0: "PID (V)", 210: "DAQ count", 224: "TC_Capture"},
+                times="absolute",
                 external_trigger={"port":port, "freq":100, "width":10},
                 do_overwrite=True, 
                 is_verbose=False)
