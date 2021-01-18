@@ -300,7 +300,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
                                 step=all_channel_sample_dt)
                                 
     # TODO: This assertion only holds for non-counter/timer cases ... figure out correct assertion otherwise 
-    if 224 in input_channels:
+    if 224 not in input_channels:
         assert (len(request_times) == int(samples_per_request / len(input_channels)))
         
     last_time_s = 0.0
