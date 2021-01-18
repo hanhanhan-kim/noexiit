@@ -138,7 +138,7 @@ def main():
         
         # START streaming PID values and counts from DAQ:
         args = [sys.executable, "count_frames_and_stream.py", # sys.executable calls current Python
-                duration, "/dev/ttyUSB0"]
+                str(duration), "/dev/ttyUSB0"]
         p = subprocess.Popen(args)
 
         # The above process has a 2.0 s sleep because of the required start-up time of the trigger.
@@ -151,33 +151,54 @@ def main():
 
         # Get motor positions:
         t_start = datetime.datetime.now()
-        while motors_thread.is_alive():
+        if duration is not None:
+            while p.poll() == None: # While process is running: 
+                
+                now = datetime.datetime.now()
+                elapsed_time = (now - t_start).total_seconds() # get timedelta obj
+
+                stepper_posn = stepper.get_position()
+                servo_posn = stepper.get_servo_angle()
+
+                print(f"Calendar time: {now}\n", 
+                    f"Elapsed time (s): {elapsed_time}\n", 
+                    f"Stepper position (deg): {stepper_posn}\n", 
+                    f"Servo position (deg): {servo_posn}\n\n") 
+
+                # Save:
+                cal_times.append(now)
+                elapsed_times.append(elapsed_time)
+                stepper_posns.append(stepper_posn)
+                servo_posns.append(servo_posn)
+        
+        else: 
+        # If streaming is set to run until killed:
+            while motors_thread.is_alive():
+
+                now = datetime.datetime.now()
+                elapsed_time = (now - t_start).total_seconds() # get timedelta obj
+
+                stepper_posn = stepper.get_position()
+                servo_posn = stepper.get_servo_angle()
+
+                print(f"Calendar time: {now}\n", 
+                    f"Elapsed time (s): {elapsed_time}\n", 
+                    f"Stepper position (deg): {stepper_posn}\n", 
+                    f"Servo position (deg): {servo_posn}\n\n") 
+
+                # Save:
+                cal_times.append(now)
+                elapsed_times.append(elapsed_time)
+                stepper_posns.append(stepper_posn)
+                servo_posns.append(servo_posn)
             
-            now = datetime.datetime.now()
-            elapsed_time = (now - t_start).total_seconds() # get timedelta obj
+            # TODO: Can't seem to kill script even with ctrl+c when duration == None 
+            # Close stream once the motors finish:
+            p.terminate()
 
-            stepper_posn = stepper.get_position()
-            servo_posn = stepper.get_servo_angle()
-
-            print(f"Calendar time: {now}\n", 
-                  f"Elapsed time (s): {elapsed_time}\n", 
-                  f"Stepper position (deg): {stepper_posn}\n", 
-                  f"Servo position (deg): {servo_posn}\n\n") 
-
-            # Save:
-            cal_times.append(now)
-            elapsed_times.append(elapsed_time)
-            stepper_posns.append(stepper_posn)
-            servo_posns.append(servo_posn)
-
-        # TODO: The elapsed times for the stream and the motor stuff aren't remotely similar ...
-
-        # # Join the motors thread back to the main: TODO: Add this back once I fix unkillable stream bug
-        # motors_thread.join()
-
-        # Close stream once the motors finish:
-        p.terminate()
-
+        # # Join the motors thread back to the main: 
+        motors_thread.join()
+        
         # SAVE DATA---------------------------------------------------------------------------------------------
 
         # Save outputs, except elapsed times, to a csv:
@@ -190,7 +211,7 @@ def main():
         df.to_csv("o_loop_motor_" + file_ending, index=False)
 
         # Rename the streaming output .csv:
-        stream_fname = "o_loop_stream" + file_ending
+        stream_fname = "o_loop_stream_" + file_ending
         rename("stream.csv", stream_fname) 
 
         # Plot motor commands:
@@ -207,11 +228,11 @@ def main():
         # Plot PID readings:
         stream_df = pd.read_csv(stream_fname)
         plt.subplot(2, 1, 2)
-        plt.plot(stream_df["time_s"], stream_df["PID (V)"]) # TODO: Change stream.py to use cal times instead
+        plt.plot(stream_df["datetime"], stream_df["PID (V)"])
         plt.xlabel("time (s)")
         plt.ylabel("PID reading (V)")
         plt.grid(True)
-        plt.savefig(("o_loop_stream" + file_ending).replace(".csv", ".png"))
+        plt.savefig(("o_loop_stream_" + file_ending).replace(".csv", ".png"))
         plt.show()
 
         # Save the stepper settings and servo extension angle: 
