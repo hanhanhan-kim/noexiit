@@ -340,8 +340,11 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     global _finish_up
     _finish_up = False
     def signal_shutdown(sig, frame):
+        trig.stop()
+        trig_timer.cancel()
         global _finish_up
         _finish_up = True
+        print("Clean exit achieved.")
 
     signal.signal(signal.SIGINT, signal_shutdown)
 
