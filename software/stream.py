@@ -29,6 +29,7 @@ import atexit
 import signal
 import math
 import csv
+import argparse
 
 import numpy as np
 from LabJackPython import Device
@@ -479,11 +480,48 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     # here, because that prints something to ROS output.
 
 
-if __name__ == '__main__':
+def main():
 
-    stream_to_csv("test.csv", 
-                # duration_s=3.0,
-                input_channels=[0, 1], 
-                input_channel_names={0: "PID (V)", 1: "valve control"},
-                do_overwrite=True, 
-                is_verbose=True)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("csv_path", 
+        help="Path to which to stream the .csv.")
+    parser.add_argument("duration",
+        help="Duration (s) of the DAQ stream. If None, will stream until exited (ctrl+c).")
+    parser.add_argument("times",
+        help="Accepts either 'elapsed' (default) or 'absolute'. If 'elapsed', \
+        a column, 'time (s)', will be added to the .csv with time in seconds from \
+        beginning of streaming. If 'absolute', a column, 'datetime' will be added \
+        to the .csv with time as a string from a datetime object. N.B. Understand \
+        that the offset between streaming start /s top and when those calls are \
+        made are hard to predict or measure, and so using elapsed times is often \
+        recommended.")
+
+    args = parser.parse_args()
+    
+    csv_path = args.csv_path
+    duration = args.duration
+    times = args.times
+
+    # TODO : Don't run more than one counter and/or timer. The required multiple 224 
+    # channels means I have to make some fixes.
+    # See: https://labjack.com/support/datasheets/u3/operation/stream-mode/digital-inputs-timers-counters
+
+    if duration.lower() == "none":
+        duration = None
+    else:
+        duration = float(duration)
+    
+    if times != "elapsed" or "absolute":
+        raise ValueError("`times` must be either 'elapsed' or 'absolute'.")
+
+    stream_to_csv(csv_path, 
+                  duration_s=duration,
+                  input_channels=[0, 210, 224], 
+                  input_channel_names={0: "PID (V)", 210: "DAQ count", 224: "16-bit roll-overs"},
+                  times="absolute",
+                  do_overwrite=True, 
+                  is_verbose=True)
+
+
+if __name__ == '__main__':
+    main()
