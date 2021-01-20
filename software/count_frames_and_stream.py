@@ -29,7 +29,10 @@ def main():
     duration = args.duration
     port = args.port
 
-    # TODO: Script doesn't exit cleanly when duration is None:
+    # TODO : Don't run more than one counter and/or timer. The required multiple 224 
+    # channels means I have to make some fixes.
+    # See: https://labjack.com/support/datasheets/u3/operation/stream-mode/digital-inputs-timers-counters
+
     if duration.lower() == "none":
         duration = None
     else:
@@ -39,11 +42,11 @@ def main():
     stream_to_csv("stream.csv", 
                 duration_s=duration,
                 input_channels=[0, 210, 224], 
-                input_channel_names={0: "PID (V)", 210: "DAQ count", 224: "TC_Capture"},
+                input_channel_names={0: "PID (V)", 210: "DAQ count", 224: "16-bit roll-overs"},
                 times="absolute",
                 external_trigger={"port":port, "freq":100, "width":10},
                 do_overwrite=True, 
-                is_verbose=False)
+                is_verbose=True)
 
 
 if __name__ == "__main__":
