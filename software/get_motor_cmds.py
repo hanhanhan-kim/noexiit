@@ -17,15 +17,16 @@ from autostep import Autostep
 def stream_to_csv(stepper, csv_path):
             
     """
-    Saves motor commands to csv.
+    Saves motor commands to csv. Uses a global _got_motors flag so that 
+    if run in a thread, the flag can be switched to end the stream.
     
     Parameters:
     -----------
     stepper (Autostep): The Autostep object, defined with the correct port. 
         E.g. Autostep("/dev/ttyACM0")
         Do NOT make this object more than once. 
-    csv_path (str): Path to which to stream the .csv.
 
+    csv_path (str): Path to which to stream the .csv.
     """
 
     # TODO: add overwrite handling
@@ -49,8 +50,11 @@ def stream_to_csv(stepper, csv_path):
 
     csv_writer = csv.DictWriter(csv_file_handle, fieldnames=column_names)
     csv_writer.writeheader()
+
+    global _got_motors
+    _got_motors = False
     
-    while True:
+    while not _got_motors:
 
         now = datetime.datetime.now()
         stepper_posn = stepper.get_position()
@@ -63,6 +67,12 @@ def stream_to_csv(stepper, csv_path):
         csv_writer.writerow({column_names[0]: now, 
                              column_names[1]: stepper_posn, 
                              column_names[2]: servo_posn})
+
+        if _got_motors == True:
+            break
+    
+    close_csv_handle()
+    _got_motors = True
 
 
 def main():
