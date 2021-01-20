@@ -114,8 +114,7 @@ def home(stepper, pre_exp_time = 1.5, homing_speed = 30):
     stepper.set_position(0)
 
     # Wait before starting experiment:
-    print(f"Home found. Position is {stepper.get_position()}.", 
-          f" Experiment starting in {pre_exp_time} seconds.")
+    print(f"Home found. Position is {stepper.get_position()}. \nContinuing in {pre_exp_time} seconds ...")
     time.sleep(pre_exp_time)
 
 
