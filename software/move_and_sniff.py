@@ -31,8 +31,9 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed,
 
     Parameters:
     -----------
-        stepper (Autostep obj): The Autostep object, defined with respect 
-            to the correct port. Do NOT make this object more than once.
+        stepper (Autostep): The Autostep object, defined with the correct port. 
+            E.g. Autostep("/dev/ttyACM0")
+            Do NOT make this object more than once. 
 
         posns (list): List of target absolute positions to move to.
 
@@ -90,8 +91,9 @@ def home(stepper, pre_exp_time = 1.5, homing_speed = 30):
 
     Parameters:
     -----------
-    stepper (Autostep obj): The Autostep object, defined with respect to the correct port.
-                            Do NOT make this object more than once.
+    stepper (Autostep): The Autostep object, defined with the correct port. 
+        E.g. Autostep("/dev/ttyACM0")
+        Do NOT make this object more than once. 
 
     pre_exp_time (fl): The time interval in secs after executing the home function.
 
@@ -116,6 +118,42 @@ def home(stepper, pre_exp_time = 1.5, homing_speed = 30):
     # Wait before starting experiment:
     print(f"Home found. Position is {stepper.get_position()}. \nContinuing in {pre_exp_time} seconds ...")
     time.sleep(pre_exp_time)
+
+
+def save_params(stepper, fname):
+
+    """
+    Print and save autostep stepper motor parameters to .txt file. 
+
+    Parameters:
+    -----------
+    stepper (Autostep): The Autostep object, defined with the correct port. 
+        E.g. Autostep("/dev/ttyACM0")
+        Do NOT make this object more than once. 
+
+    fname (str): Path to which to save the .txt file.
+    """
+
+    stepper.print_params()
+    with open(fname, "a") as f:
+
+        print("autostep parameters", file=f)
+        print("--------------------------", file=f)
+        print('fullstep/rev:  {0}\n'.format(stepper.get_fullstep_per_rev()) +
+        'step mode:     {0}\n'.format(stepper.get_step_mode()) +
+        'oc threshold:  {0}'.format(stepper.get_oc_threshold()), file=f)
+        print('jog mode:', file=f)
+        for k,v in stepper.get_jog_mode_params().items():
+            print('  {0}: {1} {2}'.format(k,v,Autostep.MoveModeUnits[k]), file=f)
+        print('max mode:', file=f)
+        for k, v in stepper.get_max_mode_params().items():
+            print('  {0}: {1} {2}'.format(k,v,Autostep.MoveModeUnits[k]), file=f)
+        print('kvals (0-255): ', file=f)
+        for k,v in stepper.get_kval_params().items():
+            print('  {0:<6} {1}'.format(k+':',v), file=f)
+        # print("\n".join("{}\t{}".format(k, v) for k, v in stepper.get_params().items()), file=f)
+        print("\nlinear servo parameters", file=f)
+        print("--------------------------", file=f)
 
 
 def main():
