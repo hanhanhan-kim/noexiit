@@ -178,9 +178,14 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         # Initializing the CameraTrigger takes 2.0 secs:
         print("Initializing the external trigger ...")
         time.sleep(2.0)
+        print("Initialized external trigger.")
 
-        # Set up a timer in its own thread, to end the trigger:
-        trig_timer = threading.Timer(duration_s, trig.stop)
+        # Kill the external trigger when the script exits (either normally or by ctrl_c):
+        def stop_trigger():
+            print("Stopping external trigger ...")
+            trig.stop()
+            print("Successfully stopped external trigger.")
+        atexit.register(stop_trigger)
 
     if input_channels is None:
         input_channels = [0]
@@ -340,11 +345,9 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     global _finish_up
     _finish_up = False
     def signal_shutdown(sig, frame):
-        trig.stop()
-        trig_timer.cancel()
         global _finish_up
         _finish_up = True
-        print("Clean exit achieved.")
+        print("Breaking out of stream ...")
 
     signal.signal(signal.SIGINT, signal_shutdown)
 
@@ -358,7 +361,6 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     # Start trigger:
     if external_trigger is not None:
         trig.start()
-        trig_timer.start()
 
     missed = 0
     request_count = 0
@@ -417,6 +419,8 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
             # TODO should i be warning / erring in this case?
             print(f"No data ; {datetime.now()}")
 
+    print("Ended stream.")
+
     if is_verbose:
 
         stop = datetime.now()
@@ -463,8 +467,8 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
 if __name__ == '__main__':
 
     stream_to_csv("test.csv", 
-                duration_s=3.0,
+                # duration_s=3.0,
                 input_channels=[0, 1], 
                 input_channel_names={0: "PID (V)", 1: "valve control"},
                 do_overwrite=True, 
-                is_verbose=True)
+                is_verbose=False)
