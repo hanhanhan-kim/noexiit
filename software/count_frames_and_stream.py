@@ -39,7 +39,7 @@ def main():
         duration = float(duration)
 
     # Start the DAQ stream and cam trigger:
-    stream_to_csv("stream.csv", 
+    stream_to_csv("daq_stream.csv", 
                 duration_s=duration,
                 input_channels=[0, 210, 224], 
                 input_channel_names={0: "PID (V)", 210: "DAQ count", 224: "16-bit roll-overs"},
