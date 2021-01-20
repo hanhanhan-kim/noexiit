@@ -3,6 +3,16 @@
 """
 Utility functions for using LabJack U3 DAQ's streaming abilities. 
 
+If using a counter or timer with the stream, use the 224 channel, 
+as described in the docs:
+https://labjack.com/support/datasheets/u3/operation/stream-mode/digital-inputs-timers-counters
+
+Channel 224 stores the most significant digit. LabJack recommends streaming the counters
+and timers in 16-bit mode (default). In other words, when using e.g. 1 counter, the counts 
+will be stored up to (2**16)-1, and will then roll over (return to 0). The number of roll overs 
+are stored in Channel 224. So to get back the total number of counts in this example, do:
+DAQ_count + TC_capture * (2**16-1). 
+
 Modified from Tom O'Connell's LabJack code:
 https://github.com/ejhonglab/labjack/blob/main/src/labjack/labjack.py
 """
@@ -114,6 +124,9 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     # the count is >0 (and also start counting towards duration_s from that point)
     # (would need a pin on my stimulus control arduino to go high at the start of
     # the stimulus program though...)
+    # TODO : Don't run more than one counter and/or timer. The required multiple 224 
+    # channels means I have to make some fixes.
+    # See: https://labjack.com/support/datasheets/u3/operation/stream-mode/digital-inputs-timers-counters
 
     """
     Stream AIN data. Can stream directly to a CSV.
@@ -184,7 +197,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         def stop_trigger():
             print("Stopping external trigger ...")
             trig.stop()
-            print("Successfully stopped external trigger.")
+            print("Successfully stopped external trigger.\n")
         atexit.register(stop_trigger)
 
     if input_channels is None:
@@ -233,7 +246,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         u3.Counter1(Reset=True)
 
     if is_verbose:
-        print("Configuring U3 stream ...")
+        print("Configuring U3 stream ... \n")
 
     # See https://labjack.com/support/datasheets/u3/hardware-description/ain/channel_numbers
     n_channels = []
@@ -267,17 +280,18 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     all_channel_sample_dt = 1 / scan_frequency
 
     if is_verbose:
-        print("samples_per_request:", samples_per_request)
-        print("samples_per_request / len(input_channels):", samples_per_request / len(input_channels))
-        print("n_requests:", n_requests)
-        print("max_scan_freq:", max_scan_freq)
-        print("max_scan_freq / len(input_channels):", max_scan_freq / len(input_channels))
-        print("duration_s:", duration_s)
+        print(f"samples_per_request: {samples_per_request}")
+        print(f"samples_per_request / len(input_channels): {samples_per_request / len(input_channels)}")
+        print(f"n_requests: {n_requests}")
+        print(f"max_scan_freq: {max_scan_freq}")
+        print(f"max_scan_freq / len(input_channels): {max_scan_freq / len(input_channels)}")
+        print(f"duration_s: {duration_s}\n")
         # Because we need the last request to finish, even if it would bring our
         # sample total above the total we are effectively requesting with duration_s:
-        actual_duration_s = request_s * n_requests
-        print("actual_duration_s:", actual_duration_s)
-        print("all_channel_sample_dt:", all_channel_sample_dt)
+        if duration_s is not None:
+            actual_duration_s = request_s * n_requests
+            print(f"actual_duration_s: {actual_duration_s}")
+            print(f"all_channel_sample_dt: {all_channel_sample_dt}\n")
 
     channel_names = [get_channel_name(d, i) for i in sorted(input_channels)]
 
@@ -419,7 +433,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
             # TODO should i be warning / erring in this case?
             print(f"No data ; {datetime.now()}")
 
-    print("Ended stream.")
+    print("Ended stream.\n")
 
     if is_verbose:
 
@@ -444,7 +458,9 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         # test? maybe measure a reference square wave ~2-4x slower than
         # sample rate?
         
-        print(f"runTime - actual_duration_s: {runTime - actual_duration_s}")
+        if duration_s is not None:
+            print(f"runTime - actual_duration_s: {runTime - actual_duration_s}")
+
         print(f"The experiment took {runTime} seconds.")
         print(f"Actual Scan Rate = {scan_frequency} Hz")
 
@@ -456,7 +472,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         # of the stream object
         
         print(f"Timed Scan Rate = {scanTotal} scans / {runTime} seconds = {float(scanTotal)/runTime} Hz")
-        print(f"Timed Sample Rate = {sampleTotal} samples / {runTime} seconds = {float(sampleTotal)/runTime} Hz")
+        print(f"Timed Sample Rate = {sampleTotal} samples / {runTime} seconds = {float(sampleTotal)/runTime} Hz \n")
 
     # The atexit handlers will run after the labjack node that calls this
     # function exits. Letting SIGTERM (or maybe even un-handled SIGINT?) kill
@@ -471,4 +487,4 @@ if __name__ == '__main__':
                 input_channels=[0, 1], 
                 input_channel_names={0: "PID (V)", 1: "valve control"},
                 do_overwrite=True, 
-                is_verbose=False)
+                is_verbose=True)
