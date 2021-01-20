@@ -83,7 +83,7 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed,
         time.sleep(retr_wait_time)
 
 
-def home(stepper, pre_exp_time = 3.0, homing_speed = 30):
+def home(stepper, pre_exp_time = 1.5, homing_speed = 30):
 
     """
     Homes the stepper to the reed switch and the linear servo to retraction.
