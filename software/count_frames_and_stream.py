@@ -20,12 +20,15 @@ from stream import stream_to_csv
 def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("csv_path", 
+        help="Path to which to stream the .csv.")
     parser.add_argument("duration",
         help="Duration (s) of the PID acquisition. If None, will stream until exited (ctrl+c).")
     parser.add_argument("port",
         help="Path to the ATMega328P trigger's port, e.g. /dev/ttyUSB0")
     args = parser.parse_args()
     
+    csv_path = args.csv_path
     duration = args.duration
     port = args.port
 
@@ -39,14 +42,14 @@ def main():
         duration = float(duration)
 
     # Start the DAQ stream and cam trigger:
-    stream_to_csv("daq_stream.csv", 
-                duration_s=duration,
-                input_channels=[0, 210, 224], 
-                input_channel_names={0: "PID (V)", 210: "DAQ count", 224: "16-bit roll-overs"},
-                times="absolute",
-                external_trigger={"port":port, "freq":100, "width":10},
-                do_overwrite=True, 
-                is_verbose=True)
+    stream_to_csv(csv_path=csv_path, 
+                  duration_s=duration,
+                  input_channels=[0, 210, 224], 
+                  input_channel_names={0: "PID (V)", 210: "DAQ count", 224: "16-bit roll-overs"},
+                  times="absolute",
+                  external_trigger={"port":port, "freq":100, "width":10},
+                  do_overwrite=True, 
+                  is_verbose=True)
 
 
 if __name__ == "__main__":
