@@ -27,7 +27,6 @@ from datetime import datetime, timedelta
 import warnings
 import atexit
 import signal
-import threading
 import math
 import csv
 
