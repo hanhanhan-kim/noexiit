@@ -39,7 +39,13 @@ def stream_to_csv(stepper, csv_path):
         open_kwargs = dict()
 
     csv_file_handle = open(csv_path, "w", **open_kwargs)
-    atexit.register(csv_file_handle.close)
+    
+    # When script exits, stop streaming to csv:
+    def close_csv_handle():
+        print("Closing .csv handle ...")
+        csv_file_handle.close()
+        print("Closed .csv handle.")
+    atexit.register(close_csv_handle)
 
     csv_writer = csv.DictWriter(csv_file_handle, fieldnames=column_names)
     csv_writer.writeheader()
