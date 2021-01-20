@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Demos simultaneous streaming and counting on the U3-HV. 
+Demos simultaneous analog streaming and counting on the U3-HV. 
 Counts digital inputs into the FIO4 pin (Counter0).
 Useful for counting hardware trigger outputs to cams (i.e. frames).
 """
@@ -23,7 +23,7 @@ def main():
     parser.add_argument("csv_path", 
         help="Path to which to stream the .csv.")
     parser.add_argument("duration",
-        help="Duration (s) of the PID acquisition. If None, will stream until exited (ctrl+c).")
+        help="Duration (s) of the DAQ stream. If None, will stream until exited (ctrl+c).")
     parser.add_argument("port",
         help="Path to the ATMega328P trigger's port, e.g. /dev/ttyUSB0")
     args = parser.parse_args()
