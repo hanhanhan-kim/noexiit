@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 
 """
-Move the tethered stimulus to each angular position in a list of specified 
-positions, while collecting stimulus and camera data.
-Upon arriving at a position, extend the tethered stimulus. Remain extended 
-for a fixed duration. Then retract the tethered stimulus. Remain retracted 
-for the same fixed duration. 
-Collect ongoing motor position data as well as photoionization detector data.
-In addition, activate an ATMega328P-based camera trigger.
+TODO: ** Explain how this code works, and the order of starting events and exits. **
+TODO: ** Implement SIGINT exit conditions for main process events (i.e. not the DAQ). **
+TODO: ** Incorporate set duration of recording (which might be shorter or longer than
+the length of motor events.)
 """
 
 import datetime
@@ -17,8 +14,9 @@ import sys
 import subprocess
 import threading
 import atexit
+import signal
 import argparse
-from os import rename
+import os
 
 import numpy as np
 import pandas as pd
@@ -28,7 +26,7 @@ from autostep import Autostep
 
 from utils import ask_yes_no
 from init_BIAS import init_BIAS
-from move_and_sniff import home, pt_to_pt_and_poke
+import move_and_get
 from camera_trigger import CameraTrigger
 
 
@@ -55,7 +53,8 @@ def main():
     # Set up user arguments:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("duration", type=int,
-        help="Duration (s) of the synchronized multi-cam video recordings. If using BIAS, should match the set duration of the BIAS recordings.")
+        help="Duration (s) of the synchronized multi-cam video recordings. \
+            If using BIAS, should match the set duration of the BIAS recordings.")
     parser.add_argument("poke_speed", type=int,
         help="A scalar speed factor for the tethered stimulus' extension \
             and retraction. Must be positive. 10 is the fastest. Higher values \
@@ -70,7 +69,7 @@ def main():
         help="A list of angular positions the tethered stimulus will move to. \
             The stimulus will poke and retract at each position in the list. \
             This argument is required.")
-    parser.add_argument("-e", "--ext", type=float, default=None, 
+    parser.add_argument("-e", "--ext", type=int, default=None, 
         help="The maximum linear servo extension angle. If None, will \
             inherit the value in the `calib_servo.noexiit` file. Default \
             is None.")
@@ -84,40 +83,62 @@ def main():
     posns = args.posns
     ext_angle = args.ext
 
-    assert(poke_speed >= 10), \
-        "The poke_speed must be 10 or greater."
+    if poke_speed < 10:
+        raise ValueError("The poke_speed must be 10 or greater.")
 
     if ext_angle is None:
-
         with open ("calib_servo.noexiit", "r") as f:
             max_ext = f.read().rstrip('\n')
-            
-        ext_angle = float(max_ext)
+        ext_angle = int(max_ext)
     
+    # Set up filename to save:
+    t_script_start = datetime.datetime.now()
+    file_ending = t_script_start.strftime("%Y_%m_%d_%H_%M_%S") + ".csv"
+
+    # Save the motor settings: 
+    fname = "motor_settings_" + t_script_start.strftime("%Y_%m_%d_%H_%M_%S") + ".txt"
+    servo_msg = f"\nlinear servo parameters \n-------------------------- \nmax extension angle: {ext_angle}\n"
+    move_and_get.save_params(stepper, fname)
+    # Write:
+    with open(fname, "a") as f:
+        print(servo_msg, file=f)
+    # Print:
+    with open(fname) as f:
+        print(f.read())
+    
+    # Set up thread for getting motor commands;
+    # (can't be a subprocess, because I can create only one Autostep object):
+    get_motors_thread = threading.Thread(target=move_and_get.stream_to_csv, 
+                                         args=(stepper, f"o_loop_motor_{file_ending}"))
+
     # Set up trigger:
-    cam_port = "/dev/ttyUSB0" # TODO: make into an arg?
-    trig = CameraTrigger(cam_port) 
+    trigger_port = "/dev/ttyUSB0" # TODO: make into an arg?
+    trig = CameraTrigger(trigger_port) 
     trig.set_freq(100) # frequency (Hz) TODO: make into an arg?
     trig.set_width(10) # (us)
     trig.stop()
 
-    # When script exits, DAQ exits: # TODO: figure out how to trip the SIGINT exit upon p_daq.terminate()
+    # Initializing the CameraTrigger takes 2.0 secs:
+    print("Initializing the external trigger ...")
+    time.sleep(2.0)
+    print("Initialized external trigger.")
 
-    # When script exits, get_motor_cmds.py stops streaming to csv.
+    # TODO: Put the two below atexit fxns on SIGINT only,
+    # so it's not redundant with a normal exit. 
 
-    # When script exits, stop trigger: 
-    def stop_trigger():
-        print("Stopping trigger ...")
-        trig.stop()
-        print("Stopped trigger.")
-    atexit.register(stop_trigger)
+    # # When script exits, stop trigger: 
+    # def stop_trigger():
+    #     print("Stopping external trigger ...")
+    #     trig.stop()
+    #     print("Stopped external trigger.")
+    # atexit.register(stop_trigger)
 
-    # When script exits, stop stepper: # TODO: terminate() subprocesses here as well?
-    def stop_stepper():
-        print("Stopping stepper ...")
-        stepper.run(0.0)
-        print("Stopped stepper.")
-    atexit.register(stop_stepper)
+    # # When script exits, stop stepper:
+    # def stop_stepper():
+    #     print("Stopping stepper ...")
+    #     stepper.run(0.0)
+    #     print("Stopped stepper.")
+    # atexit.register(stop_stepper)
 
     # EXECUTE--------------------------------------------------------------------------------------------------
 
@@ -129,7 +150,7 @@ def main():
         print("Skipping BIAS initialization ...")
 
     # Home the motors:
-    home(stepper)
+    move_and_get.home(stepper)
 
     # Proceed with experimental conditions once the home is set to 0:
     if stepper.get_position() == 0:
@@ -140,92 +161,65 @@ def main():
         stepper.busy_wait()
         print("Moved to starting stepper position.")
         
-        # START DAQ stream of PID values and counts:
-        daq_args = [sys.executable, "count_frames_and_stream.py", "None", cam_port] # sys.executable calls current python
+        # START DAQ stream of PID values and counts (trigger not called here):
+        daq_args = [sys.executable, # sys.executable calls current python
+                    "stream.py", f"o_loop_stream_{file_ending}", "none", "absolute"] 
         p_daq = subprocess.Popen(daq_args) 
+        time.sleep(1.0) # DAQ start-up takes a bit
 
-        # The above process needs AT LEAST a 2.0 s sleep because the required start-up time of the 
-        # trigger is 2.0 s, and then the DAQ takes some time to start up. 
-        # We want the DAQ to be running BEFORE collecting motor command data, and we want the
-        # DAQ to finish AFTER collecting the motor command data, so set this wait to be kind of high
-        # to be conservative.
-        time.sleep(6.0) 
-
-        t_start = datetime.datetime.now()
-
-        # GET MOTOR positions:
-        get_motor_args = [sys.executable, "get_motor_cmds.py", "motor_stream.csv"]
-        p_get_motor = subprocess.Popen(get_motor_args)  
+        # GET MOTOR positions :
+        get_motors_thread.start()  
+        time.sleep(0.1) # Make sure not to start after the trigger
 
         # START TRIGGER:
+        print("Starting external trigger ...")
         trig.start()   
+        print("Started external trigger.")
 
-        # START MOTORS:
-        pt_to_pt_and_poke(stepper, posns, ext_angle, 
-                          poke_speed, ext_wait_time, retr_wait_time) # blocking
+        # START MOTORS (is blocking):
+        move_and_get.pt_to_pt_and_poke(stepper, posns, ext_angle, 
+                                       poke_speed, ext_wait_time, retr_wait_time)
 
-        # END THINGS upon completion:
+        # STOP EVERYTHING upon completion:
+        print("Stopping external trigger ...")
         trig.stop()
-        p_get_motor.terminate()
-        p_daq.terminate()
-          
+        print("Stopped external trigger.")
+        print("Stopping the motor commands stream to csv ...")
+        move_and_get._getting_motors = False
+        get_motors_thread.join() 
+        print("Stopped the motor command stream to csv.")
+        print("Stopping the DAQ stream process ...")
+        # DAQ process must die on SIGINT to exit correctly:
+        os.kill(p_daq.pid, signal.SIGINT) 
+        time.sleep(1.0) # Sleep for a bit so the exit prints come out in the right order
+        if not p_daq.poll():
+            print("Stopped the DAQ stream process.")
         
     # SAVE DATA---------------------------------------------------------------------------------------------
 
-    file_ending = t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".csv"
+    # TODO: can't plot datetime strings ... convert to datetime or float
 
-    # Rename the DAQ stream output .csv:
-    daq_stream_fname = "o_loop_stream_" + file_ending
-    rename("daq_stream.csv", daq_stream_fname) 
+    # # Plot motor commands:
+    # plt.subplot(2, 1, 1)
+    # motor_stream_df = pd.read_csv(motor_stream_fname)
+    # plt.plot(motor_stream_df["datetime"], motor_stream_df["stepper position (deg)"],
+    #          label="stepper position (degs)")
+    # plt.plot(motor_stream_df["datetime"], motor_stream_df["servo position (deg)"],
+    #          label="servo position (degs)")
+    # plt.xlabel("time (s)")
+    # plt.ylabel("motor position (degs)")
+    # plt.legend()
+    # plt.grid(True)
 
-    # Rename the motor stream output .csv:
-    motor_stream_fname = "o_loop_motor_" + file_ending
-    rename("motor_stream.csv", motor_stream_fname)
-
-    # Plot motor commands:
-    plt.subplot(2, 1, 1)
-    motor_stream_df = pd.read_csv(motor_stream_fname)
-    plt.plot(motor_stream_df["datetime"], motor_stream_df["stepper position (deg)"],
-             label="stepper position (degs)")
-    plt.plot(motor_stream_df["datetime"], motor_stream_df["servo position (deg)"],
-             label="servo position (degs)")
-    plt.xlabel("time (s)")
-    plt.ylabel("motor position (degs)")
-    plt.legend()
-    plt.grid(True)
-
-    # Plot PID readings:
-    plt.subplot(2, 1, 2)
-    daq_stream_df = pd.read_csv(daq_stream_fname)
-    plt.plot(daq_stream_df["datetime"], daq_stream_df["PID (V)"]) # TODO: can't plot datetime strings
-    plt.xlabel("time (s)")
-    plt.ylabel("PID reading (V)")
-    plt.grid(True)
-    plt.savefig(("o_loop_stream_" + file_ending).replace(".csv", ".png"))
-    plt.show()
-
-    # Save the stepper settings and servo extension angle: 
-    stepper.print_params()
-    with open("motor_settings_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".txt", "a") as f:
-
-        print("autostep parameters", file=f)
-        print("--------------------------", file=f)
-        print('fullstep/rev:  {0}\n'.format(stepper.get_fullstep_per_rev()) +
-        'step mode:     {0}\n'.format(stepper.get_step_mode()) +
-        'oc threshold:  {0}'.format(stepper.get_oc_threshold()), file=f)
-        print('jog mode:', file=f)
-        for k,v in stepper.get_jog_mode_params().items():
-            print('  {0}: {1} {2}'.format(k,v,Autostep.MoveModeUnits[k]), file=f)
-        print('max mode:', file=f)
-        for k, v in stepper.get_max_mode_params().items():
-            print('  {0}: {1} {2}'.format(k,v,Autostep.MoveModeUnits[k]), file=f)
-        print('kvals (0-255): ', file=f)
-        for k,v in stepper.get_kval_params().items():
-            print('  {0:<6} {1}'.format(k+':',v), file=f)
-        # print("\n".join("{}\t{}".format(k, v) for k, v in stepper.get_params().items()), file=f)
-        print("\nlinear servo parameters", file=f)
-        print("--------------------------", file=f)
-        print("max extension angle: %f" %ext_angle, file =f)
+    # # Plot PID readings:
+    # plt.subplot(2, 1, 2)
+    # daq_stream_df = pd.read_csv(daq_stream_fname)
+    # plt.plot(daq_stream_df["datetime"], daq_stream_df["PID (V)"]) 
+    # plt.xlabel("time (s)")
+    # plt.ylabel("PID reading (V)")
+    # plt.grid(True)
+    # plt.savefig(("o_loop_stream_" + file_ending).replace(".csv", ".png"))
+    # plt.show()
 
 
 if __name__ == "__main__":
