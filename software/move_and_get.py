@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
 """
-Demos some Autostep and LabJack U3 DAQ functions.
-Does not demo any streams. 
+Some useful functions for controlling Autostep motors.
 
-Moves the stepper motor to each angular position in a list of specified 
-positions. Upon arriving at a position, extends the linear servo to some 
-length for some duration, then fully retracts for some duration.
-
+The main demos some Autostep and LabJack U3 DAQ functions, but does not 
+demo any streams. 
+It moves the stepper motor to each angular position in a list of specified 
+positions. Upon arriving at a position, it extends the linear servo to some 
+length for some duration, then fully retracts the servo for some duration.
 Collects the ongoing motor commands, in addition to analog data (AIN0)
 from the DAQ. 
-N.B. Does not record anything until the first motor position is reached.
+N.B. The main does not record anything until the first motor position is reached.
 
 Example command:
 ./move_and_get.py 10 2 2 -p 180 0 -e 90
@@ -199,10 +199,10 @@ def stream_to_csv(stepper, csv_path):
     csv_writer = csv.DictWriter(csv_file_handle, fieldnames=column_names)
     csv_writer.writeheader()
 
-    global _got_motors
-    _got_motors = False
+    global _getting_motors
+    _getting_motors = True
     
-    while not _got_motors:
+    while _getting_motors:
 
         now = datetime.datetime.now()
         stepper_posn = stepper.get_position()
@@ -216,11 +216,11 @@ def stream_to_csv(stepper, csv_path):
                              column_names[1]: stepper_posn, 
                              column_names[2]: servo_posn})
 
-        if _got_motors == True:
+        if _getting_motors == False:
             break
     
     close_csv_handle()
-    _got_motors = True
+    _getting_motors == False
 
 
 def main():
