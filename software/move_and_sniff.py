@@ -201,13 +201,13 @@ def main():
     posns = args.posns
     ext_angle = args.ext
 
-    assert(poke_speed >= 10), \
-        "The poke_speed must be 10 or greater."
+    if poke_speed < 10:
+        raise ValueError("The poke_speed must be 10 or greater.")
 
     if ext_angle is None:
         with open ("calib_servo.noexiit", "r") as f:
             max_ext = f.read().rstrip('\n')
-        ext_angle = float(max_ext)
+        ext_angle = int(max_ext)
 
     # Stop the stepper when script is killed:
     def stop_stepper():
