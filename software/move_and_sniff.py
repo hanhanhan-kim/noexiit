@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 
 """
-Move the tethered stimulus to each angular position in a list of specified 
-positions, while collecting stimulus data.
-Upon arriving at a position, extend the tethered stimulus. Remain extended 
-for a fixed duration. Then retract the tethered stimulus. Remain retracted 
-for the same fixed duration. 
-Collect ongoing motor position data as well as photoionization detector data.
+Demos some Autostep and LabJack U3 DAQ functions (no streams).
+
+Moves the stepper motor to each angular position in a list of specified 
+positions. Upon arriving at a position, extends the linear servo to some 
+length for some duration, then fully retracts for some duration.
+
+Collects the ongoing motor commands, in addition to analog data (AIN0)
+from the DAQ. 
+N.B. Does not record anything until the first motor position is reached.
+
+Example command: 
+./move_and_sniff.py 10 2 2 -p 180 0 -e 90
 """
 
 from autostep import Autostep
@@ -123,7 +129,7 @@ def home(stepper, pre_exp_time = 1.5, homing_speed = 30):
 def save_params(stepper, fname):
 
     """
-    Print and save autostep stepper motor parameters to .txt file. 
+    Save autostep stepper motor parameters to .txt file. 
 
     Parameters:
     -----------
@@ -134,7 +140,6 @@ def save_params(stepper, fname):
     fname (str): Path to which to save the .txt file.
     """
 
-    stepper.print_params()
     with open(fname, "a") as f:
 
         print("autostep parameters", file=f)
@@ -152,8 +157,6 @@ def save_params(stepper, fname):
         for k,v in stepper.get_kval_params().items():
             print('  {0:<6} {1}'.format(k+':',v), file=f)
         # print("\n".join("{}\t{}".format(k, v) for k, v in stepper.get_params().items()), file=f)
-        print("\nlinear servo parameters", file=f)
-        print("--------------------------", file=f)
 
 
 def main():
@@ -185,7 +188,7 @@ def main():
         help="A list of angular positions the tethered stimulus will move to. \
             The stimulus will poke and retract at each position in the list. \
             This argument is required.")
-    parser.add_argument("-e", "--ext", type=float, default=None, 
+    parser.add_argument("-e", "--ext", type=int, default=None, 
         help="The maximum linear servo extension angle. If None, will \
             inherit the value in the `calib_servo.noexiit` file. Default \
             is None.")
@@ -233,8 +236,11 @@ def main():
                                                ext_wait_time, retr_wait_time))
 
         # Move to first stepper position prior to data acquisition:
+        print("Moving to starting stepper position.")
         stepper.move_to(posns[0])
         stepper.busy_wait()
+        print("Moved to starting stepper position.")
+        print("Starting experiment!")
         
         # Start motors:
         motors_thread.start()
@@ -288,27 +294,16 @@ def main():
         plt.grid(True)
         plt.show()
 
-        # Save the stepper settings and servo extension angle: 
-        stepper.print_params()
-        with open("motor_settings_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".txt", "a") as f:
-            print("autostep parameters", file=f)
-            print("--------------------------", file=f)
-            print('fullstep/rev:  {0}\n'.format(stepper.get_fullstep_per_rev()) +
-            'step mode:     {0}\n'.format(stepper.get_step_mode()) +
-            'oc threshold:  {0}'.format(stepper.get_oc_threshold()), file=f)
-            print('jog mode:', file=f)
-            for k,v in stepper.get_jog_mode_params().items():
-                print('  {0}: {1} {2}'.format(k,v,Autostep.MoveModeUnits[k]), file=f)
-            print('max mode:', file=f)
-            for k, v in stepper.get_max_mode_params().items():
-                print('  {0}: {1} {2}'.format(k,v,Autostep.MoveModeUnits[k]), file=f)
-            print('kvals (0-255): ', file=f)
-            for k,v in stepper.get_kval_params().items():
-                print('  {0:<6} {1}'.format(k+':',v), file=f)
-            # print("\n".join("{}\t{}".format(k, v) for k, v in stepper.get_params().items()), file=f)
-            print("\nlinear servo parameters", file=f)
-            print("--------------------------", file=f)
-            print("max extension angle: %f" %ext_angle, file =f)
+    # Save the motor settings: 
+    fname = "motor_settings_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".txt"
+    servo_msg = f"\nlinear servo parameters \n-------------------------- \nmax extension angle: {ext_angle}\n"
+    save_params(stepper, fname)
+    # Write:
+    with open(fname, "a") as f:
+        print(servo_msg, file=f)
+    # Print:
+    with open(fname) as f:
+        print(f.read())
 
 
 if __name__ == "__main__":
