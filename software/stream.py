@@ -374,7 +374,9 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
 
     # Start trigger:
     if external_trigger is not None:
-        trig.start()
+        print("Starting external trigger ...")
+        trig.start()   
+        print("Started external trigger.")
 
     missed = 0
     request_count = 0
@@ -512,7 +514,7 @@ def main():
     else:
         duration = float(duration)
     
-    if times != "elapsed" or "absolute":
+    if times != "elapsed" and times != "absolute":
         raise ValueError("`times` must be either 'elapsed' or 'absolute'.")
 
     stream_to_csv(csv_path, 
@@ -520,6 +522,7 @@ def main():
                   input_channels=[0, 210, 224], 
                   input_channel_names={0: "PID (V)", 210: "DAQ count", 224: "16-bit roll-overs"},
                   times="absolute",
+                  external_trigger=None,
                   do_overwrite=True, 
                   is_verbose=True)
 
