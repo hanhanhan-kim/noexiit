@@ -19,7 +19,8 @@ from stream import stream_to_csv
 
 def main():
 
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, 
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("csv_path", 
         help="Path to which to stream the .csv.")
     parser.add_argument("duration",

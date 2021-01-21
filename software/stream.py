@@ -482,7 +482,8 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
 
 def main():
 
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, 
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("csv_path", 
         help="Path to which to stream the .csv.")
     parser.add_argument("duration",
