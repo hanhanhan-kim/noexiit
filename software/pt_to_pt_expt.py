@@ -25,7 +25,7 @@ import u3
 
 from camera_trigger import CameraTrigger
 from init_BIAS import init_BIAS
-from move_and_sniff import home, pt_to_pt_and_poke
+from move_and_get import home, pt_to_pt_and_poke
 
 def main():
 
