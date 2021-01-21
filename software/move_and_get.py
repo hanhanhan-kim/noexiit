@@ -188,14 +188,6 @@ def stream_to_csv(stepper, csv_path):
         open_kwargs = dict()
 
     csv_file_handle = open(csv_path, "w", **open_kwargs)
-    
-    # When script exits, stop streaming to csv:
-    def close_csv_handle():
-        print("Closing .csv handle ...")
-        csv_file_handle.close()
-        print("Closed .csv handle.")
-    atexit.register(close_csv_handle)
-
     csv_writer = csv.DictWriter(csv_file_handle, fieldnames=column_names)
     csv_writer.writeheader()
 
@@ -218,9 +210,10 @@ def stream_to_csv(stepper, csv_path):
 
         if _getting_motors == False:
             break
-    
-    close_csv_handle()
-    _getting_motors == False
+
+    print("Closing motors' .csv handle ...")
+    csv_file_handle.close()
+    print("Closed motors' .csv handle.")
 
 
 def main():
