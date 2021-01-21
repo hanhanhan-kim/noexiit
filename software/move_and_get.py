@@ -13,7 +13,7 @@ from the DAQ.
 N.B. Does not record anything until the first motor position is reached.
 
 Example command:
-./move_and_sniff.py 10 2 2 -p 180 0 -e 90
+./move_and_get.py 10 2 2 -p 180 0 -e 90
 """
 
 from autostep import Autostep
@@ -353,7 +353,7 @@ def main():
 
         # Plot AIN0 readings:
         plt.subplot(2, 1, 2)
-        plt.plot(elapsed_times, AIN0_volt)
+        plt.plot(elapsed_times, AIN0_volts)
         plt.xlabel("time (s)")
         plt.ylabel("AIN0 reading (V)")
         plt.grid(True)
