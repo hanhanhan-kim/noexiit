@@ -114,8 +114,12 @@ def main():
     
     # Set up thread for getting motor commands;
     # (can't be a subprocess, because I can create only one Autostep object):
-    get_motors_thread = threading.Thread(target=move_and_get.stream_to_csv, 
-                                         args=(stepper, f"o_loop_motor_{file_ending}", duration+0.2))
+    if duration != None:
+        get_motors_thread = threading.Thread(target=move_and_get.stream_to_csv, 
+                                            args=(stepper, f"o_loop_motor_{file_ending}", duration+0.2))
+    else:
+        get_motors_thread = threading.Thread(target=move_and_get.stream_to_csv, 
+                                            args=(stepper, f"o_loop_motor_{file_ending}", duration))
 
     # Set up trigger:
     trigger_port = "/dev/ttyUSB0" # TODO: make into an arg?
