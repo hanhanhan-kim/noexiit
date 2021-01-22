@@ -52,9 +52,11 @@ def main():
     # TODO: Recall that the duration should match BIAS duration ... ask Will about timing/ordering of trigger duration vs. BIAS duration
     # Set up user arguments:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("duration", type=int,
+    parser.add_argument("duration", 
         help="Duration (s) of the synchronized multi-cam video recordings. \
-            If using BIAS, should match the set duration of the BIAS recordings.")
+            If set to None, will record until the motor sequence has finished. \
+            If using BIAS, the user MUST match this argument to the BIAS recordings' \
+            set duration.")
     parser.add_argument("poke_speed", type=int,
         help="A scalar speed factor for the tethered stimulus' extension \
             and retraction. Must be positive. 10 is the fastest. Higher values \
@@ -76,7 +78,11 @@ def main():
     
     args = parser.parse_args()
 
-    duration = args.duration # TODO: incorporate optional duration arg, if not None
+    duration = args.duration 
+    if duration.lower() == "none":
+        duration = None 
+    else:
+        duration = float(duration)
     poke_speed = args.poke_speed
     ext_wait_time = args.ext_wait_time
     retr_wait_time = args.retr_wait_time
@@ -109,7 +115,7 @@ def main():
     # Set up thread for getting motor commands;
     # (can't be a subprocess, because I can create only one Autostep object):
     get_motors_thread = threading.Thread(target=move_and_get.stream_to_csv, 
-                                         args=(stepper, f"o_loop_motor_{file_ending}"))
+                                         args=(stepper, f"o_loop_motor_{file_ending}", duration))
 
     # Set up trigger:
     trigger_port = "/dev/ttyUSB0" # TODO: make into an arg?
@@ -117,6 +123,11 @@ def main():
     trig.set_freq(100) # frequency (Hz) TODO: make into an arg?
     trig.set_width(10) # (us)
     trig.stop()
+
+    def stop_trigger():
+        print("Stopping external trigger ...")
+        trig.stop()
+        print("Stopped external trigger.")
 
     # Initializing the CameraTrigger takes 2.0 secs:
     print("Initializing the external trigger ...")
@@ -167,7 +178,7 @@ def main():
         p_daq = subprocess.Popen(daq_args) 
         time.sleep(1.0) # DAQ start-up takes a bit
 
-        # GET MOTOR positions :
+        # GET MOTOR positions:
         get_motors_thread.start()  
         time.sleep(0.1) # Make sure not to start after the trigger
 
@@ -176,21 +187,24 @@ def main():
         trig.start()   
         print("Started external trigger.")
 
+        if duration != None:
+            threading.Timer(duration, stop_trigger).start()
+
         # START MOTORS (is blocking):
         move_and_get.pt_to_pt_and_poke(stepper, posns, ext_angle, 
                                        poke_speed, ext_wait_time, retr_wait_time)
 
         # STOP EVERYTHING upon completion:
-        print("Stopping external trigger ...")
-        trig.stop()
-        print("Stopped external trigger.")
-        print("Stopping the motor commands stream to csv ...")
-        move_and_get._getting_motors = False
+        if duration == None:
+            stop_trigger()
+            print("Stopping the motor commands stream to csv ...")
+            move_and_get._getting_motors = False 
+            
         get_motors_thread.join() 
         print("Stopped the motor command stream to csv.")
+        
         print("Stopping the DAQ stream process ...")
-        # DAQ process must die on SIGINT to exit correctly:
-        os.kill(p_daq.pid, signal.SIGINT) 
+        os.kill(p_daq.pid, signal.SIGINT) # DAQ process must die on SIGINT to exit correctly
         time.sleep(1.0) # Sleep for a bit so the exit prints come out in the right order
         if not p_daq.poll():
             print("Stopped the DAQ stream process.")

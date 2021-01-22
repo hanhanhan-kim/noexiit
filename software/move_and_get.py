@@ -162,10 +162,10 @@ def save_params(stepper, fname):
         # print("\n".join("{}\t{}".format(k, v) for k, v in stepper.get_params().items()), file=f)
 
 
-def stream_to_csv(stepper, csv_path):
+def stream_to_csv(stepper, csv_path, duration=None):
             
     """
-    Saves motor commands to csv. Uses a global _got_motors flag so that 
+    Saves motor commands to csv. Uses a global `_got_motors` flag so that 
     if run in a thread, the flag can be switched to end the stream.
     
     Parameters:
@@ -175,10 +175,13 @@ def stream_to_csv(stepper, csv_path):
         Do NOT make this object more than once. 
 
     csv_path (str): Path to which to stream the .csv.
+    
+    duration (fl or None): If None (default), this function will stream to
+        csv forever, until the `_got_motors` flag is manually switched. 
+        Otherwise, takes a duration (secs) for which the data streams. 
     """
 
-    # TODO: add overwrite handling
-    # TODO: add support for break conditions, e.g. after some duration of recording
+    # TODO: add overwrite handling 
 
     column_names = ["datetime", "stepper position (deg)", "servo position (deg)"]
 
@@ -194,22 +197,45 @@ def stream_to_csv(stepper, csv_path):
     global _getting_motors
     _getting_motors = True
     
-    while _getting_motors:
+    if duration == None:
 
-        now = datetime.datetime.now()
-        stepper_posn = stepper.get_position()
-        servo_posn = stepper.get_servo_angle()
+        while _getting_motors:
 
-        print(f"{column_names[0]}: {now}\n", 
-              f"{column_names[1]}: {stepper_posn}\n", 
-              f"{column_names[2]}: {servo_posn}\n\n") 
+            now = datetime.datetime.now()
+            stepper_posn = stepper.get_position()
+            servo_posn = stepper.get_servo_angle()
 
-        csv_writer.writerow({column_names[0]: now, 
-                             column_names[1]: stepper_posn, 
-                             column_names[2]: servo_posn})
+            print(f"{column_names[0]}: {now}\n", 
+                f"{column_names[1]}: {stepper_posn}\n", 
+                f"{column_names[2]}: {servo_posn}\n\n") 
 
-        if _getting_motors == False:
-            break
+            csv_writer.writerow({column_names[0]: now, 
+                                column_names[1]: stepper_posn, 
+                                column_names[2]: servo_posn})
+
+            if _getting_motors == False:
+                break
+    
+    else:
+
+        t_start = datetime.datetime.now()
+        while True:
+
+            now = datetime.datetime.now()
+            stepper_posn = stepper.get_position()
+            servo_posn = stepper.get_servo_angle()
+
+            print(f"{column_names[0]}: {now}\n", 
+                f"{column_names[1]}: {stepper_posn}\n", 
+                f"{column_names[2]}: {servo_posn}\n\n") 
+
+            csv_writer.writerow({column_names[0]: now, 
+                                column_names[1]: stepper_posn, 
+                                column_names[2]: servo_posn})
+
+            if (now - t_start).total_seconds() >= duration:
+                print("Stopping the motor commands stream to csv ...")
+                break
 
     print("Closing motors' .csv handle ...")
     csv_file_handle.close()
