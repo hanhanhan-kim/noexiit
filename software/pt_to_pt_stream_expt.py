@@ -1,8 +1,32 @@
 #!/usr/bin/env python3
 
 """
-TODO: ** Explain how this code works, and the order of starting events and exits. **
-N.B. Will gracefully interrupt, but only between stepper positions
+Moves the tethered stimulus to each angular position in a list of specified 
+positions. Upon arriving at a position, extends the tethered stimulus for a fixed
+duration. Then retracts the tethered stimulus for a fixed duration.
+
+Streams data during motor movements. Events happen in the following order:
+
+Initialization (homing, etc.)
+│ 
+├── Gets DAQ stuff 
+├── Gets motors' positions
+├── Starts cam trigger
+├── Starts motors
+│
+├── Finishes motors or duration 
+├── Stops cam trigger
+├── Stops getting motors' positions
+└── Stops getting DAQ stuff
+
+Events happen in the above order even when script is interrupted (ctrl + c).
+
+"DAQ stuff" refers to PID data and frame counter. 
+Motor position sets and gets happen in a different process from DAQ gets,
+in order to achieve maximum frequencies. 
+
+Example command:
+./pt_to_pt_stream_expt.py 20 10 2 2 -p 180 0 -e 90
 """
 
 import datetime
@@ -49,7 +73,8 @@ def main():
 
     # TODO: Recall that the duration should match BIAS duration ... ask Will about timing/ordering of trigger duration vs. BIAS duration
     # Set up user arguments:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, 
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("duration", 
         help="Duration (s) of the synchronized multi-cam video recordings. \
             If set to None, will record until the motor sequence has finished. \
