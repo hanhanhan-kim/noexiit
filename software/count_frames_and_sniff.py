@@ -7,7 +7,7 @@ the FIO4 pin (Counter0).
 Does not support infinite or interrupted recordings. 
 
 Example command:
-./count_frames_and_sniff.py cmd_rsp.csv 
+./count_frames_and_sniff.py cmd_rsp.csv 5
 """
 
 import datetime
@@ -31,6 +31,7 @@ def main():
         help="Duration (s) of the DAQ recording.")
     args = parser.parse_args()
     
+    csv_path = args.csv_path
     duration = args.duration
 
     cal_times = []
@@ -85,8 +86,8 @@ def main():
                        "PID (V)": PID_volts,
                        "DAQ count": counts})
 
-    t_start  = t_start.strftime("%m%d%Y_%H%M%S")
-    df.to_csv(f"PID_volts_{t_start}.csv", index=False)
+    # t_start  = t_start.strftime("%m%d%Y_%H%M%S")
+    df.to_csv(csv_path, index=False)
     
     plt.plot(cal_times, PID_volts)
     plt.show()
