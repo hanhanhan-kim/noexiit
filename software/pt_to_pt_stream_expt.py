@@ -113,13 +113,13 @@ def main():
     # Set up thread for getting motor commands;
     # (can't be a subprocess, because I can create only one Autostep object):
     if duration != None:
-        get_motors_thread = threading.Thread(target=move_and_get.stream_to_csv, 
-                                             args=(stepper, f"o_loop_motor_{file_ending}", 
-                                             duration + 0.2))
+        get_motors_duration = duration + 0.2 # needs the delay so trigger doesn't end after motor stream; also can't add fl to None
     else:
-        get_motors_thread = threading.Thread(target=move_and_get.stream_to_csv, 
-                                             args=(stepper, f"o_loop_motor_{file_ending}", 
-                                             duration))
+        get_motors_duration = duration 
+    get_motors_thread = threading.Thread(target=move_and_get.stream_to_csv, 
+                                            args=(stepper, f"o_loop_motor_{file_ending}", 
+                                            get_motors_duration))
+    get_motors_thread.daemon = True
 
     # Set up trigger:
     trigger_port = "/dev/ttyUSB0" # TODO: make into an arg?
@@ -141,13 +141,16 @@ def main():
 
     # Write exit function:
     def stop_remaining_hardware(sig, frame):
+        if duration != None:
+            print("Stopping timer for trigger end.")
+            trig_timer.cancel()
+            print("Stopped timer for trigger end.")
         move_and_get._moving_motors = False
         print("Stopped movements.")
+        stop_trigger()
         print("Stopping the motor commands stream to csv ...")
         move_and_get._getting_motors = False 
-        get_motors_thread.join() 
         print("Stopped the motor command stream to csv.")
-        stop_trigger()
         print("Stopping the DAQ stream process ...")
         time.sleep(1.0) # Sleep for a bit, so the DAQ stops after the get motors thread
         os.kill(p_daq.pid, signal.SIGINT) # DAQ process must die on SIGINT to exit correctly
@@ -195,7 +198,8 @@ def main():
         print("Started external trigger.")
 
         if duration != None:
-            threading.Timer(duration, stop_trigger).start()
+            trig_timer = threading.Timer(duration, stop_trigger)
+            trig_timer.start()
 
         # START MOTORS (is blocking):
         move_and_get.pt_to_pt_and_poke(stepper, posns, ext_angle, 
