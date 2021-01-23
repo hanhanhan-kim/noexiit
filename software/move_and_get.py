@@ -9,7 +9,7 @@ It moves the stepper motor to each angular position in a list of specified
 positions. Upon arriving at a position, it extends the linear servo to some 
 length for some duration, then fully retracts the servo for some duration.
 Collects the ongoing motor commands, in addition to analog data (AIN0)
-from the DAQ. 
+from the DAQ, via a command-response mode. 
 N.B. The main does not record anything until the first motor position is reached.
 
 Example command:
@@ -37,6 +37,7 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed,
     '''
     Specifies stepper motor and servo motor behaviours according to a 
     list of target positions. 
+    Can be interrupted by flipping the `_moving_motors` flag to False.
 
     Parameters:
     -----------
@@ -71,7 +72,13 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed,
     rev_angles = list(fwd_angles[::-1])
     dt = 0.01
 
+    global _moving_motors
+    _moving_motors = True
+
     for pos in posns:
+        if not _moving_motors:
+            print("Stopping movements ...")
+            break
         # Move stepper to pos:
         stepper.move_to(pos)
         stepper.busy_wait()
