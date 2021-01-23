@@ -10,6 +10,9 @@ See `count_frames_and_stream.py` for an example.
 
 Modified from Tom O'Connell's LabJack code:
 https://github.com/ejhonglab/labjack/blob/main/src/labjack/labjack.py
+
+Example command:
+./stream.py stream.csv none absolute
 """
 
 from __future__ import print_function, division
