@@ -2,9 +2,7 @@
 
 """
 TODO: ** Explain how this code works, and the order of starting events and exits. **
-TODO: ** Implement SIGINT exit conditions for main process events (i.e. not the DAQ). **
-TODO: ** Incorporate set duration of recording (which might be shorter or longer than
-the length of motor events.)
+N.B. Will gracefully interrupt, but only between stepper positions
 """
 
 import datetime
@@ -24,9 +22,9 @@ import matplotlib.pyplot as plt
 import u3
 from autostep import Autostep
 
-from utils import ask_yes_no
-from init_BIAS import init_BIAS
+import utils
 import move_and_get
+from init_BIAS import init_BIAS
 from camera_trigger import CameraTrigger
 
 
@@ -116,10 +114,12 @@ def main():
     # (can't be a subprocess, because I can create only one Autostep object):
     if duration != None:
         get_motors_thread = threading.Thread(target=move_and_get.stream_to_csv, 
-                                            args=(stepper, f"o_loop_motor_{file_ending}", duration+0.2))
+                                             args=(stepper, f"o_loop_motor_{file_ending}", 
+                                             duration + 0.2))
     else:
         get_motors_thread = threading.Thread(target=move_and_get.stream_to_csv, 
-                                            args=(stepper, f"o_loop_motor_{file_ending}", duration))
+                                             args=(stepper, f"o_loop_motor_{file_ending}", 
+                                             duration))
 
     # Set up trigger:
     trigger_port = "/dev/ttyUSB0" # TODO: make into an arg?
@@ -128,37 +128,40 @@ def main():
     trig.set_width(10) # (us)
     trig.stop()
 
-    def stop_trigger():
-        print("Stopping external trigger ...")
-        trig.stop()
-        print("Stopped external trigger.")
-
     # Initializing the CameraTrigger takes 2.0 secs:
     print("Initializing the external trigger ...")
     time.sleep(2.0)
     print("Initialized external trigger.")
 
-    # TODO: Put the two below atexit fxns on SIGINT only,
-    # so it's not redundant with a normal exit. 
+    # Wrap trig.stop() with prints, so prints get called in thread timer, when duration is not None:
+    def stop_trigger():
+        print("Stopping external trigger ...")
+        trig.stop()
+        print("Stopped external trigger.")
 
-    # # When script exits, stop trigger: 
-    # def stop_trigger():
-    #     print("Stopping external trigger ...")
-    #     trig.stop()
-    #     print("Stopped external trigger.")
-    # atexit.register(stop_trigger)
+    # Write exit function:
+    def stop_remaining_hardware(sig, frame):
+        move_and_get._moving_motors = False
+        print("Stopped movements.")
+        print("Stopping the motor commands stream to csv ...")
+        move_and_get._getting_motors = False 
+        get_motors_thread.join() 
+        print("Stopped the motor command stream to csv.")
+        stop_trigger()
+        print("Stopping the DAQ stream process ...")
+        time.sleep(1.0) # Sleep for a bit, so the DAQ stops after the get motors thread
+        os.kill(p_daq.pid, signal.SIGINT) # DAQ process must die on SIGINT to exit correctly
+        time.sleep(0.2) # Sleep for a bit so the print statements appear in the right order 
+        if not p_daq.poll():
+            print("Stopped the DAQ stream process.")
+        sys.exit(0)
 
-    # # When script exits, stop stepper:
-    # def stop_stepper():
-    #     print("Stopping stepper ...")
-    #     stepper.run(0.0)
-    #     print("Stopped stepper.")
-    # atexit.register(stop_stepper)
+    signal.signal(signal.SIGINT, stop_remaining_hardware)
 
     # EXECUTE--------------------------------------------------------------------------------------------------
 
     # Initialize BIAS, if desired:
-    proceed = ask_yes_no("Initialize BIAS? That is, connect cams, load jsons, and start capture?", default="no")
+    proceed = utils.ask_yes_no("Initialize BIAS? That is, connect cams, load jsons, and start capture?", default="no")
     if proceed:
         init_BIAS(cam_ports=cam_ports, config_path=config_path)
     else:
@@ -178,7 +181,7 @@ def main():
         
         # START DAQ stream of PID values and counts (trigger not called here):
         daq_args = [sys.executable, # sys.executable calls current python
-                    "stream.py", f"o_loop_stream_{file_ending}", "none", "absolute"] 
+                    "stream.py", f"o_loop_daq_{file_ending}", "none", "absolute"] 
         p_daq = subprocess.Popen(daq_args) 
         time.sleep(1.0) # DAQ start-up takes a bit
 
@@ -208,36 +211,50 @@ def main():
         print("Stopped the motor command stream to csv.")
         
         print("Stopping the DAQ stream process ...")
+        time.sleep(1.0) # Sleep for a bit, so the DAQ stops after the get motors thread
         os.kill(p_daq.pid, signal.SIGINT) # DAQ process must die on SIGINT to exit correctly
-        time.sleep(1.0) # Sleep for a bit so the exit prints come out in the right order
+        time.sleep(0.2) # Sleep for a bit so the print statements appear in the right order 
         if not p_daq.poll():
             print("Stopped the DAQ stream process.")
         
-    # SAVE DATA---------------------------------------------------------------------------------------------
+    # PLOT DATA---------------------------------------------------------------------------------------------
+    
+    # Pre-process:
+    motor_df = pd.read_csv(f"o_loop_motor_{file_ending}")
+    motor_df["datetime"] = pd.to_datetime(motor_df["datetime"], 
+                                          format="%Y-%m-%d %H:%M:%S.%f")
 
-    # TODO: can't plot datetime strings ... convert to datetime or float
+    daq_df = pd.read_csv(f"o_loop_daq_{file_ending}")
+    daq_df["datetime"] = pd.to_datetime(daq_df["datetime"], 
+                                        format="%Y-%m-%d %H:%M:%S.%f")
 
-    # # Plot motor commands:
-    # plt.subplot(2, 1, 1)
-    # motor_stream_df = pd.read_csv(motor_stream_fname)
-    # plt.plot(motor_stream_df["datetime"], motor_stream_df["stepper position (deg)"],
-    #          label="stepper position (degs)")
-    # plt.plot(motor_stream_df["datetime"], motor_stream_df["servo position (deg)"],
-    #          label="servo position (degs)")
-    # plt.xlabel("time (s)")
-    # plt.ylabel("motor position (degs)")
-    # plt.legend()
-    # plt.grid(True)
+    df = pd.merge_ordered(daq_df, motor_df, "datetime").interpolate() # for plotting only
+    df = utils.datetime_to_elapsed(df)
 
-    # # Plot PID readings:
-    # plt.subplot(2, 1, 2)
-    # daq_stream_df = pd.read_csv(daq_stream_fname)
-    # plt.plot(daq_stream_df["datetime"], daq_stream_df["PID (V)"]) 
-    # plt.xlabel("time (s)")
-    # plt.ylabel("PID reading (V)")
-    # plt.grid(True)
-    # plt.savefig(("o_loop_stream_" + file_ending).replace(".csv", ".png"))
-    # plt.show()
+    # Plot:
+    plt.style.use("ggplot")
+
+    ax1 = plt.subplot(2, 1, 1)
+    ax1.tick_params(labelbottom=False) 
+    plt.title("Data aligned according to host clock")
+    plt.plot(df["elapsed secs"], df["stepper position (deg)"], 
+             label="stepper position (degs)")
+    plt.plot(df["elapsed secs"], df["servo position (deg)"], 
+             label="servo position (degs)")
+    plt.ylabel("motor position (degs)")
+    plt.legend()
+    plt.grid(True)
+
+    ax2 = plt.subplot(2, 1, 2, sharex=ax1)
+    plt.plot(df["elapsed secs"], df["PID (V)"])
+    plt.xlabel("time (s)")
+    plt.ylabel("PID reading (V)")
+    plt.grid(True)
+
+    plt.subplots_adjust(hspace=.1)
+
+    plt.savefig(("o_loop_" + file_ending).replace(".csv", ".png"), dpi=500)
+    plt.show()
 
 
 if __name__ == "__main__":
