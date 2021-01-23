@@ -2,10 +2,13 @@
 Utility functions. 
 """
 
+import datetime
+
 def ask_yes_no(question, default="yes"):
 
     """
     Ask a yes/no question and return the answer.
+
     Parameters:
     -----------
     question (str): The question to ask the user. 
@@ -47,3 +50,26 @@ if __name__ == "__main__":
         print("Correct answer! Let's move on!")
     else:
         print("To each their own ...")
+
+
+def datetime_to_elapsed(df, col_name="datetime"):
+
+    """
+    Generates a pd.series (column) of elapsed times in seconds,
+    from a column of datetime objs
+
+    Parameters:
+    -----------
+    df: A dataframe.
+    col_name (str): Name of the column of datetime objects. 
+
+    Returns:
+    ---------
+    A dataframe with an additional column of elapsed seconds.
+    ("elapsed secs")
+    """
+
+    col = df[col_name]- df[col_name].iloc[0]
+    df["elapsed secs"] = [row.total_seconds() for row in col]
+    
+    return df
