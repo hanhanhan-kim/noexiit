@@ -2,8 +2,11 @@
 
 """
 Demos simultaneous analog streaming and counting on the U3-HV. 
-Counts digital inputs into the FIO4 pin (Counter0).
-Useful for counting hardware trigger outputs to cams (i.e. frames).
+Streams analog inputs into the AIN0 pin, and counts digital 
+inputs into the FIO4 pin (Counter0).
+
+Example command:
+./count_frames_and_stream.py stream.csv 5 /dev/ttyUSB0
 """
 
 import datetime
@@ -22,7 +25,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, 
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("csv_path", 
-        help="Path to which to stream the .csv.")
+        help="Path to which to stream the .csv. Saves during acquisition.")
     parser.add_argument("duration",
         help="Duration (s) of the DAQ stream. If None, will stream until exited (ctrl+c).")
     parser.add_argument("port",

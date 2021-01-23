@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 
 """
-Some useful functions for controlling Autostep motors.
+Moves the tethered stimulus to each angular position in a list 
+of specified positions. Upon arriving at a position, extends the 
+tethered stimulus for a fixed duration. Then retracts the tethered 
+stimulus for a fixed duration.
 
-The main demos some Autostep and LabJack U3 DAQ functions, but does not 
-demo any streams. 
-It moves the stepper motor to each angular position in a list of specified 
-positions. Upon arriving at a position, it extends the linear servo to some 
-length for some duration, then fully retracts the servo for some duration.
-Collects the ongoing motor commands, in addition to analog data (AIN0)
-from the DAQ, via a command-response mode. 
-N.B. The main does not record anything until the first motor position is reached.
+Collects, but does not stream, data during motor movements.
+Does not trigger or collect cams or cam-related data.
 
 Example command:
 ./move_and_get.py 10 2 2 -p 180 0 -e 90

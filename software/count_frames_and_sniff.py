@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 
 """
-Demos U3-HV's counter function. 
-Counts digital inputs into the FIO4 pin. 
-Useful for counting hardware trigger outputs to cams (i.e. frames)
+Demos simultaneous analog command-response and counting on the U3-HV. 
+Gets analog inputs into the AIN0 pin, and counts digital inputs into 
+the FIO4 pin (Counter0).
+Does not support infinite or interrupted recordings. 
+
+Example command:
+./count_frames_and_sniff.py cmd_rsp.csv 
 """
 
 import datetime
@@ -19,9 +23,12 @@ from camera_trigger import CameraTrigger
 
 def main():
 
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, 
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("csv_path", 
+        help="Path to which to save the .csv. Does not save during acquisition.")
     parser.add_argument("duration", type=float,
-        help="Duration (s) of the PID acquisition.")
+        help="Duration (s) of the DAQ recording.")
     args = parser.parse_args()
     
     duration = args.duration
