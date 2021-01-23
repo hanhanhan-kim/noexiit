@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 """
-Demos simultaneous analog streaming and counting on the U3-HV. 
+Demos simultaneous cam trigger initiation, and analog streaming 
+and counting on the U3-HV,  
 Streams analog inputs into the AIN0 pin, and counts digital 
 inputs into the FIO4 pin (Counter0).
 

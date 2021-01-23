@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 
 """
-Move the tethered stimulus to each angular position in a list of specified 
-positions, while collecting stimulus and camera data.
-Upon arriving at a position, extend the tethered stimulus. Remain extended 
-for a fixed duration. Then retract the tethered stimulus. Remain retracted 
-for the same fixed duration. 
-Collect ongoing motor position data as well as photoionization detector data.
-In addition, activate an ATMega328P-based camera trigger.
+Moves the tethered stimulus to each angular position in a list of specified 
+positions. Upon arriving at a position, extends the tethered stimulus for a fixed
+duration. Then retracts the tethered stimulus for a fixed duration.
+
+Collects and saves, but does not stream, data during motor movements.
+Data includes PID inputs, trigger counts, and motor positions. 
+Does not support interrupted recordings.
+Motor position sets and gets and DAQ gets happen in the same proces which 
+throttles, the frequencies. 
+
+Example command:
+./pt_to_pt_expt.py 20 10 2 2 -p 180 0 -e 90
 """
 
 from autostep import Autostep
@@ -23,6 +28,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import u3
 
+import utils
+import move_and_get
 from camera_trigger import CameraTrigger
 from init_BIAS import init_BIAS
 from move_and_get import home, pt_to_pt_and_poke
@@ -82,8 +89,8 @@ def main():
     posns = args.posns
     ext_angle = args.ext
 
-    assert(poke_speed >= 10), \
-        "The poke_speed must be 10 or greater."
+    if poke_speed < 10:
+        raise ValueError("The poke_speed must be 10 or greater.")
 
     if ext_angle is None:
 
@@ -91,6 +98,21 @@ def main():
             max_ext = f.read().rstrip('\n')
             
         ext_angle = float(max_ext)
+
+    # Set up filename to save:
+    t_script_start = datetime.datetime.now()
+    name_script_start = t_script_start.strftime("%Y_%m_%d_%H_%M_%S")
+
+    # Save the motor settings: 
+    fname = "motor_settings_" + name_script_start + ".txt"
+    servo_msg = f"\nlinear servo parameters \n-------------------------- \nmax extension angle: {ext_angle}\n"
+    move_and_get.save_params(stepper, fname)
+    # Write:
+    with open(fname, "a") as f:
+        print(servo_msg, file=f)
+    # Print:
+    with open(fname) as f:
+        print(f.read())
     
     # Stop the stepper when script is killed:
     def stop_stepper():
@@ -100,21 +122,11 @@ def main():
     # EXECUTE--------------------------------------------------------------------------------------------------
 
     # Initialize BIAS, if desired:
-    # TODO: Make this less shitty, default to N
-    # Remember
-    while True:
-        proceed = input("Initialize BIAS? That is, connect cams, load jsons, and start capture? Input y or n: \n")
-        if proceed == "y":
-            init_BIAS(cam_ports = cam_ports,
-                      config_path = config_path)
-            break
-        elif proceed == "n":
-            print("Skipping BIAS initialization ...")
-            break
-        else:
-            print("Please input y or n.")
-            time.sleep(1.0)
-            continue
+    proceed = utils.ask_yes_no("Initialize BIAS? That is, connect cams, load jsons, and start capture?", default="no")
+    if proceed:
+        init_BIAS(cam_ports=cam_ports, config_path=config_path)
+    else:
+        print("Skipping BIAS initialization ...")
 
     # Home the motors:
     home(stepper)
@@ -208,50 +220,31 @@ def main():
                             "Stepper position (deg)": stepper_posns,
                             "Servo position (deg)": servo_posns})
 
-        df.to_csv("o_loop_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".csv", index=False)
+        df.to_csv("o_loop_" + name_script_start + ".csv", index=False)
 
-        # Plot motor commands:
-        plt.subplot(2, 1, 1)
+        # Plot:
+        plt.style.use("ggplot")
+
+        ax1 = plt.subplot(2, 1, 1)
+        ax1.tick_params(labelbottom=False) 
         plt.plot(elapsed_times, stepper_posns,
                  label="stepper position (degs)")
         plt.plot(elapsed_times, servo_posns,
                  label="servo position (degs)")
-        plt.xlabel("time (s)")
         plt.ylabel("motor position (degs)")
         plt.legend()
         plt.grid(True)
 
-        # Plot PID readings:
-        plt.subplot(2, 1, 2)
+        ax2 = plt.subplot(2, 1, 2, sharex=ax1)
         plt.plot(elapsed_times, PID_volts)
         plt.xlabel("time (s)")
         plt.ylabel("PID reading (V)")
         plt.grid(True)
-        plt.savefig("o_loop_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".png")
+        
+        plt.subplots_adjust(hspace=.1)
+
+        plt.savefig("o_loop_" + name_script_start + ".png", dpi=500)
         plt.show()
-
-        # Save the stepper settings and servo extension angle: 
-        stepper.print_params()
-        with open("motor_settings_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".txt", "a") as f:
-
-            print("autostep parameters", file=f)
-            print("--------------------------", file=f)
-            print('fullstep/rev:  {0}\n'.format(stepper.get_fullstep_per_rev()) +
-            'step mode:     {0}\n'.format(stepper.get_step_mode()) +
-            'oc threshold:  {0}'.format(stepper.get_oc_threshold()), file=f)
-            print('jog mode:', file=f)
-            for k,v in stepper.get_jog_mode_params().items():
-                print('  {0}: {1} {2}'.format(k,v,Autostep.MoveModeUnits[k]), file=f)
-            print('max mode:', file=f)
-            for k, v in stepper.get_max_mode_params().items():
-                print('  {0}: {1} {2}'.format(k,v,Autostep.MoveModeUnits[k]), file=f)
-            print('kvals (0-255): ', file=f)
-            for k,v in stepper.get_kval_params().items():
-                print('  {0:<6} {1}'.format(k+':',v), file=f)
-            # print("\n".join("{}\t{}".format(k, v) for k, v in stepper.get_params().items()), file=f)
-            print("\nlinear servo parameters", file=f)
-            print("--------------------------", file=f)
-            print("max extension angle: %f" %ext_angle, file =f)
 
 
 if __name__ == "__main__":

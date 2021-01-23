@@ -122,10 +122,11 @@ def main():
     
     # Set up filename to save:
     t_script_start = datetime.datetime.now()
-    file_ending = t_script_start.strftime("%Y_%m_%d_%H_%M_%S") + ".csv"
+    name_script_start = t_script_start.strftime("%Y_%m_%d_%H_%M_%S")
+    file_ending = name_script_start + ".csv"
 
     # Save the motor settings: 
-    fname = "motor_settings_" + t_script_start.strftime("%Y_%m_%d_%H_%M_%S") + ".txt"
+    fname = "motor_settings_" + name_script_start + ".txt"
     servo_msg = f"\nlinear servo parameters \n-------------------------- \nmax extension angle: {ext_angle}\n"
     move_and_get.save_params(stepper, fname)
     # Write:

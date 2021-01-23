@@ -6,8 +6,7 @@ of specified positions. Upon arriving at a position, extends the
 tethered stimulus for a fixed duration. Then retracts the tethered 
 stimulus for a fixed duration.
 
-Collects, but does not stream, data during motor movements.
-Does not trigger or collect cams or cam-related data.
+Prints, but does not stream nor save, data.
 
 Example command:
 ./move_and_get.py 10 2 2 -p 180 0 -e 90
@@ -407,16 +406,10 @@ def main():
         plt.grid(True)
         plt.show()
 
-    # Save the motor settings: 
-    fname = "motor_settings_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".txt"
+    # Print the motor settings: 
+    stepper.print_params()
     servo_msg = f"\nlinear servo parameters \n-------------------------- \nmax extension angle: {ext_angle}\n"
-    save_params(stepper, fname)
-    # Write:
-    with open(fname, "a") as f:
-        print(servo_msg, file=f)
-    # Print:
-    with open(fname) as f:
-        print(f.read())
+    print(servo_msg)
 
 
 if __name__ == "__main__":

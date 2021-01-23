@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
 
 """
-Utility functions for using LabJack U3 DAQ's streaming abilities. 
+Demos simultaneous analog streaming and counting on the U3-HV. 
+Streams analog inputs into the AIN0 pin, and counts digital 
+inputs into the FIO4 pin (Counter0).
 
-If using a counter or timer with the stream, use the 224 channel, 
-as described in the docs:
-https://labjack.com/support/datasheets/u3/operation/stream-mode/digital-inputs-timers-counters
-
-Channel 224 stores the most significant digit. LabJack recommends streaming the counters
-and timers in 16-bit mode (default). In other words, when using e.g. 1 counter, the counts 
-will be stored up to (2**16)-1, and will then roll over (return to 0). The number of roll overs 
-are stored in Channel 224. So to get back the total number of counts in this example, do:
-DAQ_count + TC_capture * (2**16-1). 
+Does not initiate an external trigger, although it can support it.
+See `count_frames_and_stream.py` for an example. 
 
 Modified from Tom O'Connell's LabJack code:
 https://github.com/ejhonglab/labjack/blob/main/src/labjack/labjack.py
@@ -129,7 +124,17 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     # See: https://labjack.com/support/datasheets/u3/operation/stream-mode/digital-inputs-timers-counters
 
     """
-    Stream AIN data. Can stream directly to a CSV.
+    Streams AIN data. Can stream directly to a CSV.
+    
+    If using a counter or timer with the stream, use the 224 channel, 
+    as described in the docs:
+    https://labjack.com/support/datasheets/u3/operation/stream-mode/digital-inputs-timers-counters
+
+    Channel 224 stores the most significant digit. LabJack recommends streaming the counters
+    and timers in 16-bit mode (default). In other words, when using e.g. 1 counter, the counts 
+    will be stored up to (2**16)-1, and will then roll over (return to 0). The number of roll overs 
+    are stored in Channel 224. So to get back the total number of counts in this example, do:
+    DAQ_count + TC_capture * (2**16-1). 
 
     Parameters:
     ------------
