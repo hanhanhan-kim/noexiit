@@ -76,28 +76,53 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed,
     _moving_motors = True
 
     for pos in posns:
+
         if not _moving_motors:
             print("Stopping movements ...")
             break
+
         # Move stepper to pos:
         stepper.move_to(pos)
         stepper.busy_wait()
+        if not _moving_motors:
+            print("Stopping movements ...")
+            break
+
         # Wait at initial retraction:
         time.sleep(retr_wait_time)
+        if not _moving_motors:
+            print("Stopping movements ...")
+            break
+
         # Extend linear servo:
         for angle in fwd_angles:
             stepper.set_servo_angle(angle)
             while stepper.get_servo_angle() <= ext_angle is True:
                 time.sleep(dt)
+        if not _moving_motors:
+            print("Stopping movements ...")
+            break
+
         # Wait at extension:
         time.sleep(ext_wait_time)
+        if not _moving_motors:
+            print("Stopping movements ...")
+            break
+
         # Retract linear servo:
         for angle in rev_angles:
             stepper.set_servo_angle(angle)
             while stepper.get_servo_angle() >= 0 is True:
                 time.sleep(dt)
+        if not _moving_motors:
+            print("Stopping movements ...")
+            break
+
         # Wait at retraction:
         time.sleep(retr_wait_time)
+        if not _moving_motors:
+            print("Stopping movements ...")
+            break
 
 
 def home(stepper, pre_exp_time = 1.5, homing_speed = 30):
