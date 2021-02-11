@@ -137,7 +137,9 @@ def home(stepper, pre_exp_time = 1.5, homing_speed = 30):
     homing_speed (int): The speed in degs/sec with which the stepper reaches home. 
     """
 
-    # If servo is extended, retract:
+    # TODO: Check if set_servo_angle() and set_servo_angle_alt() are blocking;
+    # Otherwise, retract both simultaneously, if neither are already homed.
+    # If servos are extended, retract:
     if stepper.get_servo_angle() != 0:
         print("Retracting linear servo...")
         stepper.set_servo_angle(0)
@@ -145,6 +147,13 @@ def home(stepper, pre_exp_time = 1.5, homing_speed = 30):
         time.sleep(2.0)
     else:
         print("Linear servo already retracted.")
+    if stepper.get_servo_angle_alt() != 0:
+        print("Retracting other linear servo...")
+        stepper.set_servo_angle_alt(0)
+        # Give time to reach retraction:
+        time.sleep(2.0)
+    else:
+        print("Other linear servo already retracted.")
 
     # Set the home position to 0:
     print("Searching for home...")
@@ -211,7 +220,10 @@ def stream_to_csv(stepper, csv_path, duration=None):
 
     # TODO: add overwrite handling 
 
-    column_names = ["datetime", "stepper position (deg)", "servo position (deg)"]
+    column_names = ["datetime", 
+                    "stepper position (deg)", 
+                    "servo_0 position (deg)", 
+                    "servo_1 position (deg)"]
 
     if sys.version_info >= (3, 0):
         open_kwargs = dict(newline="")
@@ -231,15 +243,18 @@ def stream_to_csv(stepper, csv_path, duration=None):
 
             now = datetime.datetime.now()
             stepper_posn = stepper.get_position()
-            servo_posn = stepper.get_servo_angle()
+            servo_0_posn = stepper.get_servo_angle()
+            servo_1_posn = stepper.get_servo_angle_alt()
 
             print(f"{column_names[0]}: {now}\n", 
-                f"{column_names[1]}: {stepper_posn}\n", 
-                f"{column_names[2]}: {servo_posn}\n\n") 
+                  f"{column_names[1]}: {stepper_posn}\n", 
+                  f"{column_names[2]}: {servo_0_posn}\n",
+                  f"{column_names[3]}: {servo_1_posn}\n\n") 
 
             csv_writer.writerow({column_names[0]: now, 
                                 column_names[1]: stepper_posn, 
-                                column_names[2]: servo_posn})
+                                column_names[2]: servo_0_posn,
+                                column_names[3]: servo_1_posn})
 
             if _getting_motors == False:
                 break
@@ -251,15 +266,18 @@ def stream_to_csv(stepper, csv_path, duration=None):
 
             now = datetime.datetime.now()
             stepper_posn = stepper.get_position()
-            servo_posn = stepper.get_servo_angle()
+            servo_0_posn = stepper.get_servo_angle()
+            servo_1_posn = stepper.get_servo_angle_alt()
 
             print(f"{column_names[0]}: {now}\n", 
-                f"{column_names[1]}: {stepper_posn}\n", 
-                f"{column_names[2]}: {servo_posn}\n\n") 
+                  f"{column_names[1]}: {stepper_posn}\n", 
+                  f"{column_names[2]}: {servo_0_posn}\n",
+                  f"{column_names[3]}: {servo_1_posn}\n\n") 
 
             csv_writer.writerow({column_names[0]: now, 
                                 column_names[1]: stepper_posn, 
-                                column_names[2]: servo_posn})
+                                column_names[2]: servo_0_posn,
+                                column_names[3]: servo_1_posn})
 
             if (now - t_start).total_seconds() >= duration:
                 print("Stopping the motor commands stream to csv ...")

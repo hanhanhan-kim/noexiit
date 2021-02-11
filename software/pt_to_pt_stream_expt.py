@@ -269,8 +269,10 @@ def main():
     plt.title("Data aligned according to host clock")
     plt.plot(df["elapsed secs"], df["stepper position (deg)"], 
              label="stepper position (degs)")
-    plt.plot(df["elapsed secs"], df["servo position (deg)"], 
-             label="servo position (degs)")
+    plt.plot(df["elapsed secs"], df["servo_0 position (deg)"], 
+             label="servo_0 position (degs)")
+    plt.plot(df["elapsed secs"], df["servo_1 position (deg)"], 
+             label="servo_1 position (degs)")
     plt.ylabel("motor position (degs)")
     plt.legend()
     plt.grid(True)
