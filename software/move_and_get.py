@@ -21,6 +21,7 @@ import atexit
 import csv
 import sys
 
+import yaml
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -320,7 +321,7 @@ def main():
             This argument is required.")
     parser.add_argument("-e", "--ext", type=int, default=None, 
         help="The maximum linear servo extension angle. If None, will \
-            inherit the value in the `config.noexiit` file. Default is None.")
+            inherit the value in the `config.yaml` file. Default is None.")
     
     args = parser.parse_args()
 
@@ -334,9 +335,8 @@ def main():
         raise ValueError("The poke_speed must be 10 or greater.")
 
     if ext_angle is None:
-        with open ("config.noexiit", "r") as f:
-            max_ext = f.read().rstrip('\n')
-        ext_angle = int(max_ext)
+        with open ("config.yaml") as f:
+            ext_angle = yaml.load(f, Loader=yaml.FullLoader)["max_ext"]
 
     # Stop the stepper when script is killed:
     def stop_stepper():

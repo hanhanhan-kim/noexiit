@@ -15,6 +15,7 @@ import numpy as np
 import argparse
 import sys
 
+import yaml
 from autostep import Autostep
 from utils import ask_yes_no
 
@@ -110,9 +111,9 @@ def main():
         stepper.busy_wait()
         print("Homed")
 
-        with open("config.noexiit", "w") as f:
-            print(max_ext, file=f)
-        print(f"Saved the max servo angle, {max_ext}, in `config.noexiit`.")
+        with open("config.yaml", "w") as f:
+            yaml.dump({"max_ext": max_ext}, f)
+        print(f"Saved the max servo angle, {max_ext}, in `config.yaml`.")
 
         # Do closed loop prep test:
         proceed_c_loop_test = ask_yes_no("Test out the servo's max extension at various "
