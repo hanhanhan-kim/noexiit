@@ -15,6 +15,7 @@ import numpy as np
 import argparse
 import sys
 from pathlib import Path
+from os.path import expanduser
 
 import yaml
 from autostep import Autostep
@@ -42,36 +43,48 @@ def main():
     wait_time = 1.5
 
     # Ask user where to save data files:
-    do_output_dir = ask_yes_no("Do you want to save the output data files to a directory "
-                                "that is not the current one?")
+    do_output_dir = ask_yes_no("Do you want to save the output data files "
+                               "to a specific directory?")
     if do_output_dir:
         while True:
-            output_dir = input("Specify the directory you want to save to:")
-
-            # TODO: Check for trailing "/" here
-
-            # Write new config.yaml if it doesn't exist:
-            if Path(output_dir).is_dir() and not Path("config.yaml").is_file():
-                with open("config.yaml", "w") as f:
-                    yaml.dump({"output_dir": (output_dir)}, f)
-                break
             
-            # Read and modify existing config.yaml if it exists: 
-            elif Path(output_dir).is_dir() and Path("config.yaml").is_file():
-                with open ("config.yaml") as f:
-                    config = yaml.load(f, Loader=yaml.FullLoader)
-                    config["output_dir"] = output_dir 
-                break
+            try:
+                output_dir = expanduser(input("Specify the directory you want to save to:"))
 
-            else:
-                print(f"`{output_dir}` does not exist. Please enter a valid directory.")
+                if not output_dir.endswith("/"):
+                    output_dir = output_dir + "/"
+
+                # Write new config.yaml if it doesn't exist:
+                if Path(output_dir).is_dir() and not Path("config.yaml").is_file():
+                    with open("config.yaml", "w") as f:
+                        yaml.dump({"output_dir": (output_dir)}, f)
+                    break
+                
+                # Read and modify existing config.yaml if it exists: 
+                elif Path(output_dir).is_dir() and Path("config.yaml").is_file():
+                    with open ("config.yaml") as f:
+                        config = yaml.load(f, Loader=yaml.FullLoader)
+                        config["output_dir"] = output_dir 
+                    with open("config.yaml", "w") as f:
+                        yaml.dump(config, f)
+                    break
+
+                else:
+                    print(f"`{output_dir}` does not exist. "
+                        "Please enter a valid directory.")
+                    continue
+
+            except TypeError:
+                print("Expected str, bytes or os.PathLike object, not int.")
                 continue
+
     else:
         # Write new config.yaml if it doesn't exist, with pwd as output path:
         if not Path("config.yaml").is_file():
             output_dir = Path.cwd()
             with open("config.yaml", "w") as f:
                 yaml.dump({"output_dir": str(output_dir)+"/"}, f)
+        # Otherwise, just keep whatever's already in the .yaml file
 
     # Set the home position to 0:
     print("Searching for home...")
