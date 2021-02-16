@@ -6,6 +6,7 @@ software/sandbox/
 
 # Special output files:
 *.noexiit
+config.yaml
 
 # Large data files:
 *.h5ad
