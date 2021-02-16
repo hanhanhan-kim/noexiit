@@ -93,7 +93,7 @@ def main():
         raise ValueError("The poke_speed must be 10 or greater.")
 
     if ext_angle is None:
-        with open ("config.yaml") as f:
+        with open("config.yaml") as f:
             ext_angle = yaml.load(f, Loader=yaml.FullLoader)["max_ext"]
 
     # Set up filename to save:
@@ -216,8 +216,9 @@ def main():
                             "PID (V)": PID_volts,
                             "Stepper position (deg)": stepper_posns,
                             "Servo position (deg)": servo_posns})
-
-        df.to_csv("o_loop_" + name_script_start + ".csv", index=False)
+        with open ("config.yaml") as f:
+            output_dir = yaml.load(f, Loader=yaml.FullLoader)["output_dir"]
+        df.to_csv(output_dir + "o_loop_" + name_script_start + ".csv", index=False)
 
         # Plot:
         plt.style.use("ggplot")
@@ -240,7 +241,7 @@ def main():
         
         plt.subplots_adjust(hspace=.1)
 
-        plt.savefig("o_loop_" + name_script_start + ".png", dpi=500)
+        plt.savefig(output_dir + "o_loop_" + name_script_start + ".png", dpi=500)
         plt.show()
 
 

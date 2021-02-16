@@ -335,7 +335,7 @@ def main():
         raise ValueError("The poke_speed must be 10 or greater.")
 
     if ext_angle is None:
-        with open ("config.yaml") as f:
+        with open("config.yaml") as f:
             ext_angle = yaml.load(f, Loader=yaml.FullLoader)["max_ext"]
 
     # Stop the stepper when script is killed:

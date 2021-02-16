@@ -14,6 +14,7 @@ import threading
 import numpy as np
 import argparse
 import sys
+from pathlib import Path
 
 import yaml
 from autostep import Autostep
@@ -39,6 +40,36 @@ def main():
     
     # Amount of time to wait, so the servo can reach the set position:
     wait_time = 1.5
+
+    # Ask user where to save data files:
+    do_output_dir = ask_yes_no("Do you want to save the output data files to a directory"
+                                "that is not the current one?")
+    if do_output_dir:
+        while True:
+            output_dir = input("Specify the directory you want to save to:")
+
+            # Write new config.yaml if it doesn't exist:
+            if Path(output_dir).is_dir() and not Path("config.yaml").is_file():
+                with open("config.yaml", "w") as f:
+                    yaml.dump({"output_dir": output_dir}, f)
+                break
+            
+            # Read and modify existing config.yaml if it exists: 
+            elif Path(output_dir).is_dir() and Path("config.yaml").is_file():
+                with open ("config.yaml") as f:
+                    config = yaml.load(f, Loader=yaml.FullLoader)
+                    config["output_dir"] = output_dir 
+                break
+
+            else:
+                print(f"`{output_dir}` does not exist. Please enter a valid directory.")
+                continue
+    else:
+        # Write new config.yaml if it doesn't exist, with pwd as output path:
+        if not Path("config.yaml").is_file():
+            output_dir = Path.cwd()
+            with open("config.yaml", "w") as f:
+                yaml.dump({"output_dir": output_dir}, f)
 
     # Set the home position to 0:
     print("Searching for home...")
@@ -111,8 +142,9 @@ def main():
         stepper.busy_wait()
         print("Homed")
 
-        with open("config.yaml", "w") as f:
-            yaml.dump({"max_ext": max_ext}, f)
+        with open ("config.yaml") as f:
+            config = yaml.load(f, Loader=yaml.FullLoader)
+            config["max_ext"] = max_ext
         print(f"Saved the max servo angle, {max_ext}, in `config.yaml`.")
 
         # Do closed loop prep test:

@@ -116,13 +116,15 @@ def main():
         raise ValueError("The poke_speed must be 10 or greater.")
 
     if ext_angle is None:
-        with open ("config.yaml") as f:
+        with open("config.yaml") as f:
             ext_angle = yaml.load(f, Loader=yaml.FullLoader)["max_ext"]
     
     # Set up filename to save:
     t_script_start = datetime.datetime.now()
     name_script_start = t_script_start.strftime("%Y_%m_%d_%H_%M_%S")
     file_ending = name_script_start + ".csv"
+    with open ("config.yaml") as f:
+        output_dir = yaml.load(f, Loader=yaml.FullLoader)["output_dir"]
 
     # Save the motor settings: 
     fname = "motor_settings_" + name_script_start + ".txt"
@@ -142,7 +144,7 @@ def main():
     else:
         get_motors_duration = duration 
     get_motors_thread = threading.Thread(target=move_and_get.stream_to_csv, 
-                                            args=(stepper, f"o_loop_motor_{file_ending}", 
+                                            args=(stepper, f"{output_dir}o_loop_motor_{file_ending}", 
                                             get_motors_duration))
     get_motors_thread.daemon = True
 
@@ -209,7 +211,7 @@ def main():
         
         # START DAQ stream of PID values and counts (trigger not called here):
         daq_args = [sys.executable, # sys.executable calls current python
-                    "stream.py", f"o_loop_daq_{file_ending}", "none", "absolute"] 
+                    "stream.py", f"{output_dir}o_loop_daq_{file_ending}", "none", "absolute"] 
         p_daq = subprocess.Popen(daq_args) 
         time.sleep(1.0) # DAQ start-up takes a bit
 
@@ -249,11 +251,11 @@ def main():
     # PLOT DATA---------------------------------------------------------------------------------------------
     
     # Pre-process:
-    motor_df = pd.read_csv(f"o_loop_motor_{file_ending}")
+    motor_df = pd.read_csv(f"{output_dir}o_loop_motor_{file_ending}")
     motor_df["datetime"] = pd.to_datetime(motor_df["datetime"], 
                                           format="%Y-%m-%d %H:%M:%S.%f")
 
-    daq_df = pd.read_csv(f"o_loop_daq_{file_ending}")
+    daq_df = pd.read_csv(f"{output_dir}o_loop_daq_{file_ending}")
     daq_df["datetime"] = pd.to_datetime(daq_df["datetime"], 
                                         format="%Y-%m-%d %H:%M:%S.%f")
 
@@ -284,7 +286,7 @@ def main():
 
     plt.subplots_adjust(hspace=.1)
 
-    plt.savefig(("o_loop_" + file_ending).replace(".csv", ".png"), dpi=500)
+    plt.savefig((f"{output_dir}o_loop_" + file_ending).replace(".csv", ".png"), dpi=500)
     plt.show()
 
 
