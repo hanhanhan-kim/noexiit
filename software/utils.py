@@ -43,15 +43,6 @@ def ask_yes_no(question, default="yes"):
             print("Please respond with 'yes'/'y' or 'no'/'n'. \n")
 
 
-if __name__ == "__main__":
-    
-    proceed = ask_yes_no("Do you like Python?", default="yes")
-    if proceed:
-        print("Correct answer! Let's move on!")
-    else:
-        print("To each their own ...")
-
-
 def datetime_to_elapsed(df, col_name="datetime"):
 
     """
