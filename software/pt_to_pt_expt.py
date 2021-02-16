@@ -99,9 +99,11 @@ def main():
     # Set up filename to save:
     t_script_start = datetime.datetime.now()
     name_script_start = t_script_start.strftime("%Y_%m_%d_%H_%M_%S")
+    with open ("config.yaml") as f:
+        output_dir = yaml.load(f, Loader=yaml.FullLoader)["output_dir"]
 
     # Save the motor settings: 
-    fname = "motor_settings_" + name_script_start + ".txt"
+    fname = f"motor_settings_{name_script_start}.txt"
     servo_msg = f"\nlinear servo parameters \n-------------------------- \nmax extension angle: {ext_angle}\n"
     move_and_get.save_params(stepper, fname)
     # Write:
@@ -216,9 +218,7 @@ def main():
                             "PID (V)": PID_volts,
                             "Stepper position (deg)": stepper_posns,
                             "Servo position (deg)": servo_posns})
-        with open ("config.yaml") as f:
-            output_dir = yaml.load(f, Loader=yaml.FullLoader)["output_dir"]
-        df.to_csv(output_dir + "o_loop_" + name_script_start + ".csv", index=False)
+        df.to_csv(f"{output_dir}o_loop_{name_script_start}.csv", index=False)
 
         # Plot:
         plt.style.use("ggplot")
@@ -241,7 +241,7 @@ def main():
         
         plt.subplots_adjust(hspace=.1)
 
-        plt.savefig(output_dir + "o_loop_" + name_script_start + ".png", dpi=500)
+        plt.savefig(f"{output_dir}o_loop_{name_script_start}.png", dpi=500)
         plt.show()
 
 

@@ -127,7 +127,7 @@ def main():
         output_dir = yaml.load(f, Loader=yaml.FullLoader)["output_dir"]
 
     # Save the motor settings: 
-    fname = "motor_settings_" + name_script_start + ".txt"
+    fname = f"{output_dir}motor_settings_{name_script_start}.txt"
     servo_msg = f"\nlinear servo parameters \n-------------------------- \nmax extension angle: {ext_angle}\n"
     move_and_get.save_params(stepper, fname)
     # Write:
