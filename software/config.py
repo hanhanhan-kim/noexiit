@@ -7,6 +7,9 @@ Sets the maximum extension angle to avoid crashes and overshoots,
 based on visual inspsection. Can rotate around the spherical 
 treadmill with the servo held at the set max extension angle 
 (useful when preparing for closed-loop experiments). 
+
+Can also configure experiment data to output to a specific 
+directory. 
 """
 
 import time
@@ -46,8 +49,8 @@ def main():
     do_output_dir = ask_yes_no("Do you want to save the output data files "
                                "to a specific directory?")
     if do_output_dir:
+        
         while True:
-            
             try:
                 output_dir = expanduser(input("Specify the directory you want to save to:"))
 
@@ -82,7 +85,7 @@ def main():
         # Write new config.yaml if it doesn't exist, with pwd as output path:
         if not Path("config.yaml").is_file():
             output_dir = Path.cwd()
-            with open("config.yaml", "w") as f:
+            with open("config.yaml", "w") as f: 
                 yaml.dump({"output_dir": str(output_dir)+"/"}, f)
         # Otherwise, just keep whatever's already in the .yaml file
 
