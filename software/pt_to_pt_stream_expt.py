@@ -118,7 +118,7 @@ def main():
     if ext_angle is None:
         with open ("calib_servo.noexiit", "r") as f:
             max_ext = f.read().rstrip('\n')
-        ext_angle = int(max_ext)
+        ext_angle = float(max_ext)
     
     # Set up filename to save:
     t_script_start = datetime.datetime.now()
