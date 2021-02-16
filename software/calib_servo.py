@@ -110,9 +110,9 @@ def main():
         stepper.busy_wait()
         print("Homed")
 
-        with open("calib_servo.noexiit", "w") as f:
+        with open("config.noexiit", "w") as f:
             print(max_ext, file=f)
-        print(f"Saved the max servo angle, {max_ext}, in `calib_servo.noexiit`.")
+        print(f"Saved the max servo angle, {max_ext}, in `config.noexiit`.")
 
         # Do closed loop prep test:
         proceed_c_loop_test = ask_yes_no("Test out the servo's max extension at various "

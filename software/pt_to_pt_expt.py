@@ -77,8 +77,7 @@ def main():
             This argument is required.")
     parser.add_argument("-e", "--ext", type=float, default=None, 
         help="The maximum linear servo extension angle. If None, will \
-            inherit the value in the `calib_servo.noexiit` file. Default \
-            is None.")
+            inherit the value in the `config.noexiit` file. Default is None.")
     
     args = parser.parse_args()
 
@@ -94,7 +93,7 @@ def main():
 
     if ext_angle is None:
 
-        with open ("calib_servo.noexiit", "r") as f:
+        with open ("config.noexiit", "r") as f:
             max_ext = f.read().rstrip('\n')
             
         ext_angle = float(max_ext)
