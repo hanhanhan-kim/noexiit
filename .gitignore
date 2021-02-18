@@ -6,6 +6,7 @@ software/sandbox/
 
 # Special output files:
 *.noexiit
+chuckselector_entries.txt
 config.yaml
 
 # Large data files:
