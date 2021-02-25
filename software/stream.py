@@ -185,9 +185,6 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     is_verbose (bool): If `True`, will print more output. Defaults to `False`.
     """
 
-    # TODO also allow use of FIO<4-7> inputs? configure as inputs, etc.
-    # `int` in [0, 3]. Should correspond to AIN[0-3] labels on U3-HV.
-
     if external_trigger is not None:
 
         # Set up trigger:
@@ -231,20 +228,24 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     d = u3.U3()
     atexit.register(d.close)
 
-    # To learn the if the U3 is an HV:
+    # Learn if the U3 is an HV:
     d.configU3()
 
-    # TODO need to actually do some physical calibration procedure first? how to
-    # test for that? For applying the proper calibration to readings.
     d.getCalibrationData()
 
-    # TODO necessary? why? also relevant on HV version, which i think has FIO0/1
-    # replaced by AIN0/1 which i think can *only* be configured as analog
-    # inputs? (which documentation page said this about the HV though...?)
-    # At least with my U3-HV, printing the output of this function is the same
-    # whether FIOAnalog=3 or not, with 'FIOAnalog' == 15 in both cases.
-    # Set the FIO0 and FIO1 to Analog (d3 = b00000011)
-    d.configIO(FIOAnalog=3)
+    # Both configU3() and configIO() can set specific FIO pins as analog. 
+    # configU3(), however, sets the power-up defaults of the U3. In contrast, 
+    # configIO() sets the U3's behaviour for only this session. 
+    # Both configU3() and configIO() specifies particular FIO pins as analog, 
+    # via the FIOAnalog argument. FIOAnalog is an integer, such that 
+    # FIOAnalog = sum(2**pin_number) for pin_number in pin_numbers. 
+    # By default, FIOAnalog = 15, because on the HV, AIN0-AIN3 are fixed analog
+    # channels dedicated to high-voltage (-10 to 10 V) inputs. In contrast, 
+    # FIO pins can be either analog or digital, and if analog, has a 0-2.4 V range.
+    FIO_channels = [2**input_channel for input_channel in input_channels 
+                    if 3 < input_channel <= 7]
+    FIO_int_rep = np.sum(FIO_channels)
+    d.configIO(FIOAnalog=FIO_int_rep)
 
     if 210 or 211 or 240 or 241 in special_channels.keys(): 
         d.configIO(EnableCounter0=True)
@@ -302,6 +303,7 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
             print(f"all_channel_sample_dt: {all_channel_sample_dt}\n")
 
     channel_names = [get_channel_name(d, i) for i in sorted(input_channels)]
+    channel_names = [channel_name.replace("FIO", "AIN") for channel_name in channel_names]
 
     if input_channel_names is None:
         column_names = channel_names
@@ -527,8 +529,8 @@ def main():
 
     stream_to_csv(csv_path, 
                   duration_s=duration,
-                  input_channels=[0, 210, 224], 
-                  input_channel_names={0: "PID (V)", 210: "DAQ count", 224: "16-bit roll-overs"},
+                  input_channels=[7, 210, 224], # 7 is an FIO, and so will be LOW voltage on U3-HV
+                  input_channel_names={7: "PID (V)", 210: "DAQ count", 224: "16-bit roll-overs"},
                   times="absolute",
                   external_trigger=None,
                   do_overwrite=True, 
