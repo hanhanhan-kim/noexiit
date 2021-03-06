@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Live plot of PID data from AIN 0 (high-voltage pin on U3-HV). 
+Live plot of PID data from AIN 7 (low-voltage FIO pin on U3-HV). 
 Uses command and response, instead of stream.
 Saves to .csv.
 """
@@ -15,6 +15,7 @@ import csv
 
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 
 import u3
 
@@ -27,8 +28,15 @@ class LivePlot(serial.Serial):
         u3.Counter0(Reset=True)
         self.device = u3.U3()
         self.device.configIO(EnableCounter0=True)
+
         print(f"First count is pre-trigger and is 0: {self.device.getFeedback(u3.Counter0(Reset=False))[0]}")
         time.sleep(1.0) # give time to see above print
+
+        self.device.configU3()
+        self.device.getCalibrationData()
+        FIO_int_rep = np.sum(2**7)
+        if FIO_int_rep >= 8: # 2**3 = 8
+            self.device.configIO(FIOAnalog=FIO_int_rep)
 
         self.num_lines = 1
         self.window_size = 10.0
@@ -57,7 +65,7 @@ class LivePlot(serial.Serial):
         plt.xlabel('t (sec)')
         plt.ylabel('voltage (V)')
         self.ax.set_xlim(0,self.window_size)
-        self.ax.set_ylim(-0.01, 5.01)
+        self.ax.set_ylim(-0.01, 2.51)
         plt.title("PID sensor data")
         plt.figlegend(self.line_list,self.label_list,'upper right')
         self.fig.canvas.flush_events()
@@ -78,7 +86,7 @@ class LivePlot(serial.Serial):
         while self.running:
             try:
                 date = datetime.datetime.now()
-                raw_list = [self.device.getAIN(0)] # PID V here
+                raw_list = [self.device.getAIN(7)] # PID V here
             except IndexError:
                 continue
             except ValueError:

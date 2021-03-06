@@ -531,8 +531,8 @@ def main():
 
     stream_to_csv(csv_path, 
                   duration_s=duration,
-                  input_channels=[0, 210, 224], # 7 is an FIO, and so will be LOW voltage on U3-HV
-                  input_channel_names={0: "PID (V)", 210: "DAQ count", 224: "16-bit roll-overs"},
+                  input_channels=[7, 210, 224], # 7 is an FIO, and so will be LOW voltage on U3-HV
+                  input_channel_names={7: "PID (V)", 210: "DAQ count", 224: "16-bit roll-overs"},
                   times="absolute",
                   external_trigger=None,
                   do_overwrite=True, 
