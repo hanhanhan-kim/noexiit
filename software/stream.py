@@ -245,7 +245,9 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     FIO_channels = [2**input_channel for input_channel in input_channels 
                     if 3 < input_channel <= 7]
     FIO_int_rep = np.sum(FIO_channels)
-    d.configIO(FIOAnalog=FIO_int_rep)
+    
+    if FIO_int_rep >= 8:
+        d.configIO(FIOAnalog=FIO_int_rep)
 
     if 210 or 211 or 240 or 241 in special_channels.keys(): 
         d.configIO(EnableCounter0=True)
