@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+Live plot of PID data from AIN 0 (high-voltage pin on U3-HV). 
+Saves to .csv.
+"""
+
 import sys
 import time
 import datetime
@@ -113,12 +118,12 @@ class LivePlot(serial.Serial):
         print('Successfully quitted')
 
 
-
-# ---------------------------------------------------------------------------------------
-if __name__ == '__main__':
+def main():
 
     liveplot = LivePlot()
     liveplot.run()
 
 
+if __name__ == '__main__':
 
+    main()
