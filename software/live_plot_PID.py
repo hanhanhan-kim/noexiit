@@ -2,6 +2,7 @@
 
 """
 Live plot of PID data from AIN 0 (high-voltage pin on U3-HV). 
+Uses command and response, instead of stream.
 Saves to .csv.
 """
 
