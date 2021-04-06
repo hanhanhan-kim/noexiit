@@ -29,9 +29,11 @@ from stream import stream_to_csv
 
 switch = SwitchX7(port='/dev/ttyACM0', timeout=1.0)
 
+
 def exit_safely():
     switch.set_all(False)
 atexit.register(exit_safely)
+
 
 def control_valves():
 
@@ -82,13 +84,19 @@ def main():
     # Start the DAQ stream:
     stream_to_csv(csv_path=csv_path, 
                   duration_s=duration,
-                  input_channels=[3, 7, 193, 210, 224], # FIOs 4-7 will be LOW voltage on U3-HV
+                  input_channels=[ # FIOs 4-7 will be LOW voltage AIN on U3-HV
+                                    # 3, 
+                                    7, 
+                                    193, 
+                                    # 210, 
+                                    # 224
+                                 ], 
                   input_channel_names={
-                                        3: "valve_3", 
+                                        # 3: "valve_3", 
                                         7: "PID (V)", 
                                         193: "digi_valves",
-                                        210: "DAQ count", 
-                                        224: "16-bit roll-overs"
+                                        # 210: "DAQ count", 
+                                        # 224: "16-bit roll-overs"
                                       },
                 #   FIO_digital_channels=[4,5,6,8,9,10,11,12,13,14,15], # I don't NEED to specify this; 7 is excluded because it's PID, must be analog 
                   times="absolute",
