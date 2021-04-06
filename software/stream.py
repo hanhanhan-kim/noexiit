@@ -111,7 +111,7 @@ def get_channel_name(device, channel_index):
 
 
 def stream_to_csv(csv_path, duration_s=None, input_channels=None,
-    resolution_index=0, input_channel_names=None, times="elapsed",
+    resolution_index=0, input_channel_names=None, FIO_digital_channels=[4,5,6], times="elapsed", 
     external_trigger=None, do_overwrite=False, is_verbose=False):
 
     # TODO implement callbacks that can be passed into this fn, then pass stuff to
@@ -162,11 +162,13 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
         corresponding column in the CSV. If not passed, the labels of the
         channels on the LabJack hardware will be used.
 
+    FIO_digital_channels (list): 
+
     times (str): Accepts either "elapsed" (default) or "absolute". If "elapsed", 
         a column, "time (s)", will be added to the .csv with time in seconds from 
         beginning of streaming. If "absolute", a column, "datetime" will be added 
         to the .csv with time as a string from a datetime object. N.B. Understand 
-        that the offset between streaming start /s top and when those calls are 
+        that the offset between streaming start /stop and when those calls are 
         made are hard to predict or measure, and so using elapsed times is often 
         recommended. 
 
@@ -242,12 +244,15 @@ def stream_to_csv(csv_path, duration_s=None, input_channels=None,
     # By default, FIOAnalog = 15, because on the HV, AIN0-AIN3 are fixed analog
     # channels dedicated to high-voltage (-10 to 10 V) inputs. In contrast, 
     # FIO pins can be either analog or digital, and if analog, has a 0-2.4 V range.
-    FIO_channels = [2**input_channel for input_channel in input_channels 
-                    if 3 < input_channel <= 7]
-    FIO_int_rep = np.sum(FIO_channels)
-    
-    if FIO_int_rep >= 8: # 2**3 = 8
-        d.configIO(FIOAnalog=FIO_int_rep)
+
+    # Set specified pins to digital (All FIO pins will otherwise be set to analog, by defualt): 
+    # input_channels - FIO_digital_channels
+    analog_channels = list(set(input_channels).difference(set(FIO_digital_channels)))
+
+    digital_channel_bits = [2**digital_channel for digital_channel in FIO_digital_channels 
+                            if 3 < digital_channel <= 7]
+    int_rep = 240 - np.sum(digital_channel_bits) # 2**4 + 2**5 + 2**6 + 2**7 = 240
+    d.configIO(FIOAnalog=int_rep)
 
     if 210 or 211 or 240 or 241 in special_channels.keys(): 
         d.configIO(EnableCounter0=True)
