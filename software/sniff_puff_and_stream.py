@@ -27,7 +27,8 @@ from switchx7 import SwitchX7
 from stream import stream_to_csv
 
 
-switch = SwitchX7(port='/dev/ttyACM0', timeout=1.0)
+# switch = SwitchX7(port='/dev/ttyACM0', timeout=1.0)
+switch = SwitchX7(port='/dev/ttyACM1', timeout=1.0)
 
 
 def exit_safely():
@@ -37,19 +38,26 @@ atexit.register(exit_safely)
 
 def control_valves():
 
-    while True:
-        
-        time.sleep(1.0)
+    # # Test program:
+    # while True:
+    
+    #     time.sleep(1.0)
 
-        for i in range(0, 7):
-            switch.set(i, True)
-            time.sleep(0.1)
-            switch.set(i, False)
+    #     for i in range(0, 7):
+    #         switch.set(i, True)
+    #         time.sleep(0.1)
+    #         switch.set(i, False)
             
-        switch.set_all(True)
-        time.sleep(0.1)
-        switch.set_all(False)
-        time.sleep(0.1)
+    #     switch.set_all(True)
+    #     time.sleep(0.1)
+    #     switch.set_all(False)
+    #     time.sleep(0.1)
+
+    time.sleep(5.0)
+    switch.set(0, True)
+    time.sleep(5.0)
+    switch.set(0, False)
+    time.sleep(5.0)
 
 
 def main():
