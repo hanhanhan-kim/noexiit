@@ -38,26 +38,23 @@ atexit.register(exit_safely)
 
 def control_valves():
 
-    # # Test program:
-    # while True:
-    
-    #     time.sleep(1.0)
-
-    #     for i in range(0, 7):
-    #         switch.set(i, True)
-    #         time.sleep(0.1)
-    #         switch.set(i, False)
-            
-    #     switch.set_all(True)
-    #     time.sleep(0.1)
-    #     switch.set_all(False)
-    #     time.sleep(0.1)
-
-    time.sleep(5.0)
+    print("1 only: solvent")
     switch.set(0, True)
-    time.sleep(5.0)
+    switch.set(1, False)
+    switch.set(2, False)
+    time.sleep(30.0)
+
+    print("2 only: odour")
     switch.set(0, False)
-    time.sleep(5.0)
+    switch.set(1, True)
+    switch.set(2, False)
+    time.sleep(10.0) 
+
+    print("1 only: solvent")
+    switch.set(1, False)
+    switch.set(0, True)
+    switch.set(2, False)
+    time.sleep(30.0)
 
 
 def main():
