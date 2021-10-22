@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-with open("README.md","r") as fh:
+with open("../README.md","r") as fh:
     long_description = fh.read()
 
 setup(
@@ -8,7 +8,7 @@ setup(
     version="0.0.0",
     author="Han Kim",
     author_email="hankim@caltech.edu",
-    description="Scripts for controlling NoEXIIT hardware.",
+    description="Commands for controlling NOEXIIT hardware.",
     long_description=long_description,
     url="https://github.com/hanhanhan-kim/noexiit",
     packages=find_packages(),
@@ -27,9 +27,7 @@ setup(
         "pyserial",
         "pyyaml",
         "tqdm",
-        "click",
-        "autostep @ git+ssh://github.com/hanhanhan-kim/autostep.git",
-        "camera_trigger @ git+ssh://github.com/hanhanhan-kim/camera_trigger"
+        "click"
     ]
 
 )
