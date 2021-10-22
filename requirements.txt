@@ -1,0 +1,2 @@
+git+git://github.com/hanhanhan-kim/camera_trigger#egg=camera_trigger&subdirectory=software/python/camera_trigger
+git+git://github.com/hanhanhan-kim/autostep#egg=autostep&subdirectory=software/python/autostep

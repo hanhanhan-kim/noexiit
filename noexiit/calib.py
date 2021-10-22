@@ -13,10 +13,8 @@ directory.
 """
 
 import time
-import threading
 import numpy as np
 import argparse
-import sys
 from pathlib import Path
 from os.path import expanduser
 
@@ -58,17 +56,17 @@ def main():
                     output_dir = output_dir + "/"
 
                 # Write new config.yaml if it doesn't exist:
-                if Path(output_dir).is_dir() and not Path("config.yaml").is_file():
-                    with open("config.yaml", "w") as f:
+                if Path(output_dir).is_dir() and not Path("../config.yaml").is_file():
+                    with open("../config.yaml", "w") as f:
                         yaml.dump({"output_dir": (output_dir)}, f)
                     break
                 
                 # Read and modify existing config.yaml if it exists: 
-                elif Path(output_dir).is_dir() and Path("config.yaml").is_file():
-                    with open ("config.yaml") as f:
+                elif Path(output_dir).is_dir() and Path("../config.yaml").is_file():
+                    with open ("../config.yaml") as f:
                         config = yaml.load(f, Loader=yaml.FullLoader)
                         config["output_dir"] = output_dir 
-                    with open("config.yaml", "w") as f:
+                    with open("../config.yaml", "w") as f:
                         yaml.dump(config, f)
                     break
 
@@ -83,9 +81,9 @@ def main():
 
     else:
         # Write new config.yaml if it doesn't exist, with pwd as output path:
-        if not Path("config.yaml").is_file():
+        if not Path("../config.yaml").is_file():
             output_dir = Path.cwd()
-            with open("config.yaml", "w") as f: 
+            with open("../config.yaml", "w") as f: 
                 yaml.dump({"output_dir": str(output_dir)+"/"}, f)
         # Otherwise, just keep whatever's already in the .yaml file
 
@@ -160,10 +158,10 @@ def main():
         stepper.busy_wait()
         print("Homed")
 
-        with open("config.yaml") as f:
+        with open("../config.yaml") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
             config["max_ext"] = max_ext
-        with open("config.yaml", "w") as f:
+        with open("../config.yaml", "w") as f:
             yaml.dump(config, f)
         print(f"Saved the max servo angle, {max_ext}, in `config.yaml`.")
 

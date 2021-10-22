@@ -48,13 +48,13 @@ def control_valves():
     switch.set(0, False)
     switch.set(1, True)
     switch.set(2, False)
-    time.sleep(10.0) 
+    time.sleep(20.0) 
 
     print("1 only: solvent")
     switch.set(1, False)
     switch.set(0, True)
     switch.set(2, False)
-    time.sleep(30.0)
+    time.sleep(120.0)
 
 
 def main():
@@ -90,14 +90,14 @@ def main():
     stream_to_csv(csv_path=csv_path, 
                   duration_s=duration,
                   input_channels=[ # FIOs 4-7 will be LOW voltage AIN on U3-HV
-                                    # 3, 
+                                    # 3,
                                     7, 
                                     193, 
                                     # 210, 
                                     # 224
                                  ], 
                   input_channel_names={
-                                        # 3: "valve_3", 
+                                        # 3: "PID (V)", 
                                         7: "PID (V)", 
                                         193: "digi_valves",
                                         # 210: "DAQ count", 
