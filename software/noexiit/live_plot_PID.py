@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Live plot of PID data from AIN 7 (low-voltage FIO pin on U3-HV). 
 Uses command and response, instead of stream.
@@ -127,12 +125,7 @@ class LivePlot(serial.Serial):
         print('Successfully quitted')
 
 
-def main():
+def main(config):
 
     liveplot = LivePlot()
     liveplot.run()
-
-
-if __name__ == '__main__':
-
-    main()

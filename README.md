@@ -54,7 +54,7 @@ See [Richard Moore's official repo](https://github.com/rjdmoore/fictrac) for add
 
 ### LabJack U3 DAQ
 
-I use the LabJack U3 as my DAQ, which synchronizes my data streams in hardware. I use Python 3 to interface with the LabJack U3. Instructions for installing the `exodriver` library  necessary for using the LabJack U3 are available [here](https://labjack.com/support/software/installers/exodriver). Instructions for installing the LabJack U3 Python3 module are available on the [official LabJack GitHub](https://github.com/labjack/LabJackPython). 
+I use the LabJack U3-HV as my DAQ, which synchronizes my data streams in hardware.  Instructions for installing the `exodriver` library necessary for using the LabJack U3-HV are available [here](https://labjack.com/support/software/installers/exodriver).  I use LabJack's [Python module](https://github.com/labjack/LabJackPython) to interface with the LabJack U3-HV. Set up of the Anaconda environment already installs the LabJack Python module.
 
 ### Firmware
 
@@ -125,10 +125,30 @@ This command prints the contents of the `.yaml` configuration file. It does not 
 
 <details><summary> Click for details. </summary>
 <br>
+This command calibrates the linear servo's behaviour. It sets the servo's maximum extension angle to avoid crashes and overshoots, based on visual inspection. The servo can rotate around the rig's spherical treadmill, while being held at the set max extension angle. This function is useful for preparing closed-loop experiments. This command can also configure the acquired experimental data to a specific directory. Importantly, this command does not require the user to update the `config.yaml` file beforehand. Rather, the command updates the configuration file based on 'real-time' user inputs. Alternatively, this command does not need to be run, and the `config.yaml` file can be manually modified. This command's `.yaml` parameters are:
+
+- `max_ext` (float): The max extension value of the linear servo(s). Must be a value between 0.0 and 180.0, inclusive. Running the `calibrate` command will automatically update this value.
+
+- `output_dir` (string): The path to the directory where acquired data will be saved. Running the `calibrate` command can automatically update this value.
+</details>
+
+#### `plot-pid-live`
+
+<details><summary> Click for details. </summary>
+<br>
+This command plots and saves to a `.csv`, in real time, the voltage readings of the photo-ionization detector (PID). It assumes that the PID is connected to the **AIN 7** (low-voltage FIO) pin of the LabJack U3-HV . It uses a 'command and response' protocol, instead of a 'streaming' protocol. This command is useful for troubleshooting the PID, and is not recommended for experimental data acquisition. It does not have any `.yaml` parameters. 
+</details>
+
+
+#### `expt-pt-to-pt`
+
+<details><summary> Click for details. </summary>
+<br>
 TODO
 </details>
 
-#### `pt_to_pt`
+
+#### `expt-still-robot`
 
 <details><summary> Click for details. </summary>
 <br>

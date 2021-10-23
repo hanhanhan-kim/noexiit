@@ -1,21 +1,3 @@
-#!/usr/bin/env python3
-
-"""
-Calibrates the linear servo's behaviour.
-
-Sets the maximum extension angle to avoid crashes and overshoots, 
-based on visual inspsection. Can rotate around the spherical 
-treadmill with the servo held at the set max extension angle 
-(useful when preparing for closed-loop experiments). 
-
-Can also configure experiment data to output to a specific 
-directory. 
-
-This command does not require the user to update the `config.yaml` 
-file beforehand. Rather, the command updates the configuration file 
-based on 'real-time' user inputs. 
-"""
-
 import time
 import numpy as np
 import argparse
@@ -38,9 +20,7 @@ def main(config):
     stepper.set_jog_mode_params({'speed':15, 'accel':100, 'decel':1000}) # deg/s and deg/s2
     stepper.set_move_mode_to_jog()
     stepper.set_gear_ratio(1)
-    stepper.enable() 
-
-    #                                     
+    stepper.enable()                   
     
     # Amount of time to wait, so the servo can reach the set position:
     wait_time = 1.5
@@ -67,7 +47,7 @@ def main(config):
                 elif Path(output_dir).is_dir() and Path("config.yaml").is_file():
                     with open ("config.yaml") as f:
                         config = yaml.load(f, Loader=yaml.FullLoader)
-                        config["calib"]["output_dir"] = output_dir 
+                        config["calibrate"]["output_dir"] = output_dir 
                     with open("config.yaml", "w") as f:
                         yaml.dump(config, f)
                     break
@@ -95,7 +75,7 @@ def main(config):
         else:
             with open ("config.yaml") as f:
                 config = yaml.load(f, Loader=yaml.FullLoader)
-                config["calib"]["output_dir"] = output_dir
+                config["calibrate"]["output_dir"] = output_dir
             with open("config.yaml", "w") as f:
                 yaml.dump(config, f)
 
@@ -173,7 +153,7 @@ def main(config):
 
         with open("config.yaml") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
-            config["calib"]["max_ext"] = max_ext
+            config["calibrate"]["max_ext"] = max_ext
         with open("config.yaml", "w") as f:
             yaml.dump(config, f)
         print(f"Saved the max servo angle, {max_ext}, in `config.yaml`.")
@@ -212,7 +192,3 @@ def main(config):
             stepper.set_servo_angle(0)
 
         print("Finished calibration.")
-
-
-# if __name__ == "__main__":
-#     main()

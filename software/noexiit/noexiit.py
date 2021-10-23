@@ -4,7 +4,9 @@ from pprint import pprint
 import click
 import yaml
 
+from noexiit.utils import parse_readme_for_docstrings, docstring_parameter
 
+docstrings = parse_readme_for_docstrings("../README.md")
 pass_config = click.make_pass_decorator(dict)
 
 # TODO: add a DEFAULT_CONFIG ?
@@ -31,21 +33,45 @@ def cli(ctx, config):
 
 @cli.command()
 @pass_config
+@docstring_parameter(docstrings[0])
 def print_config(config):
+    """
+    {0}
+    """
+    print(docstrings[0])
     print("")
     pprint(config)
     print("")
 
 @cli.command()
 @pass_config
+@docstring_parameter(docstrings[1])
 def calibrate(config):
+    """
+    {0}
+    """
     from noexiit import calib
     click.echo("\nCalibrating ...")
     calib.main(config)
 
 @cli.command()
 @pass_config
+@docstring_parameter(docstrings[2])
+def plot_pid_live(config):
+    """
+    {0}
+    """
+    from noexiit import live_plot_PID
+    click.echo("\nPlotting real-time PID data ...")
+    live_plot_PID.main(config)
+
+@cli.command()
+@pass_config
+@docstring_parameter(docstrings[3])
 def expt_pt_to_pt(config):
+    """
+    {0}
+    """
     from noexiit import pt_to_pt_stream_expt
     click.echo("\nRunning 'point to point' (open-loop) experiment ...")
     pt_to_pt_stream_expt.main(config)
@@ -54,17 +80,14 @@ def expt_pt_to_pt(config):
 
 @cli.command()
 @pass_config
+@docstring_parameter(docstrings[4])
 def expt_still_robot(config):
+    """
+    {0}
+    """
     from noexiit import c_loop_still_robot_expt
     click.echo("\nRunning 'still robot' (closed-loop) experiment ...")
     c_loop_still_robot_expt.main(config)
-
-@cli.command()
-@pass_config
-def live_PID_plot(config):
-    from noexiit import live_plot_PID
-    click.echo("\nPlotting real-time PID data ...")
-    live_plot_PID.main(config)
 
 
 if __name__ == "__main__":
