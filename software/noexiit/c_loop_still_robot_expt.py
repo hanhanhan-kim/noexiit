@@ -29,8 +29,8 @@ import u3
 
 from camera_trigger import CameraTrigger
 from autostep import Autostep
-from butter_filter import ButterFilter
-from move_and_get import home
+from noexiit.butter_filter import ButterFilter
+from noexiit.move_and_get import home
 
 
 def main():

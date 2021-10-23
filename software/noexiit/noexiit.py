@@ -40,17 +40,31 @@ def print_config(config):
 @pass_config
 def calibrate(config):
     from noexiit import calib
-    click.echo("\nRunning 'point to point' experiment ...")
+    click.echo("\nCalibrating ...")
     calib.main(config)
 
 @cli.command()
 @pass_config
-def pt_to_pt(config):
+def expt_pt_to_pt(config):
     from noexiit import pt_to_pt_stream_expt
-    click.echo("\nRunning 'point to point' experiment ...")
+    click.echo("\nRunning 'point to point' (open-loop) experiment ...")
     pt_to_pt_stream_expt.main(config)
 
+# TODO: Make an open-loop experiment file and command with odour delivery + servo stim
 
+@cli.command()
+@pass_config
+def expt_still_robot(config):
+    from noexiit import c_loop_still_robot_expt
+    click.echo("\nRunning 'still robot' (closed-loop) experiment ...")
+    c_loop_still_robot_expt.main(config)
+
+@cli.command()
+@pass_config
+def live_PID_plot(config):
+    from noexiit import live_plot_PID
+    click.echo("\nPlotting real-time PID data ...")
+    live_plot_PID.main(config)
 
 
 if __name__ == "__main__":

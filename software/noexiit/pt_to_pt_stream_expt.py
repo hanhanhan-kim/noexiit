@@ -45,12 +45,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import u3
-from autostep import Autostep
 
-import utils
-import move_and_get
-from init_BIAS import init_BIAS
+from autostep import Autostep
 from camera_trigger import CameraTrigger
+import noexiit.utils
+import noexiit.move_and_get
+from noexiit.init_BIAS import init_BIAS
 
 
 def main():

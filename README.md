@@ -5,15 +5,41 @@
 
 NOEXIIT, or *NOvel Ethological X-Insect Interaction Task*, is a behaviour rig for presenting an ethological stimulus to an insect tethered on a floating ball. We originally developed NOEXIIT to present different kinds of pinned insects to a tethered walking beetle. 
 
-This repository houses the software for controlling NOEXIIT. It is  a `pip`-installable Python package and is a CLI. It includes commands for calibrating and testing the rig, as well as commands for acquiring experimental data. I have tested the NOEXIIT CLI on Ubuntu 18.04. 
+This repository houses the software for controlling NOEXIIT. It is  a `pip`-installable Python package by the same name and is a CLI. It includes commands for calibrating and testing the rig, as well as commands for acquiring experimental data. I have tested the NOEXIIT CLI on Ubuntu 18.04. 
 
 In addition to the CLI software, the repository features a `hardware/` directory, which contains all necessary custom design files, datasheets, a bill of materials, and assembly tips. 
 
 ## Installation:
 
+1. Clone this repository:
 
+   ```bash
+   git clone https://github.com/hanhanhan-kim/noexiit
+   ```
+
+2. Install the Anaconda environment from the repo's root directory, where `conda_env.yaml` is housed:
+
+   ```bash
+   conda env create -f conda_env.yaml
+   ```
+
+   It will create an environment called `noexiit`.
+
+3. Activate the environment:
+
+   ```bash
+   conda activate noexiit
+   ```
+
+4. Install the `noexiit` Python package from the repo's root directory:
+
+   ```bash
+   pip install -e .
+   ```
 
 ## Dependencies:
+
+In addition to the `noexiit` Python package installation, additional non-Python software and firmware must be installed. They are as follows:
 
 ### Spinnaker 
 
@@ -53,3 +79,58 @@ Set up of the Anaconda environment already installs the software dependencies fo
 - [SparkFun's L6470 AutoDriver library](https://github.com/sparkfun/L6470-AutoDriver/tree/master/Libraries/Arduino) (commit `734489ea1eaeb96cfab712c96817e35d9c942eb8`).
 
 Set up of the Anaconda environment already installs the software dependencies for [`autostep`](https://github.com/hanhanhan-kim/autostep).
+
+## How to use:
+
+Using `noexiit` is simple! From anywhere, type the following in the command line:
+
+```bash
+noexiit
+```
+
+Doing so will bring up the menu of possible options and commands. To execute a command, specify the command of interest after `noexiit`. For example, to run the `print-config` command:
+
+```bash
+noexiit print-config
+```
+
+### The `.yaml` file
+
+The successful execution of a command requires filling out a single `.yaml` configuration file. The configuration file provides the arguments for all of `noexiit`'s commands. By default, `noexiit` will look for a file calleld `config.yaml` in the directory from which you run a `noexiit` command. For this reason, I suggest that you name your `.yaml` file `config.yaml`. Otherwise, you can specify a particular `.yaml` file like so:
+
+```bash
+noexiit --config <path/to/config.yaml> <command>
+```
+
+For example, if the `.yaml` file you want to use has the path `~/tmp/my_weird_config.yaml`, and you want to run the `pt-to-pt` command, you'd input:
+
+```bash
+noexiit --config ~/tmp/my_weird_config.yaml pt-to-pt
+```
+
+Each key in the `.yaml` configuration file refers to a `noexiit` command. The value of each of these keys is a dictionary that specifies the parameters for that `vidtools` command. Make sure you do not have any trailing spaces in the `.yaml` file. An example `config.yaml` file is provided in the repository. 
+
+### Commands
+
+The outputs of `noexiit`'s commands never overwrite existing files, without first asking for user confirmation. `noexiit`'s commands and their respective `.yaml` file arguments are documented below:
+
+#### `print-config`
+
+<details><summary> Click for details. </summary>
+<br>
+This command prints the contents of the `.yaml` configuration file. It does not have any `.yaml` parameters.
+</details>
+
+#### `calibrate`
+
+<details><summary> Click for details. </summary>
+<br>
+TODO
+</details>
+
+#### `pt_to_pt`
+
+<details><summary> Click for details. </summary>
+<br>
+TODO
+</details>

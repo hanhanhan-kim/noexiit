@@ -10,6 +10,10 @@ treadmill with the servo held at the set max extension angle
 
 Can also configure experiment data to output to a specific 
 directory. 
+
+This command does not require the user to update the `config.yaml` 
+file beforehand. Rather, the command updates the configuration file 
+based on 'real-time' user inputs. 
 """
 
 import time
@@ -20,9 +24,9 @@ from os.path import expanduser
 
 import yaml
 from autostep import Autostep
-from utils import ask_yes_no
+from noexiit.utils import ask_yes_no
 
-def main():
+def main(config):
     
     # Set up autostep motors:
     motor_port = '/dev/ttyACM0' # change as necessary
@@ -36,16 +40,14 @@ def main():
     stepper.set_gear_ratio(1)
     stepper.enable() 
 
-    parser = argparse.ArgumentParser(description=__doc__, 
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    args = parser.parse_args()                                     
+    #                                     
     
     # Amount of time to wait, so the servo can reach the set position:
     wait_time = 1.5
 
     # Ask user where to save data files:
     do_output_dir = ask_yes_no("Do you want to save the output data files "
-                               "to a specific directory?")
+                               "to a new specific directory?")
     if do_output_dir:
         
         while True:
@@ -56,17 +58,17 @@ def main():
                     output_dir = output_dir + "/"
 
                 # Write new config.yaml if it doesn't exist:
-                if Path(output_dir).is_dir() and not Path("../config.yaml").is_file():
-                    with open("../config.yaml", "w") as f:
-                        yaml.dump({"output_dir": (output_dir)}, f)
+                if Path(output_dir).is_dir() and not Path("config.yaml").is_file():
+                    with open("config.yaml", "w") as f:
+                        yaml.dump({"calib":{"output_dir": (output_dir)}}, f)
                     break
                 
                 # Read and modify existing config.yaml if it exists: 
-                elif Path(output_dir).is_dir() and Path("../config.yaml").is_file():
-                    with open ("../config.yaml") as f:
+                elif Path(output_dir).is_dir() and Path("config.yaml").is_file():
+                    with open ("config.yaml") as f:
                         config = yaml.load(f, Loader=yaml.FullLoader)
-                        config["output_dir"] = output_dir 
-                    with open("../config.yaml", "w") as f:
+                        config["calib"]["output_dir"] = output_dir 
+                    with open("config.yaml", "w") as f:
                         yaml.dump(config, f)
                     break
 
@@ -80,12 +82,23 @@ def main():
                 continue
 
     else:
+        print("A specific output directory does not exist.")
+        output_dir = str(Path.cwd())
+
         # Write new config.yaml if it doesn't exist, with pwd as output path:
-        if not Path("../config.yaml").is_file():
-            output_dir = Path.cwd()
-            with open("../config.yaml", "w") as f: 
-                yaml.dump({"output_dir": str(output_dir)+"/"}, f)
+        if not Path("config.yaml").is_file():
+            with open("config.yaml", "w") as f: 
+                yaml.dump({"calib":{"output_dir": str(output_dir)+"/"}}, f)
         # Otherwise, just keep whatever's already in the .yaml file
+
+        # If config.yaml does exist, make a new key with the pwd as the value:
+        else:
+            with open ("config.yaml") as f:
+                config = yaml.load(f, Loader=yaml.FullLoader)
+                config["calib"]["output_dir"] = output_dir
+            with open("config.yaml", "w") as f:
+                yaml.dump(config, f)
+
 
     # Set the home position to 0:
     print("Searching for home...")
@@ -158,10 +171,10 @@ def main():
         stepper.busy_wait()
         print("Homed")
 
-        with open("../config.yaml") as f:
+        with open("config.yaml") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
-            config["max_ext"] = max_ext
-        with open("../config.yaml", "w") as f:
+            config["calib"]["max_ext"] = max_ext
+        with open("config.yaml", "w") as f:
             yaml.dump(config, f)
         print(f"Saved the max servo angle, {max_ext}, in `config.yaml`.")
 
@@ -201,5 +214,5 @@ def main():
         print("Finished calibration.")
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
