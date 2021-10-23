@@ -31,7 +31,7 @@ In addition to the CLI software, the repository features a `hardware/` directory
    conda activate noexiit
    ```
 
-4. Install the `noexiit` Python package from the repo's root directory:
+4. Install the `noexiit` Python package from the repo's `software/` subdirectory:
 
    ```bash
    pip install -e .
