@@ -118,6 +118,7 @@ The outputs of `noexiit`'s commands never overwrite existing files, without firs
 
 <details><summary> Click for details. </summary>
 <br>
+
 This command prints the contents of the `.yaml` configuration file. It does not have any `.yaml` parameters.
 </details>
 
@@ -125,6 +126,7 @@ This command prints the contents of the `.yaml` configuration file. It does not 
 
 <details><summary> Click for details. </summary>
 <br>
+
 This command calibrates the linear servo's behaviour. It sets the servo's maximum extension angle to avoid crashes and overshoots, based on visual inspection. The servo can rotate around the rig's spherical treadmill, while being held at the set max extension angle. This function is useful for preparing closed-loop experiments. This command can also configure the acquired experimental data to a specific directory. Importantly, this command does not require the user to update the `config.yaml` file beforehand. Rather, the command updates the configuration file based on 'real-time' user inputs. Alternatively, this command does not need to be run, and the `config.yaml` file can be manually modified. This command's `.yaml` parameters are:
 
 - `max_ext` (float): The max extension value of the linear servo(s). Must be a value between 0.0 and 180.0, inclusive. Running the `calibrate` command will automatically update this value.
@@ -136,6 +138,7 @@ This command calibrates the linear servo's behaviour. It sets the servo's maximu
 
 <details><summary> Click for details. </summary>
 <br>
+
 This command plots and saves to a `.csv`, in real time, the voltage readings of the photo-ionization detector (PID). It assumes that the PID is connected to the **AIN 7** (low-voltage FIO) pin of the LabJack U3-HV . It uses a 'command and response' protocol, instead of a 'streaming' protocol. This command is useful for troubleshooting the PID, and is not recommended for experimental data acquisition. It does not have any `.yaml` parameters. 
 </details>
 
@@ -144,6 +147,7 @@ This command plots and saves to a `.csv`, in real time, the voltage readings of 
 
 <details><summary> Click for details. </summary>
 <br>
+
 TODO
 </details>
 
@@ -152,5 +156,6 @@ TODO
 
 <details><summary> Click for details. </summary>
 <br>
+
 TODO
 </details>
