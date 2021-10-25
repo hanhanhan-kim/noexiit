@@ -148,7 +148,27 @@ This command plots and saves to a `.csv`, in real time, the voltage readings of 
 <details><summary> Click for details. </summary>
 <br>
 
-TODO
+This command moves the tethered stimulus to each angular position in a list of specified positions. Upon arriving at a position, the command extends the tethered stimulus for a fixed
+duration. Then retracts the tethered stimulus for a fixed duration. Streams data during motor movements. Events happen in the following order:
+
+Initialization (homing, etc.)
+│
+├── Gets DAQ stuff
+├── Gets motors' positions
+├── Starts cam trigger
+├── Starts motors
+│
+├── Finishes motors or duration
+├── Stops cam trigger
+├── Stops getting motors' positions
+└── Stops getting DAQ stuff
+
+Events happen in the above order even when script is interrupted (ctrl + c).
+
+"DAQ stuff" refers to PID data and frame counter. Motor position sets and gets happen in a different process from DAQ gets, in order to achieve maximum frequencies. 
+
+Example command:
+./pt_to_pt_stream_expt.py 20 10 2 2 -p 180 0 -e 90
 </details>
 
 

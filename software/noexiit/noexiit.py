@@ -33,7 +33,7 @@ def cli(ctx, config):
 
 @cli.command()
 @pass_config
-@docstring_parameter(docstrings[0])
+@docstring_parameter(docstrings["print-config"])
 def print_config(config):
     """
     {0}
@@ -45,7 +45,7 @@ def print_config(config):
 
 @cli.command()
 @pass_config
-@docstring_parameter(docstrings[1])
+@docstring_parameter(docstrings["calibrate"])
 def calibrate(config):
     """
     {0}
@@ -56,7 +56,7 @@ def calibrate(config):
 
 @cli.command()
 @pass_config
-@docstring_parameter(docstrings[2])
+@docstring_parameter(docstrings["plot-pid-live"])
 def plot_pid_live(config):
     """
     {0}
@@ -67,10 +67,13 @@ def plot_pid_live(config):
 
 @cli.command()
 @pass_config
-@docstring_parameter(docstrings[3])
+@docstring_parameter(docstrings["expt-pt-to-pt"][0], 
+                     docstrings["expt-pt-to-pt"][1])
 def expt_pt_to_pt(config):
     """
     {0}
+    \b
+    {1}
     """
     from noexiit import pt_to_pt_stream_expt
     click.echo("\nRunning 'point to point' (open-loop) experiment ...")
@@ -80,7 +83,7 @@ def expt_pt_to_pt(config):
 
 @cli.command()
 @pass_config
-@docstring_parameter(docstrings[4])
+@docstring_parameter(docstrings["expt-still-robot"])
 def expt_still_robot(config):
     """
     {0}

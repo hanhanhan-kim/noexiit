@@ -65,7 +65,6 @@ def datetime_to_elapsed(df, col_name="datetime"):
     
     return df
 
-
 def parse_readme_for_docstrings(readme_path):
     
     """
@@ -75,6 +74,10 @@ def parse_readme_for_docstrings(readme_path):
 
     with open(readme_path, "r") as f:
         readme = f.readlines()
+    
+    # Extract command names from README.md to use as keys:
+    keys = [readme[i-2] for i, line in enumerate(readme) if line.startswith("<details><summary>")]
+    keys = [key[6:-2] for key in keys]
     
     # Extract docstring start and end lines from README.md:
     start_lines = []
@@ -89,9 +92,23 @@ def parse_readme_for_docstrings(readme_path):
     
     # Generate docstrings from start and end lines:
     docstrings = ["".join(readme[start_line:end_line+1])
-                  for start_line, end_line in zip(start_lines, end_lines)]
-            
-    return docstrings
+                  for start_line, end_line in zip(start_lines, end_lines)] 
+    docstrings = [docstring[1:] for docstring in docstrings]
+    
+    # Put it together to make the desired dictionary:
+    cmds_docstrings = dict(zip(keys, docstrings))
+    
+    # Handle the strange cases that need formatting:
+    to_reformat = cmds_docstrings["expt-pt-to-pt"]
+    idx = to_reformat.find("Initialization (homing, etc.)") - 1
+    
+    keep_rewrapped = to_reformat[:idx]
+    not_rewrapped = to_reformat[idx:]
+    
+    # Update dictionary with reformatted docstring:
+    cmds_docstrings["expt-pt-to-pt"] = [keep_rewrapped, not_rewrapped]
+    
+    return cmds_docstrings
 
 
 def docstring_parameter(*sub):
