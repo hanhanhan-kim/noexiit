@@ -197,7 +197,7 @@ This command's `.yaml` parameters are:
 <details><summary> Click for details. </summary>
 <br>
 
-This command moves the tethered stimulus at 1) an angular velocity opposite in direction, and adjustable in magnitude, to the animal on the ball (stepper motor), and 2) to some distance away or towards the animal on the ball, given the tethered  stimulus' angular position (linear servo). The idea is to mimic a stationary  stimulus in a flat planar world. The animal turning right and away from a stimulus in front of it, in the planar world, is equivalent to the stimulus turning left and retracting away from the animal, in the on-a-ball world. This command demonstrates the closed-loop capabilities of NOEXIIT.
+This command moves the tethered stimulus at 1) an angular velocity opposite in direction, and adjustable in magnitude, to the animal on the ball (stepper motor), and 2) to some distance away or towards the animal on the ball, given the tethered  stimulus' angular position (linear servo). The idea is to mimic a stationary  stimulus in a flat planar world. The animal turning right and away from a stimulus in front of it, in the planar world, is equivalent to the stimulus turning left and retracting away from the animal, in the on-a-ball world. This command demonstrates the closed-loop capabilities of NOEXIIT. The data is saved as a `.csv` file in the `output_dir` specified by `config.yaml`'s `calibrate` parameter. 
 
 It assumes an ATMega328P-based camera trigger, even if as of 2021/10/25, this command operates only a single camera. 
 

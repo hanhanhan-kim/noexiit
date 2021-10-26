@@ -3,6 +3,7 @@ import time
 import datetime
 import atexit
 import threading
+from os.path import join
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -45,7 +46,8 @@ def main(config):
     HOST = '127.0.0.1'  # The server's hostname or IP address
     PORT = 27654         # The port used by the server
 
-    # Set up user arguments from config: 
+    # Set up user arguments from config:
+    output_dir = config["calibrate"]["output_dir"]
     duration = config["expt-still-robot"]["duration"]
     k_stepper = config["expt-still-robot"]["k_stepper"]
     ball_radius = config["expt-still-robot"]["ball_radius"]
@@ -354,4 +356,5 @@ def main(config):
                        "PID (V)": PID_volts
                        })
     
-    df.to_csv("c_loop_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".csv", index=False)
+    csv = join(output_dir,"c_loop_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".csv")
+    df.to_csv(csv, index=False)
