@@ -118,9 +118,6 @@ def main(config):
         k_p = -5
         k_d = -3
         k_i = 0
-        
-        # Experimental gain term for modifying the significance of the animal's turns; usually 1:
-        k_stepper = 1
 
         # START the DAQ counter, 1st count pre-trigger is 0:
         u3.Counter0(Reset=True)

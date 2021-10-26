@@ -1,30 +1,10 @@
-#!/usr/bin/env python3
-
-"""
-Commands solenoid valve outputs, while also streaming 
-the following 2 types of data to the LabJack U3 DAQ:
-  1. Electrical copies of those output commands 
-  2. PID data 
-
-By default, the low-voltage pin, FIO7, is hard-coded 
-as an analog input on the stream, and is meant to be hooked 
-up to the PID signal. 
-
-Example command:
-./sniff_puff_and_stream.py ~/tmp/puff_stream.csv 4
-"""
-
-import datetime
 import time
-import argparse
 import threading
 import atexit
 from os.path import expanduser
 
-import pandas as pd
-import matplotlib.pyplot as plt
 from switchx7 import SwitchX7 
-from stream import stream_to_csv
+from noexiit.stream import stream_to_csv
 
 
 # switch = SwitchX7(port='/dev/ttyACM0', timeout=1.0)
@@ -57,26 +37,16 @@ def control_valves():
     time.sleep(120.0)
 
 
-def main():
-
-    parser = argparse.ArgumentParser(description=__doc__, 
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("csv_path", 
-        help="Path to which to stream the .csv. Saves during acquisition.")
-    parser.add_argument("duration",
-        help="Duration (s) of the DAQ stream. If None, will stream until exited (ctrl+c).")
-    args = parser.parse_args()
+def main(config):
     
-    csv_path = expanduser(args.csv_path)
-    duration = args.duration
+    csv_path = expanduser(config["sniff-and-puff"]["csv_path"])
+    duration = config["sniff-and-puff"]["duration"]
 
     # TODO : Don't run more than one counter and/or timer. The required multiple 224 
     # channels means I have to make some fixes.
     # See: https://labjack.com/support/datasheets/u3/operation/stream-mode/digital-inputs-timers-counters
 
-    if duration.lower() == "none":
-        duration = None
-    else:
+    if not isinstance(duration, type(None)):
         duration = float(duration)
 
     assert csv_path.endswith(".csv"), f"{csv_path} is not a .csv file"
@@ -107,8 +77,3 @@ def main():
                   times="absolute",
                   do_overwrite=True, 
                   is_verbose=True)
-
-    
-
-if __name__ == "__main__":
-    main()

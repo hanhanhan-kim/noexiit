@@ -92,6 +92,17 @@ def expt_still_robot(config):
     click.echo("\nRunning 'still robot' (closed-loop) experiment ...")
     c_loop_still_robot_expt.main(config)
 
+@cli.command()
+@pass_config
+@docstring_parameter(docstrings["sniff-and-puff"])
+def sniff_and_puff(config):
+    """
+    {0}
+    """
+    from noexiit import sniff_puff_and_stream
+    click.echo("\nAcquiring PID data and controlling valves ...")
+    sniff_puff_and_stream.main(config)
+
 
 if __name__ == "__main__":
     cli()

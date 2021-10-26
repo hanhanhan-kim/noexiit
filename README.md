@@ -47,7 +47,7 @@ I use FLIR Blackfly S cameras (BFS-U3-04S2M-CS) and Spinnaker 1.27.0.48 for Ubun
 
 ### FicTrac
 
-See [Richard Moore's official repo](https://github.com/rjdmoore/fictrac) for additional details. My cloned repo is rolled back to commit `f60cae42ec747ad8e050f46079b49df2f7698749`. I use the following dependencies:
+[My fork](https://github.com/hanhanhan-kim/fictrac_noexiit) of [Richard Moore's official `fictrac` repo](https://github.com/rjdmoore/fictrac) requires low-level software dependencies:
 
 - `vcpkg` rolled back to commit `85211f3ab66e15c7669a1c14a25564afcf31e2e6`. 
 - [cmake v.3.15.0](https://github.com/Kitware/CMake/releases/tag/v3.15.0).
@@ -216,5 +216,17 @@ This command's `.yaml` parameters are:
 <details><summary> Click for details. </summary>
 <br>
 
-TODO
+TODO: UPDATE THIS AND ADD MORE ARGS TO THIS COMMAND, ADD ARGS TO CONTROL_VALVES FXN, TALK ABOUT THE HARDWARE CONNECTION REQUIRED TO MAKE THE VALVE COMMAND COPIES, ETC. MAKE LESS SHITTY, ETC.
+
+Commands two-way solenoid valve outputs, while also streaming the following 2 types of data to the LabJack U3 DAQ:
+  1. Electrical copies of those output commands 
+  2. PID data 
+  
+By default, the low-voltage pin, FIO7, is hard-coded as an analog input on the stream, and is meant to be hooked up to the PID signal. 
+
+This command's `.yaml` parameters are:
+
+- `csv_path` (string): Path to which to stream the `.csv`.
+
+- `duration` (float or `null`): Duration (secs) of the DAQ stream. If `null`, will stream until exited (ctrl+c). 
 </details>
