@@ -37,33 +37,6 @@ def main(config):
     cam_ports = ['5010', '5020', '5030', '5040', '5050']
     config_path = 'mnt/more_vids/config_jsons/trig_1200us_10secs.json' # alt is 4mins
 
-    # # TODO: Recall that the duration should match BIAS duration ... ask Will about timing/ordering of trigger duration vs. BIAS duration
-    # # Set up user arguments:
-    # parser = argparse.ArgumentParser(description=__doc__, 
-    #                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    # parser.add_argument("duration", 
-    #     help="Duration (s) of the synchronized multi-cam video recordings. \
-    #         If set to None, will record until the motor sequence has finished. \
-    #         If using BIAS, the user MUST match this argument to the BIAS recordings' \
-    #         set duration.")
-    # parser.add_argument("poke_speed", type=int,
-    #     help="A scalar speed factor for the tethered stimulus' extension \
-    #         and retraction. Must be positive. 10 is the fastest. Higher values \
-    #         are slower.")
-    # parser.add_argument("ext_wait_time", type=float,
-    #     help="Duration (s) for which the tethered stimulus is extended at each \
-    #         set angular position.")
-    # parser.add_argument("retr_wait_time", type=float,
-    #     help="Duration (s) for which the tethered stimulus is retracted at each \
-    #         set angular position.")
-    # parser.add_argument("-p", "--posns", nargs="+", type=float, required=True,
-    #     help="A list of angular positions the tethered stimulus will move to. \
-    #         The stimulus will poke and retract at each position in the list. \
-    #         This argument is required.")
-    # parser.add_argument("-e", "--ext", type=int, default=None, 
-    #     help="The maximum linear servo extension angle. If None, will \
-    #         inherit the value in the `config.yaml` file. Default is None.")
-
     # Set up user arguments from config:
     duration = config["expt-pt-to-pt"]["duration"]
     poke_speed = config["expt-pt-to-pt"]["poke_speed"]

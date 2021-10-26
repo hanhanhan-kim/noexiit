@@ -174,6 +174,8 @@ Events happen in the above order even when the command is interrupted (ctrl + c)
 - `ext_wait_time` (float): Duration (secs) for which the tethered stimulus is extended at each set angular position. 
 
 - `retr_wait_time` (float): Duration (secs) for which the tethered stimulus is retracted at each set angular position. 
+
+- `extension` (float or `null`): The maximum linear servo extension angle. If `null`, will inherit the value from the `calibrate` parameter in the `config.yaml` file. 
 </details>
 
 
