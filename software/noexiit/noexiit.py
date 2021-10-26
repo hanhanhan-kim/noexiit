@@ -1,4 +1,5 @@
 from pathlib import Path
+from os.path import dirname, realpath, join
 from pprint import pprint
 
 import click
@@ -6,7 +7,8 @@ import yaml
 
 from noexiit.utils import parse_readme_for_docstrings, docstring_parameter
 
-docstrings = parse_readme_for_docstrings("../README.md")
+readme_dir = dirname(dirname(dirname(realpath(__file__))))
+docstrings = parse_readme_for_docstrings(join(readme_dir, "README.md"))
 pass_config = click.make_pass_decorator(dict)
 
 # TODO: add a DEFAULT_CONFIG ?
