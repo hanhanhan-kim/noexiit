@@ -1,0 +1,21 @@
+calibrate:
+  max_ext: 180.0
+  output_dir: /mnt/more_vids/
+  
+expt-pt-to-pt:
+  duration: 20 # secs
+  ext_wait_time: 2 # secs
+  extension: 90
+  poke_speed: 10
+  positions:
+  - 180
+  - 0
+  retr_wait_time: 2
+
+expt-still-robot:
+  duration: 30 # secs
+  k_stepper: 1
+  ball_radius: 5 # mm
+
+sniff-and-puff:
+  
