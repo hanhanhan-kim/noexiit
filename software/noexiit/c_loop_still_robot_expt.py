@@ -1,24 +1,7 @@
-#!/usr/bin/env python3
-
-"""
-Move the tethered stimulus at 1) an angular velocity opposite in direction, 
-but equal in magnitude, to the animal on the ball (stepper motor), and 2) 
-to some distance away or towards the animal on the ball, given the tethered 
-stimulus' angular position (linear servo). The idea is to mimic a stationary 
-stimulus in a flat planar world. The animal turning right and away from a
-stimulus in front of it, in the planar world, is equivalent to the stimulus 
-turning left and retracting away from the animal, in the on-a-ball world.
-
-This experiment demonstrates the closed-loop capabilities of NOEXIIT. 
-
-It assumes an ATMega328P-based camera trigger. 
-"""
-
 import socket
 import time
 import datetime
 import atexit
-import argparse
 import threading
 
 import numpy as np
@@ -33,7 +16,7 @@ from noexiit.butter_filter import ButterFilter
 from noexiit.move_and_get import home
 
 
-def main():
+def main(config):
 
     # SET UP PARAMATERS-----------------------------------------------------------------------------------------
     
@@ -62,17 +45,10 @@ def main():
     HOST = '127.0.0.1'  # The server's hostname or IP address
     PORT = 27654         # The port used by the server
 
-    # Set up user arguments:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("duration", type=float,
-        help="Duration (s) of the closed-loop acquisition mode.")
-    parser.add_argument("ball_radius", nargs="?", default=5.0, type=float,
-        help="Radius of the spherical treadmill in mm. Default is 5.0 mm.")
-
-    args = parser.parse_args()
-
-    duration = args.duration
-    ball_radius = args.ball_radius
+    # Set up user arguments from config: 
+    duration = config["expt-still-robot"]["duration"]
+    k_stepper = config["expt-still-robot"]["k_stepper"]
+    ball_radius = config["expt-still-robot"]["ball_radius"]
 
     # Show stepper motor parameters:
     dev.print_params()
@@ -382,7 +358,3 @@ def main():
                        })
     
     df.to_csv("c_loop_" + t_start.strftime("%Y_%m_%d_%H_%M_%S") + ".csv", index=False)
-
-
-if __name__ == '__main__':
-    main()

@@ -122,6 +122,16 @@ The outputs of `noexiit`'s commands never overwrite existing files, without firs
 This command prints the contents of the `.yaml` configuration file. It does not have any `.yaml` parameters.
 </details>
 
+
+#### `plot-pid-live`
+
+<details><summary> Click for details. </summary>
+<br>
+
+This command plots and saves to a `.csv`, in real time, the voltage readings of the photo-ionization detector (PID). It assumes that the PID is connected to the **AIN 7** (low-voltage FIO) pin of the LabJack U3-HV . It uses a 'command and response' protocol, instead of a 'streaming' protocol. This command is useful for troubleshooting the PID, and is not recommended for experimental data acquisition. It does not have any `.yaml` parameters. 
+</details>
+
+
 #### `calibrate`
 
 <details><summary> Click for details. </summary>
@@ -134,22 +144,13 @@ This command calibrates the linear servo's behaviour. It sets the servo's maximu
 - `output_dir` (string): The path to the directory where acquired data will be saved. Running the `calibrate` command can automatically update this value.
 </details>
 
-#### `plot-pid-live`
-
-<details><summary> Click for details. </summary>
-<br>
-
-This command plots and saves to a `.csv`, in real time, the voltage readings of the photo-ionization detector (PID). It assumes that the PID is connected to the **AIN 7** (low-voltage FIO) pin of the LabJack U3-HV . It uses a 'command and response' protocol, instead of a 'streaming' protocol. This command is useful for troubleshooting the PID, and is not recommended for experimental data acquisition. It does not have any `.yaml` parameters. 
-</details>
-
 
 #### `expt-pt-to-pt`
 
 <details><summary> Click for details. </summary>
 <br>
 
-This command moves the tethered stimulus to each angular position in a list of specified positions. Upon arriving at a position, the command extends the tethered stimulus for a fixed
-duration. Then retracts the tethered stimulus for a fixed duration. Streams data during motor movements. Events happen in the following order:
+This command moves the tethered stimulus to each angular position in a list of specified positions. Upon arriving at a position, the command extends the tethered stimulus for a fixed duration. Then retracts the tethered stimulus for a fixed duration. Streams data during motor movements. Events happen in the following order:
 
 Initialization (homing, etc.)
 │
@@ -165,7 +166,9 @@ Initialization (homing, etc.)
 
 Events happen in the above order even when the command is interrupted (ctrl + c).
 
-"DAQ stuff" refers to the PID data and the frame counter. Motor position sets and gets happen in a different process from DAQ gets, in order to achieve maximum frequencies. This command's `.yaml` parameters are: 
+"DAQ stuff" refers to the PID data and the frame counter. Motor position sets and gets happen in a different process from DAQ gets, in order to achieve maximum frequencies. 
+
+This command's `.yaml` parameters are: 
 
 - `duration` (float or `null`): Duration (secs) of the synchronized multi-cam video recordings. If set to `null`, will record until the motor sequence has finished. If using BIAS, the user MUST match this argument to the BIAS recordings' set duration. 
 
@@ -184,5 +187,15 @@ Events happen in the above order even when the command is interrupted (ctrl + c)
 <details><summary> Click for details. </summary>
 <br>
 
-TODO
+This command moves the tethered stimulus at 1) an angular velocity opposite in direction, and adjustable in magnitude, to the animal on the ball (stepper motor), and 2) to some distance away or towards the animal on the ball, given the tethered  stimulus' angular position (linear servo). The idea is to mimic a stationary  stimulus in a flat planar world. The animal turning right and away from a stimulus in front of it, in the planar world, is equivalent to the stimulus turning left and retracting away from the animal, in the on-a-ball world. This command demonstrates the closed-loop capabilities of NOEXIIT.
+
+It assumes an ATMega328P-based camera trigger, even if as of 2021/10/25, this command operates only a single camera. 
+
+This command's `.yaml` parameters are:
+
+- `duration` (float): Duration (secs) of the closed-loop acquisition mode. 
+
+- `k_stepper` (float): Gain term for modifying the significance of the animal's turns. A value of 1 means that when the animal turns theta degrees, the stimulus also rotates theta degrees, but in the opposite direction. A value less than 1 means that when the animal rotates theta degrees, the stimulus rotates less than theta degrees by a factor of `k_stepper`, and in the opposite direction. In this way, the animal's actions are 'less significant' than they normally are. A value greater than 1 means that when the animal rotates theta degrees, the stimulus rotates more than theta degrees by a factor of `k_stepper`, and in the opposite direction. In this way, the animal's actions are 'more significant' than they normally are. 
+
+- `ball_radius` (float): Radius of the spherical treadmill, in mm. 
 </details>
