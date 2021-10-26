@@ -7,10 +7,9 @@ externally synchronized video recordings. Loads a .json configuration file.
 
 import time
 import json
-import threading
 import argparse
 
-from command_BIAS import command_BIAS
+from noexiit.command_BIAS import command_BIAS
 
 
 def init_BIAS(cam_ports, config_path, backoff_time=1.0):

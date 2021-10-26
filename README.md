@@ -163,12 +163,17 @@ Initialization (homing, etc.)
 ├── Stops getting motors' positions
 └── Stops getting DAQ stuff
 
-Events happen in the above order even when script is interrupted (ctrl + c).
+Events happen in the above order even when the command is interrupted (ctrl + c).
 
-"DAQ stuff" refers to PID data and frame counter. Motor position sets and gets happen in a different process from DAQ gets, in order to achieve maximum frequencies. 
+"DAQ stuff" refers to the PID data and the frame counter. Motor position sets and gets happen in a different process from DAQ gets, in order to achieve maximum frequencies. This command's `.yaml` parameters are: 
 
-Example command:
-./pt_to_pt_stream_expt.py 20 10 2 2 -p 180 0 -e 90
+- `duration` (float or `null`): Duration (secs) of the synchronized multi-cam video recordings. If set to `null`, will record until the motor sequence has finished. If using BIAS, the user MUST match this argument to the BIAS recordings' set duration. 
+
+- `poke_speed` (integer): A scalar speed factor for the tethered stimulus' extension and retraction. Must be positive. 10 is the fastest. Higher values are slower. 
+
+- `ext_wait_time` (float): Duration (secs) for which the tethered stimulus is extended at each set angular position. 
+
+- `retr_wait_time` (float): Duration (secs) for which the tethered stimulus is retracted at each set angular position. 
 </details>
 
 

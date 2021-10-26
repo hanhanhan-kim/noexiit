@@ -1,30 +1,24 @@
-#!/usr/bin/env python3
-
 import datetime
 import time
 import datetime
 import sys 
 import subprocess
 import threading
-import atexit
 import signal
-import argparse
 import os
 
 import yaml
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import u3
 
 from autostep import Autostep
 from camera_trigger import CameraTrigger
-import noexiit.utils
-import noexiit.move_and_get
+import noexiit.utils as utils
+import noexiit.move_and_get as move_and_get
 from noexiit.init_BIAS import init_BIAS
 
 
-def main():
+def main(config):
 
     # SET UP PARAMETERS-----------------------------------------------------------------------------------------
 
@@ -41,61 +35,59 @@ def main():
 
     # Specify BIAS params:
     cam_ports = ['5010', '5020', '5030', '5040', '5050']
-    config_path = '/home/platyusa/Videos/bias_behaviour_300hz_1000us.json'
+    config_path = 'mnt/more_vids/config_jsons/trig_1200us_10secs.json' # alt is 4mins
 
-    # TODO: Recall that the duration should match BIAS duration ... ask Will about timing/ordering of trigger duration vs. BIAS duration
-    # Set up user arguments:
-    parser = argparse.ArgumentParser(description=__doc__, 
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("duration", 
-        help="Duration (s) of the synchronized multi-cam video recordings. \
-            If set to None, will record until the motor sequence has finished. \
-            If using BIAS, the user MUST match this argument to the BIAS recordings' \
-            set duration.")
-    parser.add_argument("poke_speed", type=int,
-        help="A scalar speed factor for the tethered stimulus' extension \
-            and retraction. Must be positive. 10 is the fastest. Higher values \
-            are slower.")
-    parser.add_argument("ext_wait_time", type=float,
-        help="Duration (s) for which the tethered stimulus is extended at each \
-            set angular position.")
-    parser.add_argument("retr_wait_time", type=float,
-        help="Duration (s) for which the tethered stimulus is retracted at each \
-            set angular position.")
-    parser.add_argument("-p", "--posns", nargs="+", type=float, required=True,
-        help="A list of angular positions the tethered stimulus will move to. \
-            The stimulus will poke and retract at each position in the list. \
-            This argument is required.")
-    parser.add_argument("-e", "--ext", type=int, default=None, 
-        help="The maximum linear servo extension angle. If None, will \
-            inherit the value in the `config.yaml` file. Default is None.")
-    
-    args = parser.parse_args()
+    # # TODO: Recall that the duration should match BIAS duration ... ask Will about timing/ordering of trigger duration vs. BIAS duration
+    # # Set up user arguments:
+    # parser = argparse.ArgumentParser(description=__doc__, 
+    #                                  formatter_class=argparse.RawDescriptionHelpFormatter)
+    # parser.add_argument("duration", 
+    #     help="Duration (s) of the synchronized multi-cam video recordings. \
+    #         If set to None, will record until the motor sequence has finished. \
+    #         If using BIAS, the user MUST match this argument to the BIAS recordings' \
+    #         set duration.")
+    # parser.add_argument("poke_speed", type=int,
+    #     help="A scalar speed factor for the tethered stimulus' extension \
+    #         and retraction. Must be positive. 10 is the fastest. Higher values \
+    #         are slower.")
+    # parser.add_argument("ext_wait_time", type=float,
+    #     help="Duration (s) for which the tethered stimulus is extended at each \
+    #         set angular position.")
+    # parser.add_argument("retr_wait_time", type=float,
+    #     help="Duration (s) for which the tethered stimulus is retracted at each \
+    #         set angular position.")
+    # parser.add_argument("-p", "--posns", nargs="+", type=float, required=True,
+    #     help="A list of angular positions the tethered stimulus will move to. \
+    #         The stimulus will poke and retract at each position in the list. \
+    #         This argument is required.")
+    # parser.add_argument("-e", "--ext", type=int, default=None, 
+    #     help="The maximum linear servo extension angle. If None, will \
+    #         inherit the value in the `config.yaml` file. Default is None.")
 
-    duration = args.duration 
-    if duration.lower() == "none":
-        duration = None 
-    else:
+    # Set up user arguments from config:
+    duration = config["expt-pt-to-pt"]["duration"]
+    poke_speed = config["expt-pt-to-pt"]["poke_speed"]
+    ext_wait_time = config["expt-pt-to-pt"]["ext_wait_time"]
+    retr_wait_time = config["expt-pt-to-pt"]["retr_wait_time"]
+    posns = config["expt-pt-to-pt"]["positions"]
+    ext_angle = config["expt-pt-to-pt"]["extension"]
+
+    if not isinstance(duration, type(None)):
         duration = float(duration)
-    poke_speed = args.poke_speed
-    ext_wait_time = args.ext_wait_time
-    retr_wait_time = args.retr_wait_time
-    posns = args.posns
-    ext_angle = args.ext
 
     if poke_speed < 10:
         raise ValueError("The poke_speed must be 10 or greater.")
 
     if ext_angle is None:
         with open("config.yaml") as f:
-            ext_angle = yaml.load(f, Loader=yaml.FullLoader)["max_ext"]
+            ext_angle = yaml.load(f, Loader=yaml.FullLoader)["calibrate"]["max_ext"]
     
     # Set up filename to save:
     t_script_start = datetime.datetime.now()
     name_script_start = t_script_start.strftime("%Y_%m_%d_%H_%M_%S")
     file_ending = name_script_start + ".csv"
     with open ("config.yaml") as f:
-        output_dir = yaml.load(f, Loader=yaml.FullLoader)["output_dir"]
+        output_dir = yaml.load(f, Loader=yaml.FullLoader)["calibrate"]["output_dir"]
 
     # Save the motor settings: 
     fname = f"{output_dir}motor_settings_{name_script_start}.txt"
@@ -181,8 +173,9 @@ def main():
         print("Moved to starting stepper position.")
         
         # START DAQ stream of PID values and counts (trigger not called here):
+        dirname = os.path.dirname(os.getcwd())
         daq_args = [sys.executable, # sys.executable calls current python
-                    "stream.py", f"{output_dir}o_loop_daq_{file_ending}", "none", "absolute"] 
+                    os.path.join(dirname, "software/noexiit/stream.py"), f"{output_dir}o_loop_daq_{file_ending}", "none", "absolute"] 
         p_daq = subprocess.Popen(daq_args) 
         time.sleep(1.0) # DAQ start-up takes a bit
 
@@ -230,7 +223,11 @@ def main():
     daq_df["datetime"] = pd.to_datetime(daq_df["datetime"], 
                                         format="%Y-%m-%d %H:%M:%S.%f")
 
-    df = pd.merge_ordered(daq_df, motor_df, "datetime").interpolate() # for plotting only
+    # Merge and interpolate, but only for plotting. Do NOT interpolate saved data:
+    df = pd.merge_ordered(daq_df, motor_df, "datetime")
+    # Interpolating on datetime objs is buggy (2021/10/25): 
+    interpolated = df.loc[:, df.columns != "datetime"].interpolate()
+    df = pd.concat([df["datetime"], interpolated], axis=1)
     df = utils.datetime_to_elapsed(df)
 
     # Plot:
@@ -259,7 +256,3 @@ def main():
 
     plt.savefig((f"{output_dir}o_loop_" + file_ending).replace(".csv", ".png"), dpi=500)
     plt.show()
-
-
-if __name__ == "__main__":
-    main()

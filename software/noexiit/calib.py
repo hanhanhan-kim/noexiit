@@ -63,12 +63,12 @@ def main(config):
 
     else:
         print("A specific output directory does not exist.")
-        output_dir = str(Path.cwd())
+        output_dir = str(Path.cwd()) + "/"
 
         # Write new config.yaml if it doesn't exist, with pwd as output path:
         if not Path("config.yaml").is_file():
             with open("config.yaml", "w") as f: 
-                yaml.dump({"calib":{"output_dir": str(output_dir)+"/"}}, f)
+                yaml.dump({"calib":{"output_dir": str(output_dir)}}, f)
         # Otherwise, just keep whatever's already in the .yaml file
 
         # If config.yaml does exist, make a new key with the pwd as the value:

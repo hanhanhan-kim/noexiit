@@ -101,10 +101,8 @@ def parse_readme_for_docstrings(readme_path):
     # Handle the strange cases that need formatting:
     to_reformat = cmds_docstrings["expt-pt-to-pt"]
     idx = to_reformat.find("Initialization (homing, etc.)") - 1
-    
     keep_rewrapped = to_reformat[:idx]
     not_rewrapped = to_reformat[idx:]
-    
     # Update dictionary with reformatted docstring:
     cmds_docstrings["expt-pt-to-pt"] = [keep_rewrapped, not_rewrapped]
     
