@@ -187,6 +187,8 @@ This command's `.yaml` parameters are:
 - `retr_wait_time` (float): Duration (secs) for which the tethered stimulus is retracted at each set angular position. 
 
 - `extension` (float or `null`): The maximum linear servo extension angle. If `null`, will inherit the value from the `calibrate` parameter in the `config.yaml` file. 
+
+**N.B.** Successful execution of this command requires some external set-up. The BIAS video capture program must be manually launched before running the command. In addition, even though the command can automatically configure and initiate BIAS for synchronized multi-cam acquisition via HTTP commands, the HTTP commands are unreliable and work only sometimes. For this reason, I recommend manually uploading the same BIAS configuration file for each camera, such that the external trigger feature is enabled, and then manually initiating the external trigger listening by clicking on each camera GUI's `Start` button (in external trigger mode, the `Start` button doesn't actually start acquisition. It just initiates the 'listening' for an external trigger signal).
 </details>
 
 
@@ -206,4 +208,13 @@ This command's `.yaml` parameters are:
 - `k_stepper` (float): Gain term for modifying the significance of the animal's turns. A value of 1 means that when the animal turns theta degrees, the stimulus also rotates theta degrees, but in the opposite direction. A value less than 1 means that when the animal rotates theta degrees, the stimulus rotates less than theta degrees by a factor of `k_stepper`, and in the opposite direction. In this way, the animal's actions are 'less significant' than they normally are. A value greater than 1 means that when the animal rotates theta degrees, the stimulus rotates more than theta degrees by a factor of `k_stepper`, and in the opposite direction. In this way, the animal's actions are 'more significant' than they normally are. 
 
 - `ball_radius` (float): Radius of the spherical treadmill, in mm. 
+</details>
+
+
+#### `sniff-and-puff`
+
+<details><summary> Click for details. </summary>
+<br>
+
+TODO
 </details>
