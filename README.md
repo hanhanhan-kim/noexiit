@@ -80,6 +80,14 @@ Set up of the Anaconda environment already installs the software dependencies fo
 
 Set up of the Anaconda environment already installs the software dependencies for [`autostep`](https://github.com/hanhanhan-kim/autostep).
 
+#### Valves
+
+[My fork](https://github.com/hanhanhan-kim/switchx7) of [Will Dickson's official `switchx7` repo](https://github.com/willdickson/switchx7) requires firmware dependencies on a Teensy 3.2 MCU. Uploading firmware onto a Teensy requires the [Teensyduino add-on for the Arduino IDE](https://www.pjrc.com/teensy/teensyduino.html). I use the following Arduino IDE dependencies:
+
+- Streaming v5.0.0
+
+Set up of the Anaconda environment already installs the software dependencies for [`switchx7`](https://github.com/hanhanhan-kim/switchx7).
+
 ## How to use:
 
 Using `noexiit` is simple! From anywhere, type the following in the command line:
