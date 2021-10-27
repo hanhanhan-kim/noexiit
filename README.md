@@ -240,7 +240,7 @@ This command's `.yaml` parameters are:
 
 - `ball_radius` (float): Radius of the spherical treadmill, in mm. 
 
-- `fictrac_exe_path` (string): Path to the Fictrac executable. Will probably be `fictrac/bin/fictrac`. 
+- `fictrac_exe_path` (string): Path to the Fictrac executable. Will probably be the absolute path of `fictrac/bin/fictrac`, where the parent directory is the Fictrac repo. 
 
 - `fictrac_config_path` (string): Path to the Fictrac configuration text file. *N.B.* The configuration file must have an integer as the `src_fn` parameter, as opposed to a path that specifies an offline video. 
 </details>
