@@ -216,17 +216,27 @@ This command's `.yaml` parameters are:
 <details><summary> Click for details. </summary>
 <br>
 
-TODO: UPDATE THIS AND ADD MORE ARGS TO THIS COMMAND, ADD ARGS TO CONTROL_VALVES FXN, TALK ABOUT THE HARDWARE CONNECTION REQUIRED TO MAKE THE VALVE COMMAND COPIES, ETC. MAKE LESS SHITTY, ETC.
-
-Commands two-way solenoid valve outputs, while also streaming the following 2 types of data to the LabJack U3 DAQ:
+Commands two two-way solenoid valve outputs, while also streaming the following 2 types of data to the LabJack U3 DAQ:
   1. Electrical copies of those output commands 
   2. PID data 
   
-By default, the low-voltage pin, FIO7, is hard-coded as an analog input on the stream, and is meant to be hooked up to the PID signal. 
+By default, the low-voltage pin, FIO7, is hard-coded as an analog input on the stream, and is meant to be hooked up to the PID signal. The high-voltage pin, AIN3, can be used instead, but the user must go into the codebase and alter the hard-coded value. The electrical copies of the valve control commands are sent via the D-sub connector to the [Teensy 3.2 breakout board](https://github.com/willdickson/teensy3x_solenoid_driver). This command assumes that the increasing numbering of the D-sub connector pins match the increasing numbering of the breakout board pins, from the smallest possible pin values. 
 
 This command's `.yaml` parameters are:
 
-- `csv_path` (string): Path to which to stream the `.csv`.
-
 - `duration` (float or `null`): Duration (secs) of the DAQ stream. If `null`, will stream until exited (ctrl+c). 
+
+- `output_dir` (string or `null`): The path to the directory where the acquired `sniffed_puffed.csv` data will be saved. If `null`, will inherit the value from the `calibrate` parameter in the `config.yaml` file. 
+
+- `port` (string): The path to the Teensy MCU port that control the valves. This path is *not* the Teensy MCU port that controls the stepper and servo motors. E.g. '/dev/ttyACM1'. 
+
+- `pre_stim_durn` (float): The time (secs) before activating only the 'ON' valve, e.g. the odour valve. 
+
+- `stim_durn` (float): The time (secs) before activating only the 'ON' valve, e.g. the odour valve.
+
+- `post_stim_durn` (float): The time (secs) after activating only the 'ON' valve, e.g. the odour valve. 
+
+- `on_valve_id` (int): The ID of the 'ON' valve. Will be a value between 0 and 6 inclusive. An appropriate valve for activating e.g. the odourant. 
+
+- `off_valve_id` (int): The ID of the 'OFF' valve. Will be a value between 0 and 6 inclusive. An appropriate valve for activating e.g. the solvent. 
 </details>

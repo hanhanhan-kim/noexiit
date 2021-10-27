@@ -18,4 +18,14 @@ expt-still-robot:
   ball_radius: 5 # mm
 
 sniff-and-puff:
+
+  duration: null
+  output_dir: null
+
+  port: /dev/ttyACM1
+  pre_stim_durn: 2
+  stim_durn: 2
+  post_stim_durn: 2
+  on_valve_id: 1
+  off_valve_id: 0
   
