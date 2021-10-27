@@ -140,6 +140,37 @@ This command plots and saves to a `.csv`, in real time, the voltage readings of 
 </details>
 
 
+#### `sniff-and-puff`
+
+<details><summary> Click for details. </summary>
+<br>
+
+This command controls two two-way solenoid valve outputs, while also streaming the following 2 types of data to the LabJack U3 DAQ:
+  1. Electrical copies of those output commands 
+  2. PID data 
+  
+By default, the low-voltage pin, FIO7, is hard-coded as an analog input on the stream, and is meant to be hooked up to the PID signal. The high-voltage pin, AIN3, can be used instead, but the user must go into the codebase and alter the hard-coded value. The electrical copies of the valve control commands are sent via the D-sub connector to the [Teensy 3.2 breakout board](https://github.com/willdickson/teensy3x_solenoid_driver). This command assumes that the increasing numbering of the D-sub connector pins matches the increasing numbering of the breakout board pins, from the smallest possible pin values.  This command is useful for collecting troubleshooting data, but is probably not ideal for acquiring data for biological experiments.
+
+This command's `.yaml` parameters are:
+
+- `duration` (float or `null`): Duration (secs) of the DAQ stream. If `null`, will stream until exited (ctrl+c). 
+
+- `output_dir` (string or `null`): The path to the directory where the acquired `sniffed_puffed.csv` data will be saved. If `null`, will inherit the value from the `calibrate` parameter in the `config.yaml` file. 
+
+- `port` (string): The path to the Teensy MCU port that control the valves, e.g. `/dev/ttyACM1`. This path is *not* the Teensy MCU port that controls the stepper and servo motors. 
+
+- `pre_stim_durn` (float): The time (secs) before activating only the 'ON' valve, e.g. the odour valve. 
+
+- `stim_durn` (float): The time (secs) before activating only the 'ON' valve, e.g. the odour valve.
+
+- `post_stim_durn` (float): The time (secs) after activating only the 'ON' valve, e.g. the odour valve. 
+
+- `on_valve_id` (int): The ID of the 'ON' valve. Will be a value between 0 and 6 inclusive. An appropriate valve for activating e.g. the odourant. 
+
+- `off_valve_id` (int): The ID of the 'OFF' valve. Will be a value between 0 and 6 inclusive. An appropriate valve for activating e.g. the solvent. 
+</details>
+
+
 #### `calibrate`
 
 <details><summary> Click for details. </summary>
@@ -208,35 +239,8 @@ This command's `.yaml` parameters are:
 - `k_stepper` (float): Gain term for modifying the significance of the animal's turns. A value of 1 means that when the animal turns theta degrees, the stimulus also rotates theta degrees, but in the opposite direction. A value less than 1 means that when the animal rotates theta degrees, the stimulus rotates less than theta degrees by a factor of `k_stepper`, and in the opposite direction. In this way, the animal's actions are 'less significant' than they normally are. A value greater than 1 means that when the animal rotates theta degrees, the stimulus rotates more than theta degrees by a factor of `k_stepper`, and in the opposite direction. In this way, the animal's actions are 'more significant' than they normally are. 
 
 - `ball_radius` (float): Radius of the spherical treadmill, in mm. 
-</details>
 
+- `fictrac_exe_path` (string): Path to the Fictrac executable. Will probably be `fictrac/bin/fictrac`. 
 
-#### `sniff-and-puff`
-
-<details><summary> Click for details. </summary>
-<br>
-
-This command controls two two-way solenoid valve outputs, while also streaming the following 2 types of data to the LabJack U3 DAQ:
-  1. Electrical copies of those output commands 
-  2. PID data 
-  
-By default, the low-voltage pin, FIO7, is hard-coded as an analog input on the stream, and is meant to be hooked up to the PID signal. The high-voltage pin, AIN3, can be used instead, but the user must go into the codebase and alter the hard-coded value. The electrical copies of the valve control commands are sent via the D-sub connector to the [Teensy 3.2 breakout board](https://github.com/willdickson/teensy3x_solenoid_driver). This command assumes that the increasing numbering of the D-sub connector pins matches the increasing numbering of the breakout board pins, from the smallest possible pin values. 
-
-This command's `.yaml` parameters are:
-
-- `duration` (float or `null`): Duration (secs) of the DAQ stream. If `null`, will stream until exited (ctrl+c). 
-
-- `output_dir` (string or `null`): The path to the directory where the acquired `sniffed_puffed.csv` data will be saved. If `null`, will inherit the value from the `calibrate` parameter in the `config.yaml` file. 
-
-- `port` (string): The path to the Teensy MCU port that control the valves, e.g. `/dev/ttyACM1`. This path is *not* the Teensy MCU port that controls the stepper and servo motors. 
-
-- `pre_stim_durn` (float): The time (secs) before activating only the 'ON' valve, e.g. the odour valve. 
-
-- `stim_durn` (float): The time (secs) before activating only the 'ON' valve, e.g. the odour valve.
-
-- `post_stim_durn` (float): The time (secs) after activating only the 'ON' valve, e.g. the odour valve. 
-
-- `on_valve_id` (int): The ID of the 'ON' valve. Will be a value between 0 and 6 inclusive. An appropriate valve for activating e.g. the odourant. 
-
-- `off_valve_id` (int): The ID of the 'OFF' valve. Will be a value between 0 and 6 inclusive. An appropriate valve for activating e.g. the solvent. 
+- `fictrac_config_path` (string): Path to the Fictrac configuration text file. *N.B.* The configuration file must have an integer as the `src_fn` parameter, as opposed to a path that specifies an offline video. 
 </details>
