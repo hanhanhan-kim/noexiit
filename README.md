@@ -216,7 +216,7 @@ This command's `.yaml` parameters are:
 <details><summary> Click for details. </summary>
 <br>
 
-Commands two two-way solenoid valve outputs, while also streaming the following 2 types of data to the LabJack U3 DAQ:
+This command controls two two-way solenoid valve outputs, while also streaming the following 2 types of data to the LabJack U3 DAQ:
   1. Electrical copies of those output commands 
   2. PID data 
   
