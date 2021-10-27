@@ -3,7 +3,11 @@ import time
 import datetime
 import atexit
 import threading
-from os.path import join
+import subprocess
+import signal
+from pathlib import Path
+from os import kill
+from os.path import join, expanduser, dirname
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -45,18 +49,43 @@ def main(config):
     # Set connection parameters:
     HOST = '127.0.0.1'  # The server's hostname or IP address
     PORT = 27654         # The port used by the server
-
+    
     # Set up user arguments from config:
     output_dir = config["calibrate"]["output_dir"]
     duration = config["expt-still-robot"]["duration"]
     k_stepper = config["expt-still-robot"]["k_stepper"]
     ball_radius = config["expt-still-robot"]["ball_radius"]
+    fictrac_exe_path = expanduser(config["expt-still-robot"]["fictrac_exe_path"])
+    fictrac_config_path = expanduser(config["expt-still-robot"]["fictrac_config_path"])
+
+    if not Path(output_dir).is_dir():
+        raise ValueError(f"{output_dir} is not an existing directory.")
+    if not Path(fictrac_exe_path).exists():
+        raise ValueError(f"{fictrac_exe_path} does not exist.")
+    if not Path(fictrac_config_path).exists():
+        raise ValueError(f"{fictrac_config_path} does not exist.")
+
+    with open(fictrac_config_path, "r") as f:
+        fictrac_config = f.readlines()
+    
+    for line in fictrac_config:
+        if line.startswith("src_fn"):
+            if not isinstance(int(line[-2]), int):
+                raise TypeError("The src_fn parameter must be an integer, "
+                                "and not, for example, a string. "
+                                f"{line[-2]} is not an integer.")
 
     # Show stepper motor parameters:
     dev.print_params()
     
     # EXECUTE---------------------------------------------------------------------------------------------------
     
+    # Start background FicTrac so it begins to listen for camera inputs:
+    fictrac_args = [fictrac_exe_path, fictrac_config_path]
+    p_fictrac = subprocess.Popen(fictrac_args, stdout=subprocess.PIPE)
+    print("Waiting 2 secs for warm-up ...")
+    time.sleep(2.0) # wait a bit for the relevant msgs to print
+
     # TODO: use absolute positions to do closed loop
     home(dev)
     
@@ -278,6 +307,11 @@ def main(config):
 
     # Stop stepper:
     dev.run(0.0)
+
+    # Close Fictrac:
+    kill(p_fictrac.pid, signal.SIGINT)
+    if not p_fictrac.poll():
+        print("Stopped Fictrac.")
     
     # PLOT RESULTS----------------------------------------------------------------------------------------------
 

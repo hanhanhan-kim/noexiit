@@ -16,6 +16,8 @@ expt-still-robot:
   duration: 30 # secs
   k_stepper: 1
   ball_radius: 5 # mm
+  fictrac_exe_path: ~/src/fictrac_noexiit/bin/fictrac
+  fictrac_config_path: ~/src/fictrac_noexiit/my_scripts/config_c_loop.txt
 
 sniff-and-puff:
 
