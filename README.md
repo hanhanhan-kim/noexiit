@@ -228,7 +228,7 @@ This command's `.yaml` parameters are:
 
 - `output_dir` (string or `null`): The path to the directory where the acquired `sniffed_puffed.csv` data will be saved. If `null`, will inherit the value from the `calibrate` parameter in the `config.yaml` file. 
 
-- `port` (string): The path to the Teensy MCU port that control the valves. This path is *not* the Teensy MCU port that controls the stepper and servo motors. E.g. '/dev/ttyACM1'. 
+- `port` (string): The path to the Teensy MCU port that control the valves, e.g. `/dev/ttyACM1`. This path is *not* the Teensy MCU port that controls the stepper and servo motors. 
 
 - `pre_stim_durn` (float): The time (secs) before activating only the 'ON' valve, e.g. the odour valve. 
 
