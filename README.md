@@ -220,7 +220,7 @@ This command controls two two-way solenoid valve outputs, while also streaming t
   1. Electrical copies of those output commands 
   2. PID data 
   
-By default, the low-voltage pin, FIO7, is hard-coded as an analog input on the stream, and is meant to be hooked up to the PID signal. The high-voltage pin, AIN3, can be used instead, but the user must go into the codebase and alter the hard-coded value. The electrical copies of the valve control commands are sent via the D-sub connector to the [Teensy 3.2 breakout board](https://github.com/willdickson/teensy3x_solenoid_driver). This command assumes that the increasing numbering of the D-sub connector pins match the increasing numbering of the breakout board pins, from the smallest possible pin values. 
+By default, the low-voltage pin, FIO7, is hard-coded as an analog input on the stream, and is meant to be hooked up to the PID signal. The high-voltage pin, AIN3, can be used instead, but the user must go into the codebase and alter the hard-coded value. The electrical copies of the valve control commands are sent via the D-sub connector to the [Teensy 3.2 breakout board](https://github.com/willdickson/teensy3x_solenoid_driver). This command assumes that the increasing numbering of the D-sub connector pins matches the increasing numbering of the breakout board pins, from the smallest possible pin values. 
 
 This command's `.yaml` parameters are:
 
