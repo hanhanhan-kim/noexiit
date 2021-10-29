@@ -110,10 +110,10 @@ The successful execution of a command requires filling out a single `.yaml` conf
 noexiit --config <path/to/config.yaml> <command>
 ```
 
-For example, if the `.yaml` file you want to use has the path `~/tmp/my_weird_config.yaml`, and you want to run the `pt-to-pt` command, you'd input:
+For example, if the `.yaml` file you want to use has the path `~/tmp/my_weird_config.yaml`, and you want to run the `expt-pt-to-pt` command, you'd input:
 
 ```bash
-noexiit --config ~/tmp/my_weird_config.yaml pt-to-pt
+noexiit --config ~/tmp/my_weird_config.yaml expt-pt-to-pt
 ```
 
 Each key in the `.yaml` configuration file refers to a `noexiit` command. The value of each of these keys is a dictionary that specifies the parameters for that `vidtools` command. Make sure you do not have any trailing spaces in the `.yaml` file. An example `config.yaml` file is provided in the repository. 
