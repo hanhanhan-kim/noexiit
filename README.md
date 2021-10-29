@@ -161,13 +161,13 @@ This command's `.yaml` parameters are:
 
 - `pre_stim_durn` (float): The time (secs) before activating only the 'ON' valve, e.g. the odour valve. 
 
-- `stim_durn` (float): The time (secs) before activating only the 'ON' valve, e.g. the odour valve.
+- `stim_durn` (float): The time (secs) while activating only the 'ON' valve, e.g. the odour valve.
 
 - `post_stim_durn` (float): The time (secs) after activating only the 'ON' valve, e.g. the odour valve. 
 
-- `on_valve_id` (int): The ID of the 'ON' valve. Will be a value between 0 and 6 inclusive. An appropriate valve for activating e.g. the odourant. 
+- `on_valve_id` (integer): The ID of the 'ON' valve. Will be a value between 0 and 6 inclusive. An appropriate valve for activating e.g. the odourant. 
 
-- `off_valve_id` (int): The ID of the 'OFF' valve. Will be a value between 0 and 6 inclusive. An appropriate valve for activating e.g. the solvent. 
+- `off_valve_id` (integer): The ID of the 'OFF' valve. Will be a value between 0 and 6 inclusive. An appropriate valve for activating e.g. the solvent. 
 </details>
 
 
@@ -196,11 +196,13 @@ Initialization (homing, etc.)
 ├── Gets DAQ stuff
 ├── Gets motors' positions
 ├── Starts cam trigger
+├── Starts valves, if necessary
 ├── Starts motors
 │
 ├── Finishes motors or duration
 ├── Stops cam trigger
 ├── Stops getting motors' positions
+├── Stops valves, if necessary
 └── Stops getting DAQ stuff
 
 Events happen in the above order even when the command is interrupted (ctrl + c).
@@ -211,13 +213,31 @@ This command's `.yaml` parameters are:
 
 - `duration` (float or `null`): Duration (secs) of the synchronized multi-cam video recordings. If set to `null`, will record until the motor sequence has finished. If using BIAS, the user MUST match this argument to the BIAS recordings' set duration. 
 
+- `trigger_port` (string): The path to the ATMega328P MCU (e.g. Arduino Nano) that controls the valves, e.g. `/dev/ttyUSB0`. 
+
+- `cam_hz` (integer): The frame rate, in Hz, with which to fire the external camera trigger. 
+
 - `poke_speed` (integer): A scalar speed factor for the tethered stimulus' extension and retraction. Must be positive. 10 is the fastest. Higher values are slower. 
 
 - `ext_wait_time` (float): Duration (secs) for which the tethered stimulus is extended at each set angular position. 
 
 - `retr_wait_time` (float): Duration (secs) for which the tethered stimulus is retracted at each set angular position. 
 
+- `positions` (list of floats): List of angular positions (degs) for the tethered stimulus to visit. The tethered stimulus will extend and retract at each position in the list. E.g. `[0, 180.3, -180, 720]` will result in the stepper motor rotating clockwise to all the positive values and rotating counter clockwise to all the negative values. 
+
 - `extension` (float or `null`): The maximum linear servo extension angle. If `null`, will inherit the value from the `calibrate` parameter in the `config.yaml` file. 
+
+- `puff_port` (string or `null`): The path to the Teensy MCU that controls the valves, e.g. `/dev/ttyACM1`. This path is *not* the Teensy MCU port that controls the stepper and servo motors. Importantly, **if this argument is `null`, none of the valve arguments will be considered** (i.e. any arguments with the words `puff` or `valve`). 
+
+- `pre_puff_durn` (float): The time (secs) before activating only the 'ON valve, e.g. the odour valve. This argument is a 'valve argument'. 
+
+- `puff_durn` (float): The time (secs) while activating only the 'ON' valve, e.g. the odour valve. This argument is a 'valve argument'. 
+
+- `post_puff_durn` (float): The time (secs) after activating only the 'ON' valve, e.g. the odour valve. This argument is a 'valve argument'. 
+
+- `on_valve_id` (integer): The ID of the 'ON' valve. Will be a value between 0 and 6 inclusive. An appropriate valve for activating e.g. the odourant. This argument is a 'valve argument'. 
+
+- `off_valve_id` (integer): The ID of the 'OFF' valve. Will be a value between 0 and 6 inclusive. An appropriate valve for activating e.g. the solvent. This argument is a 'valve argument'. 
 
 **N.B.** Successful execution of this command requires some external set-up. The BIAS video capture program must be manually launched before running the command. In addition, even though the command can automatically configure and initiate BIAS for synchronized multi-cam acquisition via HTTP commands, the HTTP commands are unreliable and work only sometimes. For this reason, I recommend manually uploading the same BIAS configuration file for each camera, such that the external trigger feature is enabled, and then manually initiating the external trigger listening by clicking on each camera GUI's `Start` button (in external trigger mode, the `Start` button doesn't actually start acquisition. It just initiates the 'listening' for an external trigger signal).
 </details>

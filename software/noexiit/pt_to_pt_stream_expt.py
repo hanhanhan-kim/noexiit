@@ -13,9 +13,11 @@ import matplotlib.pyplot as plt
 
 from autostep import Autostep
 from camera_trigger import CameraTrigger
+from switchx7 import SwitchX7 
 import noexiit.utils as utils
 import noexiit.move_and_get as move_and_get
 from noexiit.init_BIAS import init_BIAS
+from noexiit.sniff_puff_and_stream import control_valves
 
 
 def main(config):
@@ -39,11 +41,21 @@ def main(config):
 
     # Set up user arguments from config:
     duration = config["expt-pt-to-pt"]["duration"]
+    trigger_port = config["expt-pt-to-pt"]["trigger_port"]
+    cam_hz = config["expt-pt-to-pt"]["cam_hz"]
+    # Motor stuff:
     poke_speed = config["expt-pt-to-pt"]["poke_speed"]
     ext_wait_time = config["expt-pt-to-pt"]["ext_wait_time"]
     retr_wait_time = config["expt-pt-to-pt"]["retr_wait_time"]
     posns = config["expt-pt-to-pt"]["positions"]
     ext_angle = config["expt-pt-to-pt"]["extension"]
+    # Valve stuff:
+    puff_port = config["expt-pt-to-pt"]["puff_port"]
+    pre_puff_durn = config["expt-pt-to-pt"]["pre_puff_durn"]
+    puff_durn = config["expt-pt-to-pt"]["puff_durn"]
+    post_puff_durn = config["expt-pt-to-pt"]["post_puff_durn"]
+    on_valve_id = config["expt-pt-to-pt"]["on_valve_id"]
+    off_valve_id = config["expt-pt-to-pt"]["off_valve_id"]
 
     if not isinstance(duration, type(None)):
         duration = float(duration)
@@ -55,6 +67,16 @@ def main(config):
         with open("config.yaml") as f:
             ext_angle = yaml.load(f, Loader=yaml.FullLoader)["calibrate"]["max_ext"]
     
+    # Check that motor or valve stim durations don't exceed the expt duration: 
+    time_spent_rotating = move_and_get.get_time_from_pt_to_pt(stepper, posns, "jog")
+    motor_duration = len(posns) * (ext_wait_time + retr_wait_time) + time_spent_rotating
+    valve_duration = pre_puff_durn + puff_durn + post_puff_durn 
+    if (motor_duration and valve_duration) > duration:
+        raise ValueError("The time it takes for either the motors to finish moving or "
+                        "for the valves to finish energizing exceeds the experiment's "
+                        "recording duration. The stimulus activity should finish "
+                        "before the total recording duration.")
+
     # Set up filename to save:
     t_script_start = datetime.datetime.now()
     name_script_start = t_script_start.strftime("%Y_%m_%d_%H_%M_%S")
@@ -85,9 +107,8 @@ def main(config):
     get_motors_thread.daemon = True
 
     # Set up trigger:
-    trigger_port = "/dev/ttyUSB0" # TODO: make into an arg?
     trig = CameraTrigger(trigger_port) 
-    trig.set_freq(100) # frequency (Hz) TODO: make into an arg?
+    trig.set_freq(cam_hz) # frequency (Hz)
     trig.set_width(10) # (us)
     trig.stop()
 
@@ -110,6 +131,11 @@ def main(config):
             print("Stopped timer for trigger end.")
         move_and_get._moving_motors = False
         print("Stopped movements.")
+        if puff_port != None:
+            print("De-energizing valves.")
+            switch = SwitchX7(port=puff_port, timeout=1.0)
+            switch.set_all(False)
+            print("De-energized the valves.")
         stop_trigger()
         print("Stopping the motor commands stream to csv ...")
         move_and_get._getting_motors = False 
@@ -165,6 +191,20 @@ def main(config):
             trig_timer = threading.Timer(duration, stop_trigger)
             trig_timer.start()
 
+        # START VALVES, if using valves:
+        if puff_port != None:
+            valves_thread = threading.Thread(target=control_valves,
+                                args=(puff_port, 
+                                      pre_puff_durn, 
+                                      puff_durn, 
+                                      post_puff_durn, 
+                                      on_valve_id, 
+                                      off_valve_id))
+            valves_thread.daemon = True
+            valves_thread.start()
+        else:
+            print("No valves will be energized in this experiment.")
+
         # START MOTORS (is blocking):
         move_and_get.pt_to_pt_and_poke(stepper, posns, ext_angle, 
                                        poke_speed, ext_wait_time, retr_wait_time)
@@ -177,6 +217,9 @@ def main(config):
 
         get_motors_thread.join() 
         print("Stopped the motor command stream to csv.")
+
+        valves_thread.join()
+        print("Stopped the valves command stream to csv.")
         
         print("Stopping the DAQ stream process ...")
         time.sleep(1.0) # Sleep for a bit, so the DAQ stops after the get motors thread

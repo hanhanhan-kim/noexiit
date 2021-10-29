@@ -23,7 +23,6 @@ import sys
 
 import yaml
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import u3
 
@@ -42,7 +41,7 @@ def pt_to_pt_and_poke(stepper, posns, ext_angle, poke_speed,
             E.g. Autostep("/dev/ttyACM0")
             Do NOT make this object more than once. 
 
-        posns (list): List of target absolute positions to move to.
+        posns (list of floats): List of target absolute positions to move to.
 
         ext_angle (float): The linear servo's extension 'angle' for full 
             extension.
@@ -198,6 +197,73 @@ def save_params(stepper, fname):
         for k,v in stepper.get_kval_params().items():
             print('  {0:<6} {1}'.format(k+':',v), file=f)
         # print("\n".join("{}\t{}".format(k, v) for k, v in stepper.get_params().items()), file=f)
+
+
+def get_time_from_pt_to_pt(stepper, posns, movement_mode="jog"):
+
+    """
+    Get the time it takes to go from point to point, given the 
+    movement mode (either 'jog' or 'max'). This calculation does not 
+    consider the amount of time it takes for the servo to extend and 
+    retract. 
+
+    Parameters:
+    -----------
+    stepper (Autostep): The Autostep object, defined with the correct port. 
+            E.g. Autostep("/dev/ttyACM0")
+            Do NOT make this object more than once. 
+
+    posns (list of floats): List of target absolute positions to move to.
+    
+    movement_mode (str): The movement mode used to control the stepper motor. 
+        Either 'jog' or 'max'.
+
+    Returns:
+    --------
+    The total duration of time it takes 
+    """
+
+    if movement_mode == "jog":
+        movement_params = stepper.get_jog_mode_params()
+        
+    elif movement_mode == "max":
+        movement_params = stepper.get_max_mode_params()
+
+    else: 
+        raise ValueError("Invalid movement mode. \
+            Please input either 'jog' or 'max'.")
+
+    # Point-to-point motion model is that the motor accelerates, 
+    # until it reaches the set speed. Then, it begins deceleration, 
+    # such that it reaches a speed of 0 upon arriving at the destination. 
+    accel = movement_params["accel"] 
+    decel = movement_params["decel"] 
+    speed = movement_params["speed"] 
+
+    t_accel = speed / accel
+    t_decel = speed / decel
+
+    total_duration = 0
+    for i, _ in enumerate(posns):
+
+        # I'll error if I'm on the last index, because I need to work with 
+        # the value that's one ahead, in order to take a difference. 
+        if i == len(posns) - 1:
+            break 
+        if i == 0: 
+            # When traveling to the very initial position in the list, we can 
+            # assume that the motor is travelling from 0 to the very initial 
+            # position. Realize that the servo motor does not extend or retract 
+            # at the implicit starting position of 0. 
+            ang_diff = np.abs(posns[i] - 0)
+        else:
+            ang_diff = np.abs(posns[i+1] - posns[i])
+
+        t_speed = ang_diff / speed
+        t_from_pt_to_pt = t_accel + t_speed + t_decel
+        total_duration += t_from_pt_to_pt
+    
+    return total_duration
 
 
 def stream_to_csv(stepper, csv_path, duration=None):

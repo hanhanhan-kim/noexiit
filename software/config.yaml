@@ -1,23 +1,6 @@
 calibrate:
   max_ext: 180.0
   output_dir: /mnt/more_vids/
-  
-expt-pt-to-pt:
-  duration: 20 # secs
-  ext_wait_time: 2 # secs
-  extension: 90
-  poke_speed: 10
-  positions:
-  - 180
-  - 0
-  retr_wait_time: 2
-
-expt-still-robot:
-  duration: 30 # secs
-  k_stepper: 1
-  ball_radius: 5 # mm
-  fictrac_exe_path: ~/src/fictrac_noexiit/bin/fictrac
-  fictrac_config_path: ~/src/fictrac_noexiit/my_scripts/config_c_loop.txt
 
 sniff-and-puff:
 
@@ -31,3 +14,29 @@ sniff-and-puff:
   on_valve_id: 1
   off_valve_id: 0
   
+expt-pt-to-pt:
+  trigger_port: /dev/ttyUSB0
+  cam_hz: 100
+  duration: 20 # secs
+  # Motor stuff:
+  ext_wait_time: 2 # secs
+  extension: 90
+  poke_speed: 10
+  positions:
+  - 180
+  - 0
+  retr_wait_time: 2
+  # Valve stuff:
+  puff_port: /dev/ttyACM1 # if null, none of the valve params will be considered
+  pre_puff_durn: 2
+  puff_durn: 2
+  post_puff_durn: 2
+  on_valve_id: 1
+  off_valve_id: 0
+
+expt-still-robot:
+  duration: 30 # secs
+  k_stepper: 1
+  ball_radius: 5 # mm
+  fictrac_exe_path: ~/src/fictrac_noexiit/bin/fictrac
+  fictrac_config_path: ~/src/fictrac_noexiit/my_scripts/config_c_loop.txt  
