@@ -220,7 +220,8 @@ def get_time_from_pt_to_pt(stepper, posns, movement_mode="jog"):
 
     Returns:
     --------
-    The total duration of time it takes 
+    The total duration of time it takes for the stepper motor to move from 
+    point to point. 
     """
 
     if movement_mode == "jog":
